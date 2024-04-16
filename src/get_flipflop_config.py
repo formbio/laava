@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+"""Get ITR flip flop configurations.
+
+Must have already run `summarize_AAV_alignment.py` to get a .tagged.BAM file!
+"""
+
 import sys
 from csv import DictReader
 
@@ -6,22 +11,13 @@ import parasail
 import pysam
 from Bio import SeqIO
 
-"""
-Get ITR flip flop configurations
-Must have already run `summarize_AAV_alignment.py` to get a .tagged.BAM file!
-
-Required:
-"""
 
 SW_SCORE_MATRIX = parasail.matrix_create("ACGT", 2, -5)
 
-SEQ_LEFT_FLIP = "ttggccactccctctctgcgcgctcgctcgctcactgaggccgggcgaccaaaggtcgcccgacgcccgggctttgcccgggcggcctcagtgagcgagcgagcgcgcagagagggagtggccaactccatcactaggggttcct".upper()
+SEQ_LEFT_FLIP = "TTGGCCACTCCCTCTCTGCGCGCTCGCTCGCTCACTGAGGCCGGGCGACCAAAGGTCGCCCGACGCCCGGGCTTTGCCCGGGCGGCCTCAGTGAGCGAGCGAGCGCGCAGAGAGGGAGTGGCCAACTCCATCACTAGGGGTTCCT"
 SEQ_LEFT_FLOP = "TTGGCCACTCCCTCTCTGCGCGCTCGCTCGCTCACTGAGGCCGCCCGGGCAAAGCCCGGGCGTCGGGCGACCTTTGGTCGCCCGGCCTCAGTGAGCGAGCGAGCGCGCAGAGAGGGAGTGGCCAACTCCATCACTAGGGGTTCCT"
 SEQ_RIGHT_FLIP = "AGGAACCCCTAGTGATGGAGTTGGCCACTCCCTCTCTGCGCGCTCGCTCGCTCACTGAGGCCGCCCGGGCAAAGCCCGGGCGTCGGGCGACCTTTGGTCGCCCGGCCTCAGTGAGCGAGCGAGCGCGCAGAGAGGGAGTGGCCAA"
 SEQ_RIGHT_FLOP = "AGGAACCCCTAGTGATGGAGTTGGCCACTCCCTCTCTGCGCGCTCGCTCGCTCACTGAGGCCGGGCGACCAAAGGTCGCCCGACGCCCGGGCTTTGCCCGGGCGGCCTCAGTGAGCGAGCGAGCGCGCAGAGAGGGAGTGGCCAA"
-
-# POS_LEFT_FLIP=0 # start position
-# POS_RIGHT_FLIP=4603 # start position
 
 
 def read_flip_flop_fasta(fasta_filename):
@@ -49,9 +45,9 @@ def read_flip_flop_fasta(fasta_filename):
             flag += 0b0001
         else:
             print(
-                "WARNING: Sequence IDs must be SEQ_LEFT_FLIP|SEQ_LEFT_FLOP|SEQ_RIGHT_FLIP|SEQ_RIGHT_FLOP. Is {0} instead. Ignoring!".format(
-                    r.id
-                )
+                "WARNING: Sequence IDs must be "
+                "SEQ_LEFT_FLIP|SEQ_LEFT_FLOP|SEQ_RIGHT_FLIP|SEQ_RIGHT_FLOP. "
+                f"Is {r.id} instead. Ignoring!"
             )
 
     # check that all 4 needed sequence IDs are seen
@@ -73,35 +69,36 @@ def read_flip_flop_fasta(fasta_filename):
 
 
 def identify_flip_flop(r):
-    """
+    """Determine left and right flip/flip/unclassified configurations.
+
     Assume record tag:AT is vector, tag:AX can be full|left-partial|right-partial|partial
     Add back a tag 'AF' that is [flip/flop]-[flip/flop]
     """
+    min_score = 250
+
     t = dict(r.tags)
-    try:
-        assert t["AX"] in (
-            "vector-full",
-            "vector-left-partial",
-            "vector-right-partial",
-            "vector-partial",
+    if t["AX"] not in (
+        "vector-full",
+        "vector-left-partial",
+        "vector-right-partial",
+        "vector-partial",
+    ):
+        raise RuntimeError(
+            "Input BAM records must have a `AX` tag assigned by first running "
+            "summarize_AAV_alignment.py. Abort!"
         )
-    except AssertionError:
-        print(
-            "Input BAM records must have a `AX` tag assigned by first running summarize_AAV_alignment.py. Abort!"
-        )
-        sys.exit(-1)
+
     config_left, config_right = "unclassified", "unclassified"
-    if (
-        t["AX"] == "vector-partial"
-    ):  # ignore, since both sides are missing chunks of ITR
+    if t["AX"] == "vector-partial":
+        # ignore, since both sides are missing chunks of ITR
         return "unclassified", "unclassified"
 
     if t["AX"] in ("vector-full", "vector-left-partial"):
         o1 = parasail.sw_trace(r.query, SEQ_LEFT_FLIP, 3, 1, SW_SCORE_MATRIX)
         o2 = parasail.sw_trace(r.query, SEQ_LEFT_FLOP, 3, 1, SW_SCORE_MATRIX)
-        if o1.score > o2.score and o1.score > 250:
+        if o1.score > o2.score and o1.score > min_score:
             config_left = "flip"
-        elif o2.score > o1.score and o2.score > 250:
+        elif o2.score > o1.score and o2.score > min_score:
             config_left = "flop"
         else:
             config_left = "unclassified"
@@ -113,9 +110,9 @@ def identify_flip_flop(r):
         o2 = parasail.sw_trace(
             r.query[-len(SEQ_RIGHT_FLOP) - 10 :], SEQ_RIGHT_FLOP, 3, 1, SW_SCORE_MATRIX
         )
-        if o1.score > o2.score and o1.score > 250:
+        if o1.score > o2.score and o1.score > min_score:
             config_right = "flip"
-        elif o2.score > o1.score and o2.score > 250:
+        elif o2.score > o1.score and o2.score > min_score:
             config_right = "flop"
         else:
             config_right = "unclassified"
@@ -124,8 +121,9 @@ def identify_flip_flop(r):
 
 def main(per_read_csv, tagged_bam, output_prefix):
     read_info = {}
-    for r in DictReader(open(per_read_csv), delimiter="\t"):
-        read_info[r["read_id"]] = r
+    with open(per_read_csv) as in_csv:
+        for r in DictReader(in_csv, delimiter="\t"):
+            read_info[r["read_id"]] = r
 
     fout = open(output_prefix + ".flipflop_assignments.txt", "w")
     fout.write("name\ttype\tsubtype\tstart\tend\tleftITR\trightITR\n")
@@ -168,19 +166,17 @@ def main(per_read_csv, tagged_bam, output_prefix):
                 writer = writer3
             writer.write(pysam.AlignedSegment.from_dict(d, r.header))
             fout.write(
-                r.qname
-                + "\t"
-                + a_type
-                + "\t"
-                + t["AX"]
-                + "\t"
-                + str(r.reference_start)
-                + "\t"
-                + str(r.reference_end)
-                + "\t"
-                + c_l
-                + "\t"
-                + c_r
+                "\t".join(
+                    [
+                        r.qname,
+                        a_type,
+                        t["AX"],
+                        str(r.reference_start),
+                        str(r.reference_end),
+                        c_l,
+                        c_r,
+                    ]
+                )
                 + "\n"
             )
 
@@ -189,9 +185,9 @@ def main(per_read_csv, tagged_bam, output_prefix):
     writer3.close()
     fout.close()
 
-    print("Output summmary: {0}".format(fout.name))
+    print("Output summmary:", fout.name)
     print(
-        f"Indidual BAM files written: {output_prefix}.vector- full,leftpartial,rightpartial -flipflop.bam"
+        f"Individual BAM files written: {output_prefix}.vector- full,leftpartial,rightpartial -flipflop.bam"
     )
 
 

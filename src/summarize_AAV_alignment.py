@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
+"""Summarize the AAV alignment."""
+
 import gzip
 import os
-import pdb
-import random
 import re
-import shutil
 import subprocess
 import sys
-from collections import defaultdict
 from csv import DictReader, DictWriter
 from multiprocessing import Process
+# import pdb
 
 import pysam
 
@@ -61,8 +60,8 @@ name_map_scAAV = {
     "vector+backbone": "vector+backbone",
 }
 
-annot_rex = re.compile("NAME=(\S+);TYPE=([a-zA-Z]+);(REGION=\d+\-\d+){0,1}")
-ccs_rex = re.compile("\S+\/\d+\/ccs(\/fwd|\/rev)?")
+annot_rex = re.compile(r"NAME=(\S+);TYPE=([a-zA-Z]+);(REGION=\d+\-\d+){0,1}")
+ccs_rex = re.compile(r"\S+\/\d+\/ccs(\/fwd|\/rev)?")
 ANNOT_TYPE_PRIORITIES = {"vector": 1, "repcap": 2, "helper": 3, "lambda": 4, "host": 5}
 
 MAX_DIFF_W_REF = 100
@@ -120,10 +119,10 @@ def iter_cigar(rec):
     for _type, _count in cigar_list:
         x = CIGAR_DICT[_type]
         if x in ("M", "=", "X", "I", "D", "S", "N"):
-            for i in range(_count):
+            for _i in range(_count):
                 yield x, _count
         else:
-            raise Exception("Unexpected cigar {0}{1} seen! Abort!".format(_count, x))
+            raise RuntimeError(f"Unexpected cigar {_count}{x} seen! Abort!")
 
 
 def iter_cigar_w_aligned_pair(rec, writer):
@@ -132,7 +131,7 @@ def iter_cigar_w_aligned_pair(rec, writer):
     prev_r_pos = 0
     total_err = 0
     total_len = 0
-    for q_pos, r_pos in rec.get_aligned_pairs():
+    for _q_pos, r_pos in rec.get_aligned_pairs():
         cigar_type, cigar_count = next(ii)
         if cigar_type == "S":  # nothing to do if soft-clipped, r_pos must be None
             assert r_pos is None
@@ -155,8 +154,10 @@ def iter_cigar_w_aligned_pair(rec, writer):
 
 
 def read_annotation_file(annot_filename):
-    """
-    example
+    """Read the annotation.txt file into a dictionary.
+
+    Example:
+
     NAME=chr1;TYPE=host;
     NAME=chr2;TYPE=host;
     NAME=myVector;TYPE=vector;REGION=1795-6553;
@@ -171,12 +172,10 @@ def read_annotation_file(annot_filename):
         stuff = line.strip()
         m = annot_rex.match(stuff)
         if m is None:
-            raise Exception(
-                "{0} is not a valid annotation line! Should follow format `NAME=xxxx;TYPE=xxxx;REGION=xxxx;`. Abort!".format(
-                    stuff
-                )
+            raise RuntimeError(
+                f"{stuff} is not a valid annotation line! Should follow format "
+                "`NAME=xxxx;TYPE=xxxx;REGION=xxxx;`. Abort!"
             )
-            sys.exit(-1)
 
         _name = m.group(1)
         _type = m.group(2)
@@ -186,24 +185,18 @@ def read_annotation_file(annot_filename):
             else tuple(map(int, m.group(3).split("=")[1].split("-")))
         )
         if _type in d:
-            raise Exception(
-                "Annotation file has multiple {0} types. Abort!".format(_type)
+            raise RuntimeError(f"Annotation file has multiple {_type} types. Abort!")
+        if _type not in ANNOT_TYPE_PRIORITIES:
+            raise RuntimeError(
+                f"{_type} is not a valid type (host, repcap, vector, helper). Abort!"
             )
-            sys.exit(-1)
-        elif _type not in ANNOT_TYPE_PRIORITIES:
-            raise Exception(
-                "{0} is not a valid type (host, repcap, vector, helper). Abort!".format(
-                    _type
-                )
-            )
-            sys.exit(-1)
-        else:
-            d[_name] = {"type": _type, "region": _region}
+        d[_name] = {"type": _type, "region": _region}
     return d
 
 
 def is_on_target(r, valid_start, valid_end):
-    """
+    """Determine the alignment subtype.
+
     Possible assign types:
      - full (within valid_start, valid_end)
      - backbone (outside valid_start, valid_end)
@@ -222,8 +215,6 @@ def is_on_target(r, valid_start, valid_end):
 
     diff_start = r.reference_start - valid_start
     diff_end = valid_end - r.reference_end
-    # this is what a true "full length" (without large deletions) size would be
-    valid_len = valid_end - valid_start
 
     if abs(diff_start) <= MAX_DIFF_W_REF:  # complete 5' start/left
         if abs(diff_end) <= MAX_DIFF_W_REF:  # complete 3' end/right
@@ -248,7 +239,8 @@ def is_on_target(r, valid_start, valid_end):
 
 
 def assign_read_type(r, annotation):
-    """
+    """Determine the read alignment type and subtype.
+
     :param read_dict: dict of {'supp', 'primary'}
     :return: assigned_type, which could be (scAAV, ssAAV, unclassified) + (super, full, partial, unclassified)
 
@@ -272,7 +264,8 @@ def process_alignment_bam(
     starting_readname=None,
     ending_readname=None,
 ):
-    """
+    """Process the read alignments versus annotations.
+
     :param sorted_sam_filename: Sorted (by read name) SAM filename
     :param annotation:
     :param output_prefix:
@@ -287,8 +280,6 @@ def process_alignment_bam(
     writer1.writeheader()
     writer2.writeheader()
     writer3.writeheader()
-
-    debug_count = 0
 
     reader = pysam.AlignmentFile(sorted_sam_filename, check_sq=False)
     bam_writer = pysam.AlignmentFile(
@@ -339,8 +330,8 @@ MIN_PRIM_SUPP_COV = 0.8  # at minimum the total of prim + main supp should cover
 
 
 def find_companion_supp_to_primary(prim, supps):
-    """
-    Return the most likely companion supp to the primary
+    """Return the most likely companion supp to the primary.
+
     :param prim: the primary info
     :param supps: the list of supp info
     :return: return the most likely companion supp to the primary
@@ -384,8 +375,8 @@ def find_companion_supp_to_primary(prim, supps):
 
 
 def add_assigned_types_to_record(r, a_type, a_subtype):
-    """
-    Add BAM tags
+    """Add BAM tags.
+
     AT tag <type:scAAV|ssAAV|unclassified>
     AS tag <type:>
     AX tag which is "AT-AX"
@@ -400,8 +391,9 @@ def add_assigned_types_to_record(r, a_type, a_subtype):
 def process_alignment_records_for_a_read(
     records, annotation, writer1, writer2, writer3, bam_writer
 ):
-    """
-    For each, find the most probable assignment, prioritizing vector > rep/cap > helper > host
+    """For each, find the most probable assignment.
+
+    Priority: vector > rep/cap > helper > host
 
     :param records: list of alignment records for the same read
     :return:
@@ -515,39 +507,36 @@ def process_alignment_records_for_a_read(
                 else:  # never had any supp candidates, def ssAAV
                     sum_type = "ssAAV"
                     sum_subtype = prim["map_subtype"]
-            else:
-                if supp["map_type"] == "vector":
-                    if supp_orientation == "+/-":
-                        # special case, primary+ supp, maps to vector, --> is scAAV
-                        sum_type = "scAAV"
-                    else:
-                        assert supp_orientation == "+/+"
-                        sum_type = "tandem"
-                    if supp["map_subtype"] == prim["map_subtype"]:
-                        if (
-                            sum_type == "scAAV"
-                        ):  # special case, rename subtype for scAAV
-                            sum_subtype = name_map_scAAV[prim["map_subtype"]]
-                        else:
-                            sum_subtype = prim["map_subtype"]
-                    else:
-                        sum_subtype = prim["map_subtype"] + "|" + supp["map_subtype"]
-                else:  # primary is in vector, supp not in vector
-                    sum_type = prim["map_type"] + "|" + supp["map_type"]
-                    sum_subtype = prim["map_subtype"] + "|" + supp["map_subtype"]
-        else:  # mapping to non-AAV vector region
-            if supp is None:
-                sum_type = prim["map_type"]
-                sum_subtype = prim["map_subtype"]
-            elif supp["map_type"] == prim["map_type"]:
-                sum_type = prim["map_type"]
+            elif supp["map_type"] == "vector":
+                if supp_orientation == "+/-":
+                    # special case, primary+ supp, maps to vector, --> is scAAV
+                    sum_type = "scAAV"
+                else:
+                    assert supp_orientation == "+/+"
+                    sum_type = "tandem"
                 if supp["map_subtype"] == prim["map_subtype"]:
-                    sum_subtype = prim["map_subtype"]
+                    if sum_type == "scAAV":  # special case, rename subtype for scAAV
+                        sum_subtype = name_map_scAAV[prim["map_subtype"]]
+                    else:
+                        sum_subtype = prim["map_subtype"]
                 else:
                     sum_subtype = prim["map_subtype"] + "|" + supp["map_subtype"]
-            else:
+            else:  # primary is in vector, supp not in vector
                 sum_type = prim["map_type"] + "|" + supp["map_type"]
                 sum_subtype = prim["map_subtype"] + "|" + supp["map_subtype"]
+        # mapping to non-AAV vector region
+        elif supp is None:
+            sum_type = prim["map_type"]
+            sum_subtype = prim["map_subtype"]
+        elif supp["map_type"] == prim["map_type"]:
+            sum_type = prim["map_type"]
+            if supp["map_subtype"] == prim["map_subtype"]:
+                sum_subtype = prim["map_subtype"]
+            else:
+                sum_subtype = prim["map_subtype"] + "|" + supp["map_subtype"]
+        else:
+            sum_type = prim["map_type"] + "|" + supp["map_type"]
+            sum_subtype = prim["map_subtype"] + "|" + supp["map_subtype"]
         sum_info["assigned_type"] = sum_type
         sum_info["assigned_subtype"] = sum_subtype
 
@@ -579,7 +568,8 @@ def run_processing_parallel(sorted_sam_filename, d, output_prefix, num_chunks=1)
     total_num_reads = len(readname_list)
     chunk_size = (total_num_reads // num_chunks) + 1
     print(
-        f"Total {total_num_reads} reads, dividing into {num_chunks} chunks of size {chunk_size}..."
+        f"Total {total_num_reads} reads, dividing into {num_chunks} "
+        f"chunks of size {chunk_size}..."
     )
 
     pool = []
@@ -598,7 +588,7 @@ def run_processing_parallel(sorted_sam_filename, d, output_prefix, num_chunks=1)
         )
         p.start()
         pool.append(p)
-        print("Going from {0} to {1}".format(i * chunk_size, (i + 1) * chunk_size))
+        print("Going from", i * chunk_size, "to", (i + 1) * chunk_size)
     for i, p in enumerate(pool):
         if DEBUG_GLOBAL_FLAG:
             print(f"DEBUG: Waiting for {i}th pool to finish.")
@@ -609,11 +599,6 @@ def run_processing_parallel(sorted_sam_filename, d, output_prefix, num_chunks=1)
 
     # copy the first chunk over
     o = output_prefix + ".1"
-
-    # shutil.copy(o + '.nonmatch_stat.csv', output_prefix + '.nonmatch_stat.csv')
-    # shutil.copy(o + '.per_read.csv', output_prefix + '.per_read.csv')
-    # shutil.copy(o + '.summary.csv', output_prefix + '.summary.csv')
-    # shutil.copy(o + '.tagged.bam', output_prefix + '.tagged.bam')
 
     f1 = gzip.open(output_prefix + ".nonmatch_stat.csv.gz", "wb")
     f2 = open(output_prefix + ".per_read.csv", "w")
@@ -684,9 +669,6 @@ if __name__ == "__main__":
         "--cpus", type=int, default=1, help="Number of CPUs (default: 1)"
     )
     parser.add_argument("--debug", action="store_true", default=False)
-    # parser.add_argument("-f", "--random_frac", default=1., type=float, help="default: off. Random fraction of alignments to subsample.")
-    # parser.add_argument("-m", "--max_reads", type=int, default=None, \
-    #                    help="default: off. Maximum number of records to process. Can use in conjunction with --random_frac")
 
     args = parser.parse_args()
 
@@ -763,7 +745,7 @@ if __name__ == "__main__":
     # samtools sort/index the above files
     try:
         subprocess.check_call("samtools --help > /dev/null", shell=True)
-    except:
+    except Exception:
         print("WARNING: unable to call samtools to sort the output BAM files. End.")
         sys.exit(-1)
 
