@@ -2,6 +2,7 @@
 """Summarize the AAV alignment."""
 
 import gzip
+import itertools
 import os
 import re
 import subprocess
@@ -51,21 +52,13 @@ PER_READ_FIELDS = [
 
 NONMATCH_FIELDS = ["read_id", "pos0", "type", "type_len"]
 
-name_map_scAAV = {
-    "full": "full",
-    "left-partial": "left-partial",  #'wtITR-partial',
-    "right-partial": "right-partial",  #'mITR-partial',
-    "partial": "partial",
-    "backbone": "backbone",
-    "vector+backbone": "vector+backbone",
-}
-
 annot_rex = re.compile(r"NAME=(\S+);TYPE=([a-zA-Z]+);(REGION=\d+\-\d+){0,1}")
 ccs_rex = re.compile(r"\S+\/\d+\/ccs(\/fwd|\/rev)?")
 ANNOT_TYPE_PRIORITIES = {"vector": 1, "repcap": 2, "helper": 3, "lambda": 4, "host": 5}
 
 MAX_DIFF_W_REF = 100
 TARGET_GAP_THRESHOLD = 200  # skipping through the on-target region for more than this is considered "full-gap"
+
 DEBUG_GLOBAL_FLAG = False
 
 
@@ -116,24 +109,25 @@ def iter_cigar(rec):
         cigar_list = cigar_list[:-1]
 
     # warning_printed = False
-    for _type, _count in cigar_list:
+    for _type, count in cigar_list:
         x = CIGAR_DICT[_type]
         if x in ("M", "=", "X", "I", "D", "S", "N"):
-            for _i in range(_count):
-                yield x, _count
+            yield from itertools.repeat((x, count), count)
         else:
-            raise RuntimeError(f"Unexpected cigar {_count}{x} seen! Abort!")
+            raise RuntimeError(f"Unexpected cigar {count}{x} seen! Abort!")
 
 
 def iter_cigar_w_aligned_pair(rec, writer):
-    ii = iter_cigar(rec)
     prev_cigar_type = None
     prev_r_pos = 0
     total_err = 0
     total_len = 0
-    for _q_pos, r_pos in rec.get_aligned_pairs():
-        cigar_type, cigar_count = next(ii)
-        if cigar_type == "S":  # nothing to do if soft-clipped, r_pos must be None
+    # ENH: itertools.zip_longest + safety check
+    for (_q_pos, r_pos), (cigar_type, cigar_count) in zip(
+        rec.get_aligned_pairs(), iter_cigar(rec)
+    ):
+        if cigar_type == "S":
+            # Nothing to do if soft-clipped, r_pos must be None
             assert r_pos is None
             continue
         total_len += cigar_count
@@ -167,7 +161,7 @@ def read_annotation_file(annot_filename):
     :param annot_filename: Annotation file following the format indicated above. Only "vector" is required. Others optional.
     :return:
     """
-    d = {}
+    result = {}
     for line in open(annot_filename):
         stuff = line.strip()
         m = annot_rex.match(stuff)
@@ -177,21 +171,21 @@ def read_annotation_file(annot_filename):
                 "`NAME=xxxx;TYPE=xxxx;REGION=xxxx;`. Abort!"
             )
 
-        _name = m.group(1)
-        _type = m.group(2)
-        _region = (
+        seq_name = m.group(1)
+        ref_type = m.group(2)
+        coord_region = (
             None
             if m.group(3) is None
             else tuple(map(int, m.group(3).split("=")[1].split("-")))
         )
-        if _type in d:
-            raise RuntimeError(f"Annotation file has multiple {_type} types. Abort!")
-        if _type not in ANNOT_TYPE_PRIORITIES:
+        if ref_type in result:
+            raise RuntimeError(f"Annotation file has multiple {ref_type} types. Abort!")
+        if ref_type not in ANNOT_TYPE_PRIORITIES:
             raise RuntimeError(
-                f"{_type} is not a valid type (host, repcap, vector, helper). Abort!"
+                f"{ref_type} is not a valid type (host, repcap, vector, helper). Abort!"
             )
-        d[_name] = {"type": _type, "region": _region}
-    return d
+        result[seq_name] = {"type": ref_type, "region": coord_region}
+    return result
 
 
 def is_on_target(r, valid_start, valid_end):
@@ -250,11 +244,11 @@ def assign_read_type(r, annotation):
     <map to: comma-delimited list of [chr:start-end]>,
     <comma-delimited list of unmapped portion, if any>,
     """
-    _type = annotation[r.reference_name]["type"]
+    read_type = annotation[r.reference_name]["type"]
     if annotation[r.reference_name]["region"] is not None:
-        return _type, is_on_target(r, *annotation[r.reference_name]["region"])
+        return read_type, is_on_target(r, *annotation[r.reference_name]["region"])
     else:
-        return _type, "NA"
+        return read_type, "NA"
 
 
 def process_alignment_bam(
@@ -515,10 +509,7 @@ def process_alignment_records_for_a_read(
                     assert supp_orientation == "+/+"
                     sum_type = "tandem"
                 if supp["map_subtype"] == prim["map_subtype"]:
-                    if sum_type == "scAAV":  # special case, rename subtype for scAAV
-                        sum_subtype = name_map_scAAV[prim["map_subtype"]]
-                    else:
-                        sum_subtype = prim["map_subtype"]
+                    sum_subtype = prim["map_subtype"]
                 else:
                     sum_subtype = prim["map_subtype"] + "|" + supp["map_subtype"]
             else:  # primary is in vector, supp not in vector
@@ -558,7 +549,9 @@ def process_alignment_records_for_a_read(
     # pdb.set_trace()
 
 
-def run_processing_parallel(sorted_sam_filename, d, output_prefix, num_chunks=1):
+def run_processing_parallel(
+    sorted_sam_filename, annotation, output_prefix, num_chunks=1
+):
     reader = pysam.AlignmentFile(open(sorted_sam_filename), check_sq=False)
     readname_list = [next(reader).qname]
     for r in reader:
@@ -578,7 +571,7 @@ def run_processing_parallel(sorted_sam_filename, d, output_prefix, num_chunks=1)
             target=process_alignment_bam,
             args=(
                 sorted_sam_filename,
-                d,
+                annotation,
                 output_prefix + "." + str(i + 1),
                 readname_list[i * chunk_size],
                 None
@@ -598,22 +591,22 @@ def run_processing_parallel(sorted_sam_filename, d, output_prefix, num_chunks=1)
     # *.nonmatch_stat.csv, *.per_read.csv, *.summary.csv, *.tagged.bam
 
     # copy the first chunk over
-    o = output_prefix + ".1"
+    o_first = output_prefix + ".1"
 
     f1 = gzip.open(output_prefix + ".nonmatch_stat.csv.gz", "wb")
     f2 = open(output_prefix + ".per_read.csv", "w")
     f3 = open(output_prefix + ".summary.csv", "w")
 
-    with open(o + ".nonmatch_stat.csv") as h:
+    with open(o_first + ".nonmatch_stat.csv") as h:
         for line in h:
             f1.write(line.encode())
-    with open(o + ".per_read.csv") as h:
+    with open(o_first + ".per_read.csv") as h:
         for line in h:
             f2.write(line)
-    with open(o + ".summary.csv") as h:
+    with open(o_first + ".summary.csv") as h:
         for line in h:
             f3.write(line)
-    reader = pysam.AlignmentFile(o + ".tagged.bam", "rb", check_sq=False)
+    reader = pysam.AlignmentFile(o_first + ".tagged.bam", "rb", check_sq=False)
     f4 = pysam.AlignmentFile(output_prefix + ".tagged.bam", "wb", template=reader)
     for r in reader:
         f4.write(r)
@@ -621,17 +614,19 @@ def run_processing_parallel(sorted_sam_filename, d, output_prefix, num_chunks=1)
     if DEBUG_GLOBAL_FLAG:
         print("Combining chunk data...")
     for i in range(1, num_chunks):
-        o = output_prefix + "." + str(i + 1)
-        with open(o + ".nonmatch_stat.csv") as h:
+        o_rest = output_prefix + "." + str(i + 1)
+        with open(o_rest + ".nonmatch_stat.csv") as h:
             h.readline()  # ignore the header
             f1.write(h.read().encode())
-        with open(o + ".per_read.csv") as h:
+        with open(o_rest + ".per_read.csv") as h:
             h.readline()  # ignore the header
             f2.write(h.read())
-        with open(o + ".summary.csv") as h:
+        with open(o_rest + ".summary.csv") as h:
             h.readline()  # ignore the header
             f3.write(h.read())
-        for r in pysam.AlignmentFile(open(o + ".tagged.bam"), "rb", check_sq=False):
+        for r in pysam.AlignmentFile(
+            open(o_rest + ".tagged.bam"), "rb", check_sq=False
+        ):
             f4.write(r)
 
     f1.close()
@@ -639,52 +634,30 @@ def run_processing_parallel(sorted_sam_filename, d, output_prefix, num_chunks=1)
     f3.close()
     f4.close()
     reader.close()
+
     # delete the chunk data
     if DEBUG_GLOBAL_FLAG:
         print("Data combining complete. Deleting chunk data.")
     for i in range(num_chunks):
-        o = output_prefix + "." + str(i + 1)
-        os.remove(o + ".nonmatch_stat.csv")
-        os.remove(o + ".per_read.csv")
-        os.remove(o + ".summary.csv")
-        os.remove(o + ".tagged.bam")
+        o_each = output_prefix + "." + str(i + 1)
+        os.remove(o_each + ".nonmatch_stat.csv")
+        os.remove(o_each + ".per_read.csv")
+        os.remove(o_each + ".summary.csv")
+        os.remove(o_each + ".tagged.bam")
 
     return output_prefix + ".per_read.csv", output_prefix + ".tagged.bam"
 
 
-if __name__ == "__main__":
-    from argparse import ArgumentParser
-
-    parser = ArgumentParser()
-    parser.add_argument("sam_filename", help="Sorted by read name SAM file")
-    parser.add_argument("annotation_txt", help="Annotation file")
-    parser.add_argument("output_prefix", help="Output prefix")
-    parser.add_argument(
-        "--max_allowed_missing_flanking",
-        default=100,
-        type=int,
-        help="Maximum allowed missing flanking bp to be still considered 'full' (default:100)",
-    )
-    parser.add_argument(
-        "--cpus", type=int, default=1, help="Number of CPUs (default: 1)"
-    )
-    parser.add_argument("--debug", action="store_true", default=False)
-
-    args = parser.parse_args()
-
-    if args.debug:
-        DEBUG_GLOBAL_FLAG = True
-
-    MAX_DIFF_W_REF = args.max_allowed_missing_flanking
-
-    d = read_annotation_file(args.annotation_txt)
+def main(args):
+    """Entry point."""
+    annotation = read_annotation_file(args.annotation_txt)
     if args.cpus == 1:
         per_read_csv, full_out_bam = process_alignment_bam(
-            args.sam_filename, d, args.output_prefix
+            args.sam_filename, annotation, args.output_prefix
         )
     else:
         per_read_csv, full_out_bam = run_processing_parallel(
-            args.sam_filename, d, args.output_prefix, num_chunks=args.cpus
+            args.sam_filename, annotation, args.output_prefix, num_chunks=args.cpus
         )
 
     # subset BAM files into major categories for ease of loading into IGV for viewing
@@ -749,18 +722,54 @@ if __name__ == "__main__":
         print("WARNING: unable to call samtools to sort the output BAM files. End.")
         sys.exit(-1)
 
-    o = args.output_prefix
-    files = [
-        o + ".scAAV-full",
-        o + ".scAAV-partials",
-        o + ".scAAV-other",
-        o + ".ssAAV-full",
-        o + ".ssAAV-partials",
-        o + ".ssAAV-other",
-        o + ".others",
+    parts = [
+        ".scAAV-full",
+        ".scAAV-partials",
+        ".scAAV-other",
+        ".ssAAV-full",
+        ".ssAAV-partials",
+        ".ssAAV-other",
+        ".others",
     ]
-    for p in files:
+    for part in parts:
+        p = args.output_prefix + part
         subprocess.check_call(
             f"samtools sort {p}.tagged.bam > {p}.tagged.sorted.bam", shell=True
         )
         subprocess.check_call(f"samtools index {p}.tagged.sorted.bam", shell=True)
+
+
+if __name__ == "__main__":
+    from argparse import ArgumentParser
+
+    parser = ArgumentParser()
+    parser.add_argument("sam_filename", help="Sorted by read name SAM file")
+    parser.add_argument("annotation_txt", help="Annotation file")
+    parser.add_argument("output_prefix", help="Output prefix")
+    parser.add_argument(
+        "--max-allowed-missing-flanking",
+        default=100,
+        type=int,
+        help="""Maximum allowed missing flanking bp to be still considered 'full'.
+                [Default: %(default)s]""",
+    )
+    parser.add_argument(
+        "--target-gap-threshold",
+        default=200,
+        type=int,
+        help="""Skipping through the on-target region for more than this is
+            considered 'full-gap'. [Default: %(default)s]""",
+    )
+    parser.add_argument(
+        "--cpus", default=1, type=int, help="Number of CPUs. [Default: %(default)s]"
+    )
+    parser.add_argument("--debug", action="store_true", default=False)
+
+    args = parser.parse_args()
+
+    if args.debug:
+        DEBUG_GLOBAL_FLAG = True
+    MAX_DIFF_W_REF = args.max_allowed_missing_flanking
+    TARGET_GAP_THRESHOLD = args.target_gap_threshold
+
+    main(args)
