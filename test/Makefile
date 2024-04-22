@@ -4,15 +4,18 @@ small_inputs = small
 out_small_pfx = build/small
 
 
-.PSEUDO: fast slow clean
+.PHONY: fast slow clean
 fast: $(out_small_pfx)_AAV_report.html
 
 slow: $(out_small_pfx).tagged.bam $(out_small_pfx).flipflop_assignments.txt $(out_small_pfx)_AAV_report.html
 
-
 clean:
 	rm -vf build/*
 	rm -vf $(out_small_pfx)_AAV_report.html $(out_small_pfx)_AAV_report.pdf
+
+diffcheck:
+	diff build-snapshot/small.per_read.csv build/small.per_read.csv && echo "OK"
+	diff build-snapshot/small.flipflop.tsv build/small.flipflop.tsv && echo "OK"
 
 $(out_small_pfx)_AAV_report.html: ../src/create_report.R ../src/report.Rmd $(out_small_pfx).annotation.txt $(out_small_pfx).flipflop_assignments.txt
 	$< $(out_small_pfx) $(small_inputs)/annotation.txt pAV-CMV-GFP $(out_small_pfx).flipflop_assignments.txt
