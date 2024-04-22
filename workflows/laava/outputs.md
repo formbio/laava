@@ -1,8 +1,20 @@
 ## Outputs
 
+### Summary results
+
 - AAV report
   - HTML report: SampleID_AAV_report.html
   - PDF report: SampleID_AAV_report.pdf
+
+- Summary tables
+  - SampleID.alignments.tsv
+  - SampleID.readsummary.tsv
+  - SampleID.sequence-error.tsv
+  - SampleID.flipflop.tsv
+  - SampleID.Rdata
+
+
+### Supplementary data files
 
 - Alignment files
   - Mapped reads: SampleID.sort_by_name.sam
@@ -14,10 +26,3 @@
   - SampleID.per_read.csv
   - SampleID.summary.csv
   - SampleID.flipflop_assignments.txt (optional)
-
-- Summary tables
-  - SampleID.alignments.tsv
-  - SampleID.readsummary.tsv
-  - SampleID.sequence-error.tsv
-  - SampleID.flipflop.tsv
-  - SampleID.Rdata
