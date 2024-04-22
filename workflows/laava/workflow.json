@@ -10,6 +10,9 @@
     "Gene Therapy",
     "PacBio"
   ],
+  "config": {
+      "executionEngine": "nextflow-single-node"
+  },
   "inputs": {
     "seq_reads": {
       "title": "Sequencing reads",
