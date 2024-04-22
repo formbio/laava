@@ -26,37 +26,12 @@ CIGAR_DICT = {
     9: "B",
 }
 
-SUMMARY_FIELDS = [
-    "read_id",
-    "read_len",
-    "is_mapped",
-    "is_supp",
-    "map_name",
-    "map_start0",
-    "map_end1",
-    "map_len",
-    "map_iden",
-    "map_type",
-    "map_subtype",
-]
-
-PER_READ_FIELDS = [
-    "read_id",
-    "read_len",
-    "has_primary",
-    "has_supp",
-    "assigned_type",
-    "assigned_subtype",
-    "effective_count",
-]
-
-NONMATCH_FIELDS = ["read_id", "pos0", "type", "type_len"]
-
 annot_rex = re.compile(r"NAME=(\S+);TYPE=([a-zA-Z]+);(REGION=\d+\-\d+){0,1}")
 ccs_rex = re.compile(r"\S+\/\d+\/ccs(\/fwd|\/rev)?")
 ANNOT_TYPE_PRIORITIES = {"vector": 1, "repcap": 2, "helper": 3, "lambda": 4, "host": 5}
 
-MAX_DIFF_W_REF = 100
+MAX_MISSING_FLANK = 100
+MAX_OUTSIDE_VECTOR = 100
 TARGET_GAP_THRESHOLD = 200  # skipping through the on-target region for more than this is considered "full-gap"
 
 DEBUG_GLOBAL_FLAG = False
@@ -188,48 +163,58 @@ def read_annotation_file(annot_filename):
     return result
 
 
-def is_on_target(r, valid_start, valid_end):
+def is_on_target(r, target_start, target_end):
     """Determine the alignment subtype.
 
     Possible assign types:
-     - full (within valid_start, valid_end)
-     - backbone (outside valid_start, valid_end)
+     - full (within target_start, target_end)
+     - backbone (outside target_start, target_end)
      - left-partial (incomplete only on the 3'/right end)
      - right-partial (incomplete only on the 5'/left end)
      - partial (incomplete both on the 5' and 3' end)
      - vector+backbone (any amount that crosses over on target and backbone)
-
-    NOTE: at the calling of this method we don't know if it's scAAV/ssAAV yet
-    So later we will further split subtype assignment
-    ssAAV: full|left-partial|right-partial|partial
-    //scAAV: full|wtITR-partial|mITR-partial|partial
     """
-    if r.reference_end < valid_start or r.reference_start > valid_end:
-        return "backbone"
+    # Too far beyond left/5' target start
+    left_long = r.reference_start < (target_start - MAX_OUTSIDE_VECTOR)
+    # Incomplete on left/5'
+    left_short = (target_start + MAX_MISSING_FLANK) < r.reference_start
+    # Complete 5' start/left
+    left_ok = not left_short and not left_long
 
-    diff_start = r.reference_start - valid_start
-    diff_end = valid_end - r.reference_end
+    # Incomplete on right/3'
+    right_short = r.reference_end < (target_end - MAX_MISSING_FLANK)
+    # Too far beyond right/3' target end
+    right_long = (target_end + MAX_OUTSIDE_VECTOR) < r.reference_end
+    # Complete 3' end/right
+    right_ok = not right_short and not right_long
 
-    if abs(diff_start) <= MAX_DIFF_W_REF:  # complete 5' start/left
-        if abs(diff_end) <= MAX_DIFF_W_REF:  # complete 3' end/right
+    # Check the common case -- in most samples, most reads are on target
+    if left_ok:
+        if right_ok:
             for cigar_type, num in iter_cigar(r):
                 if cigar_type == "N" and num >= TARGET_GAP_THRESHOLD:
-                    # pdb.set_trace()
                     return "full-gap"
             return "full"
-        elif diff_end > MAX_DIFF_W_REF:  # left-partial (incomplete on right/3')
+        if right_short:
             return "left-partial"
-        elif diff_end < -MAX_DIFF_W_REF:  # into backbone
-            return "vector+backbone"
-    elif diff_start > MAX_DIFF_W_REF:  # right-partial (incomplete on left/5')
-        if abs(diff_end) <= MAX_DIFF_W_REF:
-            return "right-partial"
-        elif diff_end > MAX_DIFF_W_REF:
-            return "partial"
-        elif diff_end < -MAX_DIFF_W_REF:
-            return "vector+backbone"
-    else:  # diff < -MAX_DIFF_W_REF, into backbone
+        # Into backbone on right/3'
+        assert right_long
         return "vector+backbone"
+    # Check for no overlap with target
+    if r.reference_end < target_start or r.reference_start > target_end:
+        return "backbone"
+    # Check remaining cases
+    if left_short:
+        # Incomplete left/5' -> look at right for partial or right-partial
+        if right_ok:
+            return "right-partial"
+        if right_short:
+            return "partial"
+    # Overlap both target and backbone, at either end
+    assert (r.reference_start < target_start < r.reference_end) or (
+        r.reference_start < target_end < r.reference_end
+    )
+    return "vector+backbone"
 
 
 def assign_read_type(r, annotation):
@@ -264,6 +249,30 @@ def process_alignment_bam(
     :param annotation:
     :param output_prefix:
     """
+    SUMMARY_FIELDS = [
+        "read_id",
+        "read_len",
+        "is_mapped",
+        "is_supp",
+        "map_name",
+        "map_start0",
+        "map_end1",
+        "map_len",
+        "map_iden",
+        "map_type",
+        "map_subtype",
+    ]
+    PER_READ_FIELDS = [
+        "read_id",
+        "read_len",
+        "has_primary",
+        "has_supp",
+        "assigned_type",
+        "assigned_subtype",
+        "effective_count",
+    ]
+    NONMATCH_FIELDS = ["read_id", "pos0", "type", "type_len"]
+
     f1 = open(output_prefix + ".summary.csv", "w")
     f2 = open(output_prefix + ".nonmatch_stat.csv", "w")
     f3 = open(output_prefix + ".per_read.csv", "w")
@@ -750,7 +759,18 @@ if __name__ == "__main__":
         "--max-allowed-missing-flanking",
         default=100,
         type=int,
-        help="""Maximum allowed missing flanking bp to be still considered 'full'.
+        help="""Maximum allowed, in bp, missing from the left and right flanks of the
+                annotated vector region to be still considered 'full' rather than
+                'partial'.
+                [Default: %(default)s]""",
+    )
+    parser.add_argument(
+        "--max-allowed-outside-vector",
+        default=100,
+        type=int,
+        help="""Maximum allowed, in bp, outside the annotated vector region for a read
+                that fully covers the vector region to be still considered
+                'full' rather than 'vector+backbone'.
                 [Default: %(default)s]""",
     )
     parser.add_argument(
@@ -758,7 +778,7 @@ if __name__ == "__main__":
         default=200,
         type=int,
         help="""Skipping through the on-target region for more than this is
-            considered 'full-gap'. [Default: %(default)s]""",
+                considered 'full-gap'. [Default: %(default)s]""",
     )
     parser.add_argument(
         "--cpus", default=1, type=int, help="Number of CPUs. [Default: %(default)s]"
@@ -769,7 +789,8 @@ if __name__ == "__main__":
 
     if args.debug:
         DEBUG_GLOBAL_FLAG = True
-    MAX_DIFF_W_REF = args.max_allowed_missing_flanking
+    MAX_MISSING_FLANK = args.max_allowed_missing_flanking
+    MAX_OUTSIDE_VECTOR = args.max_allowed_outside_vector
     TARGET_GAP_THRESHOLD = args.target_gap_threshold
 
     main(args)
