@@ -24,6 +24,8 @@ SEQ_AAV2 = dict(
 
 
 class FlipFlopSeqSet(NamedTuple):
+    """Immutable container for flip-flop sequences."""
+
     left_flip: str
     left_flop: str
     right_flip: str
@@ -125,12 +127,14 @@ def identify_flip_flop(r, ff_seq):
 
 
 def load_per_read_info(fname):
+    """Load per-read info, keyed by read IDs, from a CSV file."""
     with open(fname) as in_csv:
         read_info = {r["read_id"]: r for r in DictReader(in_csv, delimiter="\t")}
     return read_info
 
 
 def main(per_read_csv, tagged_bam, output_prefix, flipflop_fasta):
+    """Entry point."""
     if flipflop_fasta is None:
         flipflop_seqs = FlipFlopSeqSet(**SEQ_AAV2)
     else:
@@ -208,9 +212,9 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("sorted_tagged_bam", help="Sorted tagged BAM file")
     parser.add_argument("per_read_csv", help="Per read CSV file")
-    parser.add_argument("-o", "--output_prefix", help="Output prefix", required=True)
+    parser.add_argument("-o", "--output-prefix", help="Output prefix", required=True)
     parser.add_argument(
-        "--flipflop_fasta",
+        "--flipflop-fasta",
         default=None,
         help="(optional) flip flop fasta file (if not given, uses AAV2 default)",
     )
