@@ -5,5 +5,9 @@
   "helper_fa": "test/small/sc-helper.fa",
   "repcap_fa": "test/small/sc-repcap.fa",
   "host_fa": "test/fasta/host_stub.fa",
-  "flipflop_name": "AAV2"
+  "flipflop_name": "AAV2",
+  "flipflop_fa": "test/fasta/AAV2.flipflop.fasta",
+  "target_gap_threshold": 200,
+  "max_allowed_outside_vector": 100,
+  "max_allowed_missing_flanking": 100
 }

@@ -30,20 +30,25 @@ function get_reference_names {
         | awk  '{ print $1"\t'$typename'" }'
 }
 
+# Consolidate inputs, skipping optional files
 get_reference_names "$vector_fa" "vector" > reference_names.tsv
+cp "$vector_fa" all_refs.fa
 if [ -e "$helper_fa" ]; then
     get_reference_names "$helper_fa" "helper" >> reference_names.tsv
+    cat "$helper_fa" >> all_refs.fa
 fi
 if [ -e "$repcap_fa" ]; then
     get_reference_names "$repcap_fa" "repcap" >> reference_names.tsv
+    cat "$repcap_fa" >> all_refs.fa
 fi
 if [ -e "$host_fa" ]; then
     get_reference_names "$host_fa" "host" >> reference_names.tsv
+    cat "$host_fa" >> all_refs.fa
 fi
+
+# Logging
 cat reference_names.tsv
 echo
-
-cat "$vector_fa" "$helper_fa" "$repcap_fa" "$host_fa" > all_refs.fa
 grep '^>' all_refs.fa
 echo
 
