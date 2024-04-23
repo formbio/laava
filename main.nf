@@ -10,9 +10,9 @@ workflow {
         file(params.seq_reads).getSimpleName(),
         Channel.fromPath(params.seq_reads),
         Channel.fromPath(params.vector_fa),
-        params.helper_fa ? Channel.fromPath(params.helper_fa) : NO_FILE,
-        params.repcap_fa ? Channel.fromPath(params.repcap_fa) : NO_FILE,
+        params.packaging_fa ? Channel.fromPath(params.packaging_fa) : NO_FILE,
         params.host_fa ? Channel.fromPath(params.host_fa): NO_FILE,
+        params.repcap_name,
     )
     make_report(
         Channel.fromPath(params.vector_bed),

@@ -5,10 +5,19 @@ The output annotation.txt is a bespoke format required by the PacBio scripts. It
 like::
 
     NAME=myVector;TYPE=vector;REGION=1795-6553;
-    NAME=myCapRep;TYPE=repcap;REGION=1895-5987;
+    NAME=myCapRep;TYPE=repcap;
     NAME=myHelper;TYPE=helper;
     NAME=chr1;TYPE=host;
     NAME=chr2;TYPE=host;
+
+Or, in a dual construct (repcap in vector backbone)::
+
+    NAME=myVector;TYPE=vector;REGION=1795-6553;
+    NAME=myVector;TYPE=repcap;REGION=1895-5987;
+    NAME=myHelper;TYPE=helper;
+    NAME=chr1;TYPE=host;
+    NAME=chr2;TYPE=host;
+
 
 Specifically:
 

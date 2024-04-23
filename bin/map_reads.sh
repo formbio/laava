@@ -2,9 +2,9 @@
 sample_name=$1
 reads=$2
 vector_fa=$3
-helper_fa=$4
-repcap_fa=$5
-host_fa=$6
+packaging_fa=$4
+host_fa=$5
+repcap_name=$6
 
 # NOTE: the sequence IDs should be free of blank spaces and symbols. Stick with numbers,
 # alphabet letters, and _ and -. If necessary, rename the sequence IDs in the combined
@@ -27,23 +27,40 @@ function get_reference_names {
     typename=$2
     grep '^>' "$fasta" \
         | cut -f1 -d\  | cut -f2 -d\> \
-        | awk  '{ print $1"\t'$typename'" }'
+        | awk -v var="$typename" '{
+            print $1,var
+        }'
+}
+
+function relabel_repcap {
+    tsv=$1
+    rc_name=$2
+    cat "$tsv" | awk -v var="$rc_name" '{
+        if ($1==var) {
+            print $1,"repcap"
+        } else {
+            print $1,$2
+        }
+    }'
 }
 
 # Consolidate inputs, skipping optional files
-get_reference_names "$vector_fa" "vector" > reference_names.tsv
 cp "$vector_fa" all_refs.fa
-if [ -e "$helper_fa" ]; then
-    get_reference_names "$helper_fa" "helper" >> reference_names.tsv
-    cat "$helper_fa" >> all_refs.fa
-fi
-if [ -e "$repcap_fa" ]; then
-    get_reference_names "$repcap_fa" "repcap" >> reference_names.tsv
-    cat "$repcap_fa" >> all_refs.fa
+get_reference_names "$vector_fa" "vector" > reference_names.tsv
+if [ -e "$packaging_fa" ]; then
+    cat "$packaging_fa" >> all_refs.fa
+    get_reference_names "$packaging_fa" "helper" > _tmp.tsv
+    # Re-label 'repcap' within packaging_fa
+    if [ -n "$repcap_name" ]; then
+        relabel_repcap _tmp.tsv "$repcap_name" \
+            >> reference_names.tsv
+    else
+        cat _tmp.tsv >> reference_names.tsv
+    fi
 fi
 if [ -e "$host_fa" ]; then
-    get_reference_names "$host_fa" "host" >> reference_names.tsv
     cat "$host_fa" >> all_refs.fa
+    get_reference_names "$host_fa" "host" >> reference_names.tsv
 fi
 
 # Logging
