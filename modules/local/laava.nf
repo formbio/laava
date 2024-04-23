@@ -5,9 +5,9 @@ process map_reads() {
     val sample_name
     path reads
     path vector_fa
-    path helper_fa
-    path repcap_fa
+    path packaging_fa
     path host_fa
+    val repcap_name
 
     output:
     path("${sample_name}.sort_by_name.sam"), emit: mapped_reads
@@ -16,12 +16,11 @@ process map_reads() {
 
     script:
     // Hack for optional inputs
-    def helper_fa_path = helper_fa.name != "NO_FILE" ? "$helper_fa" : ""
-    def repcap_fa_path = repcap_fa.name != "NO_FILE" ? "$repcap_fa" : ""
+    def packaging_fa_path = packaging_fa.name != "NO_FILE" ? "$packaging_fa" : ""
     def host_fa_path = host_fa.name != "NO_FILE" ? "$host_fa" : ""
     """
     map_reads.sh ${sample_name} "${reads}" "${vector_fa}" \\
-        "${helper_fa_path}" "${repcap_fa_path}" "${host_fa_path}"
+        "${packaging_fa_path}" "${host_fa_path}" "${repcap_name}" 
     """
 }
 
