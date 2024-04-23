@@ -15,8 +15,13 @@ process map_reads() {
     val "${sample_name}", emit: sample_name
 
     script:
+    // Hack for optional inputs
+    def helper_fa_path = helper_fa.name != "NO_FILE" ? "$helper_fa" : ""
+    def repcap_fa_path = repcap_fa.name != "NO_FILE" ? "$repcap_fa" : ""
+    def host_fa_path = host_fa.name != "NO_FILE" ? "$host_fa" : ""
     """
-    map_reads.sh ${sample_name} ${reads} ${vector_fa} ${helper_fa} ${repcap_fa} ${host_fa}
+    map_reads.sh ${sample_name} "${reads}" "${vector_fa}" \\
+        "${helper_fa_path}" "${repcap_fa_path}" "${host_fa_path}"
     """
 }
 
@@ -25,11 +30,15 @@ process make_report() {
     publishDir "$params.output", mode: "copy"
 
     input:
-    val sample_name
-    val flipflop_name
-    path mapped_reads
     path vector_annotation
     path reference_names
+    val sample_name
+    val target_gap_threshold
+    val max_allowed_outside_vector
+    val max_allowed_missing_flanking
+    path mapped_reads
+    val flipflop_name
+    path flipflop_fa
 
     output:
     // summarize alignment
@@ -52,8 +61,12 @@ process make_report() {
     path("${sample_name}_AAV_report.pdf"), emit: aav_report_pdf
 
     script:
+    def ff_fa_path = flipflop_fa.name != "NO_FILE" ? "$flipflop_fa" : ""
     """
     prepare_annotation.py "${vector_annotation}" "${reference_names}" -o annotation.txt
-    make_report.sh "${sample_name}" "${mapped_reads}" annotation.txt "${flipflop_name}"
+    make_report.sh "${sample_name}" \\
+        $target_gap_threshold $max_allowed_outside_vector $max_allowed_missing_flanking \\
+        "${mapped_reads}" annotation.txt \\
+        "${flipflop_name}" "${ff_fa_path}"
     """
 }

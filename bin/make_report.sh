@@ -1,8 +1,12 @@
 #!/bin/bash -ex
 sample_name=$1
-mapped_reads_sam=$2
-annotation_txt=$3
-flipflop_name=$4
+target_gap_threshold=$2
+max_allowed_outside_vector=$3
+max_allowed_missing_flanking=$4
+mapped_reads_sam=$5
+annotation_txt=$6
+flipflop_name=$7
+flipflop_fa=$8
 
 ls -Alh
 
@@ -17,17 +21,34 @@ fi
 
 echo
 echo "Starting summarize_AAV_alignment"
-summarize_AAV_alignment.py "$mapped_reads_sam" "$annotation_txt" "$sample_name" --cpus $(nproc)
+summarize_AAV_alignment.py \
+    "$mapped_reads_sam" "$annotation_txt" "$sample_name" \
+    --target-gap-threshold=$target_gap_threshold \
+    --max-allowed-outside-vector=$max_allowed_outside_vector \
+    --max-allowed-missing-flanking=$max_allowed_missing_flanking \
+    --cpus $(nproc)
+
 echo "Finished summarize_AAV_alignment"
 ls -Alh
 
-if [ -n "$flipflop_name" ]; then
-    # ENH: take user-provided ITR sequences other than AAV2
-    echo "Assuming $flipflop_name == AAV2"
+if [[ -n "$flipflop_name" || -n "$flipflop_fa" ]]; then
+    if [ -n "$flipflop_fa" ]; then
+        # Use the gives seqs for FF analysis, regardless of FF name
+        ff_opt="--flipflop-fasta $flipflop_fa"
+    elif [ "$flipflop_name" == "AAV2" ]; then
+        # Use the built-in AAV2 sequences
+        ff_opt=""
+    else
+        echo "No built-in sequences for $flipflop_name and none given"
+        exit 1
+    fi
 
     echo
     echo "Starting get_flipflop_config"
-    get_flipflop_config.py "${sample_name}.tagged.bam" "${sample_name}.per_read.csv" -o "$sample_name"
+    get_flipflop_config.py \
+        "${sample_name}.tagged.bam" "${sample_name}.per_read.csv" \
+        $ff_opt \
+        -o "$sample_name"
     echo "Finished get_flipflop_config"
     ls -Alh
     flipflop_assignments="${sample_name}.flipflop_assignments.txt"
