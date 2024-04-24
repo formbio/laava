@@ -44,20 +44,10 @@
       "required": true,
       "type": "string"
     },
-    "repcap_fa": {
-      "title": "RepCap sequence",
-      "description": "RepCap plasmid reference sequence (FASTA)",
-      "help_text": "Reference sequence for the RepCap plasmid.",
-      "filetype": ".fa|.fasta|.dna|.fna",
-      "format": "file",
-      "hidden": false,
-      "required": false,
-      "type": "string"
-    },
-    "helper_fa": {
-      "title": "Helper and other sequences",
-      "description": "Helper plasmid and other reference sequences (FASTA)",
-      "help_text": "Reference sequences for the helper plasmid and other sequences of interest, such as Lambda, as a FASTA file with one or more records.",
+    "packaging_fa": {
+      "title": "Packaging sequences",
+      "description": "Helper and RepCap plasmids (if used) and other reference sequences (FASTA)",
+      "help_text": "Reference sequences for the helper and rep/cap plasmids and other sequences of interest, such as Lambda, as a FASTA file with one or more records. This should not include the vector construct or host genome sequences.",
       "filetype": ".fa|.fasta|.dna|.fna",
       "format": "file",
       "hidden": false,
@@ -74,6 +64,16 @@
       "required": false,
       "type": "string"
     },
+    "repcap_name": {
+      "title": "RepCap sequence ID",
+      "description": "RepCap sequence identifier used in the packaging FASTA file",
+      "help_text": "Sequence identifier used in the packaging FASTA file (above) corresponding to the rep/cap plasmid reference sequence, if used. Leave this blank if a dual construct was used (rep/cap on the vector backbone) or you're unsure.",
+      "format": "text",
+      "hidden": false,
+      "required": false,
+      "default": "",
+      "type": "string"
+    },
     "flipflop_name": {
       "title": "AAV Serotype",
       "description": "AAV serotype name for flip/flop analysis",
@@ -82,6 +82,58 @@
       "hidden": false,
       "required": false,
       "default": "",
+      "type": "string"
+    },
+    "flipflop_fa": {
+      "title": "Flip/flop sequences",
+      "description": "Flip/flop ITR sequences (FASTA).",
+      "help_text": "Provide for flip/flop analysis if serotype is not AAV2 (which is built in), and provide a different value for flipflop_name. FASTA file must have 4 records with the exact sequence IDs SEQ_LEFT_FLIP, SEQ_LEFT_FLOP, SEQ_RIGHT_FLIP, SEQ_RIGHT_FLOP.",
+      "filetype": ".fa|.fasta|.dna|.fna",
+      "format": "file",
+      "hidden": false,
+      "required": false,
+      "type": "string"
+    },
+    "target_gap_threshold": {
+      "title": "Target gap threshold",
+      "description": "",
+      "help_text":  "Maximum total gap size allowed in the target region alignment to count a read as 'full'; skipping through the on-target region for more than this is considered 'full-gap'.",
+      "type": "integer",
+      "hidden": false,
+      "required": true,
+      "default": 200,
+      "minimum": 0,
+      "maximum": 1000
+    },
+    "max_allowed_outside_vector": {
+      "title": "Max allowed outside vector",
+      "description": "",
+      "help": "Maximum allowed, in bp, outside the annotated vector region for a read that fully covers the vector region to be still considered 'full' rather than 'vector+backbone'.",
+      "type": "integer",
+      "hidden": false,
+      "required": true,
+      "default": 100,
+      "minimum": 0,
+      "maximum": 200
+    },
+    "max_allowed_missing_flanking": {
+      "title": "Max allowed missing from ITR flank",
+      "description": "",
+      "help": "Maximum allowed, in bp, missing from the left and right flanks of the annotated vector region to be still considered 'full' rather than 'partial'.",
+      "type": "integer",
+      "hidden": false,
+      "required": true,
+      "default": 100,
+      "minimum": 0,
+      "maximum": 200
+    },
+    "container_version": {
+      "title": "Container version",
+      "description": "Use 'latest' for development",
+      "help_text": "",
+      "format": "text",
+      "hidden": true,
+      "required": false,
       "type": "string"
     }
   },
@@ -97,10 +149,14 @@
           "seq_reads",
           "vector_bed",
           "vector_fa",
-          "repcap_fa",
-          "helper_fa",
+          "packaging_fa",
           "host_fa",
-          "flipflop_name"
+          "repcap_name",
+          "flipflop_name",
+          "flopflop_fa",
+          "target_gap_threshold",
+          "max_allowed_outside_vector",
+          "max_allowed_missing_flanking"
         ]
       }
     ]
