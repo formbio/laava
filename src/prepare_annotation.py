@@ -49,23 +49,28 @@ def read_annotation_bed(fname):
 
     Check that the input contains exactly one 'vector' row. Ignore all other BED rows.
     """
-    out_row = None
+    out_rows = {
+        "repcap": None,
+        "vector": None,
+    }
+    ann_row = None
+    rc_row = None
     with open(fname) as infile:
         for line in infile:
             # Require BED4 or more
             seq_name, start0, end, label = line.rstrip().split("\t")[:4]
-            if label == "vector":
-                if out_row is not None:
+            if label in ("vector", "repcap"):
+                if out_rows[label] is not None:
                     raise RuntimeError(
                         f"Input {args.annotation_bed} contains more than one row "
-                        "labeled 'vector'."
+                        f"labeled '{label}'."
                     )
-                out_row = AnnRow(seq_name, label, int(start0) + 1, end)
-    if out_row is None:
+                out_rows[label] = AnnRow(seq_name, label, int(start0) + 1, end)
+    if out_rows["vector"] is None:
         raise RuntimeError(
             f"Input {args.annotation_bed} must contain a row labeled 'vector'."
         )
-    return out_row
+    return out_rows
 
 
 def read_reference_names(fname):
@@ -80,7 +85,7 @@ def read_reference_names(fname):
             yield AnnRow(seq_name, source_type, None, None)
 
 
-def write_annotation_txt(out_fname, vector_row, other_rows):
+def write_annotation_txt(out_fname, bed_rows, other_rows):
     """Write PacBio-style annotations to `out_fname`.
 
     Take the vector annotations and non-'vector' sequence names and source types, format
@@ -89,9 +94,14 @@ def write_annotation_txt(out_fname, vector_row, other_rows):
     Skip any duplicate 'vector' sequence label appearing in the other references, and
     catch if a sequence name is reused across multiple source types.
     """
+    vector_row = bed_rows["vector"]
+    repcap_row = bed_rows["repcap"]
     with open(out_fname, "w+") as outf:
         outf.write("NAME={};TYPE={};REGION={}-{};\n".format(*vector_row))
         seen_seq_names_and_sources = {vector_row.seq_name: vector_row.source_type}
+        if repcap_row:
+            outf.write("NAME={};TYPE={};REGION={}-{};\n".format(*repcap_row))
+            seen_seq_names_and_sources[repcap_row.seq_name] = repcap_row.source_type
         for orow in other_rows:
             if orow.source_type == "vector":
                 if orow.seq_name != vector_row.seq_name:
@@ -127,8 +137,8 @@ if __name__ == "__main__":
     args = AP.parse_args()
 
     try:
-        vec_row = read_annotation_bed(args.annotation_bed)
+        bed_rows = read_annotation_bed(args.annotation_bed)
         otr_rows = read_reference_names(args.reference_names)
-        write_annotation_txt(args.output, vec_row, otr_rows)
+        write_annotation_txt(args.output, bed_rows, otr_rows)
     except RuntimeError as exc:
         sys.exit(str(exc))
