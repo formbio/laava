@@ -3,6 +3,7 @@
 
 import gzip
 import itertools
+import logging
 import os
 import re
 import subprocess
@@ -33,8 +34,6 @@ ANNOT_TYPE_PRIORITIES = {"vector": 1, "repcap": 2, "helper": 3, "lambda": 4, "ho
 MAX_MISSING_FLANK = 100
 MAX_OUTSIDE_VECTOR = 100
 TARGET_GAP_THRESHOLD = 200  # skipping through the on-target region for more than this is considered "full-gap"
-
-DEBUG_GLOBAL_FLAG = False
 
 
 def subset_sam_by_readname_list(
@@ -103,7 +102,8 @@ def iter_cigar_w_aligned_pair(rec, writer):
     ):
         if cigar_type == "S":
             # Nothing to do if soft-clipped, r_pos must be None
-            assert r_pos is None
+            if r_pos is not None:
+                logging.warning("Unexpected value for r_pos: %s", r_pos)
             continue
         total_len += cigar_count
         if cigar_type != prev_cigar_type:
@@ -198,7 +198,8 @@ def is_on_target(r, target_start, target_end):
         if right_short:
             return "left-partial"
         # Into backbone on right/3'
-        assert right_long
+        if not right_long:
+            logging.warning("Unexpected value for right_long: %s", right_long)
         return "vector+backbone"
     # Check for no overlap with target
     if r.reference_end < target_start or r.reference_start > target_end:
@@ -211,9 +212,15 @@ def is_on_target(r, target_start, target_end):
         if right_short:
             return "partial"
     # Overlap both target and backbone, at either end
-    assert (r.reference_start < target_start < r.reference_end) or (
-        r.reference_start < target_end < r.reference_end
-    )
+    if not (
+        (r.reference_start < target_start < r.reference_end)
+        or (r.reference_start < target_end < r.reference_end)
+    ):
+        logging.warning(
+            "Unexpected vector+backbone alignment vs. target coordinates: %s vs. %s",
+            (r.reference_start, r.reference_end),
+            (target_start, target_end),
+        )
     return "vector+backbone"
 
 
@@ -405,8 +412,9 @@ def process_alignment_records_for_a_read(
     for r in records:
         # check ccs id format is <movie>/<zmw>/ccs[/rev or /fwd]
         if ccs_rex.fullmatch(r.qname) is None:
-            print(
-                "WARNING: sequence ID does not follow format movie/zmw/ccs[/rev or /fwd]. Might undercount ssAAV!"
+            logging.warning(
+                "WARNING: sequence ID does not follow format movie/zmw/ccs[/rev or /fwd]. "
+                "Might undercount ssAAV!"
             )
 
         info = {
@@ -445,8 +453,7 @@ def process_alignment_records_for_a_read(
             a_type, a_subtype = assign_read_type(r, annotation)
             info["map_type"] = a_type
             info["map_subtype"] = a_subtype
-            if DEBUG_GLOBAL_FLAG:
-                print(r.qname, a_type, a_subtype)
+            logging.debug("%s %s %s", r.qname, a_type, a_subtype)
             # pdb.set_trace()
 
             if r.is_supplementary:
@@ -553,8 +560,7 @@ def process_alignment_records_for_a_read(
         #    sum_info['effective_count'] = 1  # not needed, default is to 1
 
     writer3.writerow(sum_info)
-    if DEBUG_GLOBAL_FLAG:
-        print(sum_info)
+    logging.debug("%s", sum_info)
     # pdb.set_trace()
 
 
@@ -569,7 +575,7 @@ def run_processing_parallel(
 
     total_num_reads = len(readname_list)
     chunk_size = (total_num_reads // num_chunks) + 1
-    print(
+    logging.info(
         f"Total {total_num_reads} reads, dividing into {num_chunks} "
         f"chunks of size {chunk_size}..."
     )
@@ -590,10 +596,9 @@ def run_processing_parallel(
         )
         p.start()
         pool.append(p)
-        print("Going from", i * chunk_size, "to", (i + 1) * chunk_size)
+        logging.info("Going from %s to %s", i * chunk_size, (i + 1) * chunk_size)
     for i, p in enumerate(pool):
-        if DEBUG_GLOBAL_FLAG:
-            print(f"DEBUG: Waiting for {i}th pool to finish.")
+        logging.debug(f"DEBUG: Waiting for {i}th pool to finish.")
         p.join()
 
     # combine the data together for
@@ -620,8 +625,7 @@ def run_processing_parallel(
     for r in reader:
         f4.write(r)
 
-    if DEBUG_GLOBAL_FLAG:
-        print("Combining chunk data...")
+    logging.debug("Combining chunk data...")
     for i in range(1, num_chunks):
         o_rest = output_prefix + "." + str(i + 1)
         with open(o_rest + ".nonmatch_stat.csv") as h:
@@ -645,8 +649,7 @@ def run_processing_parallel(
     reader.close()
 
     # delete the chunk data
-    if DEBUG_GLOBAL_FLAG:
-        print("Data combining complete. Deleting chunk data.")
+    logging.debug("Data combining complete. Deleting chunk data.")
     for i in range(num_chunks):
         o_each = output_prefix + "." + str(i + 1)
         os.remove(o_each + ".nonmatch_stat.csv")
@@ -728,7 +731,9 @@ def main(args):
     try:
         subprocess.check_call("samtools --help > /dev/null", shell=True)
     except Exception:
-        print("WARNING: unable to call samtools to sort the output BAM files. End.")
+        logging.warning(
+            "WARNING: unable to call samtools to sort the output BAM files. End."
+        )
         sys.exit(-1)
 
     parts = [
@@ -787,8 +792,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.debug:
-        DEBUG_GLOBAL_FLAG = True
+    log_level = logging.DEBUG if args.debug else logging.INFO
+    logging.basicConfig(level=log_level, format="%(message)s")
     MAX_MISSING_FLANK = args.max_allowed_missing_flanking
     MAX_OUTSIDE_VECTOR = args.max_allowed_outside_vector
     TARGET_GAP_THRESHOLD = args.target_gap_threshold
