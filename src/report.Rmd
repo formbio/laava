@@ -159,7 +159,7 @@ Assigned Type|Definition
 ------------:|----------------------------------------------------
 scAAV        |Self-complementary AAV where one half of the payload region is a reverse complement of the other, resulting in an intra-molecular double-stranded DNA template. A sequencing read is inferred as scAAV if it has both a primary and supplementary alignment to the vector genome.
 ssAAV        |AAV where the resulting DNA template is expected to be single-stranded, as opposed to self-complementary. A sequencing read is inferred as ssAAV if it has a single alignment to the AAV genome and no complementary secondary alignment.
-other        |Read consists of a fragment mapping to the vector but with unexpected polarities (e.g. +,-,- or +,+,+) and cannot be well-defined at the moment. This means that the algorithm was not able to distinguish the read either as ssAAV or scAAV by the definitions above. Usually this means there are multiple supplementary alignments on the vector region and/or it’s a weird molecule.
+other        |Read consists of a fragment mapping to the vector but with unexpected polarities (e.g. +,-,- or +,+,+) and cannot be well-defined at the moment. This means that the algorithm was not able to distinguish the read either as ssAAV or scAAV by the definitions above, usually due to multiple supplementary alignments on the vector region or other unusual alignment features.
 host         |Read originates from the host genome that is given (e.g. hg38, CHM13).
 repcap       |Read originates from the repcap plasmid. The Rep gene encodes four proteins (Rep78, Rep68, Rep52, and Rep40), which are required for viral genome replication and packaging, while Cap expression gives rise to the viral capsid proteins (VP; VP1/VP2/VP3), which form the outer capsid shell that protects the viral genome, as well as being actively involved in cell binding and internalization.
 helper       |Read originates from the helper plasmid. In addition to Rep and Cap, AAV requires a helper plasmid containing genes from adenovirus. These genes (E4, E2a and VA) mediate AAV replication.
@@ -274,7 +274,7 @@ full            |Read alignment includes the entire ITR-to-ITR target vector seq
 left-partial    |Read aligns to a fragment of the vector originating from the left (upstream) ITR of the vector while not covering the right ITR.
 right-partial   |Read aligns to a fragment of the vector originating from the right (downstream) ITR of the vector while not covering the left ITR.
 partial         |Read aligns to a fragment of the vector originating from within the ITR sequences.
-vector+backbone |Read aligns to a fragment including the vector as well as plasmid backbone sequence.
+vector+backbone |Read aligns to a fragment including the vector as well as plasmid backbone sequence. May imply read-through beyond the right ITR, or reverse packaging if the alignment is to only the left ITR and backbone.
 backbone        |Read aligns to a fragment originating solely from the plasmid backbone sequence.
 snapback        |Read consists of a double-stranded, sub-genomic fragment including only one ITR and read alignments in both (+) and (-) polarities. (ssAAV only)
 
