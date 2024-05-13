@@ -2,16 +2,21 @@
 
 A software package and executable bioinformatics workflow for the analysis of recombinant adeno-associated virus (rAAV) products by PacBio long-read sequencing.
 
-For methods and interpretation, see: https://github.com/formbio/laava/wiki/Design-and-definitions
+* For a full explanation of the methods and example results on public PacBio datasets,
+  see the preprint paper on bioRxiv:
+  [Standardized Nomenclature and Reporting for PacBio HiFi Sequencing and Analysis of rAAV Gene Therapy Vectors](https://www.biorxiv.org/content/10.1101/2024.05.07.592296v1)
+* For a summary of technical methods, AAV type/subtype definitions, and interpretation,
+  see: [Design and definitions](https://github.com/formbio/laava/wiki/Design-and-definitions)
+* For answers to frequently asked questions, see [the FAQ](https://github.com/formbio/laava/wiki/Frequently-Asked-Questions-(FAQ))
 
 ## Installation & Usage
 
-Please read the [AAV tutorial](https://github.com/Magdoll/AAV/wiki/Tutorial:-Analyzing-AAV-Data)
+LAAVA can be used as an end-to-end Nextflow workflow, an interactive Docker container,
+or individual scripts in this codebase.
 
 ### Standard Nextflow (recommended)
 
 This code can be run as a standard [Nextflow](https://www.nextflow.io/) workflow.
-
 When run this way, the workflow will automatically pull in the analysis scripts and
 their dependencies as a [Docker
 image](https://github.com/formbio/laava/pkgs/container/laava).
@@ -129,9 +134,8 @@ R packages:
 
 ## Testing
 
-The `test/` subdirectory in this repo contains a Makefile that can fetch example PacBio
-datasets from a public server and run the scripts on them to reanalyze them and produce
-example HTML and PDF reports.
+The `test/` subdirectory in this repo contains small example input files and a Makefile
+to run the scripts to reanalyze them and produce example HTML and PDF reports.
 
 Once you've completed installation (above), activate your conda environment or Docker container and change to the test directory:
 
@@ -139,7 +143,7 @@ Once you've completed installation (above), activate your conda environment or D
 cd test
 ```
 
-To generate the HTML and PDF reports from the test dataset included in the repo (this takes about 1 minute):
+To generate the HTML and PDF reports from the test dataset included in the repo (this takes about 1-2 minutes):
 
 ```
 make
