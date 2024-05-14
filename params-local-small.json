@@ -1,5 +1,6 @@
 {
   "seq_reads": "test/small/scaav-cba-egfp.bam",
+  "vector_type": "scaav",
   "vector_bed": "test/small/annotation.bed",
   "vector_fa": "test/small/scAAV_CBA_eGFP.fasta",
   "packaging_fa": "test/small/sc-packaging.fa",

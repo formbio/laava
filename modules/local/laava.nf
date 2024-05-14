@@ -32,6 +32,7 @@ process make_report() {
     path vector_annotation
     path reference_names
     val sample_name
+    val vector_type
     val target_gap_threshold
     val max_allowed_outside_vector
     val max_allowed_missing_flanking
@@ -63,7 +64,7 @@ process make_report() {
     def ff_fa_path = flipflop_fa.name != "NO_FILE" ? "$flipflop_fa" : ""
     """
     prepare_annotation.py "${vector_annotation}" "${reference_names}" -o annotation.txt
-    make_report.sh "${sample_name}" \\
+    make_report.sh "${sample_name}" $vector_type \\
         $target_gap_threshold $max_allowed_outside_vector $max_allowed_missing_flanking \\
         "${mapped_reads}" annotation.txt \\
         "${flipflop_name}" "${ff_fa_path}"

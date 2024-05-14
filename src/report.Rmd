@@ -12,6 +12,8 @@ params:
     value: "annotation.txt"
   sample_id:
     value: ""
+  vector_type:
+    value: "unspecified"
   flipflop_summary:
     value: ""
 ---

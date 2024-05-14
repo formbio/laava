@@ -18,6 +18,7 @@ workflow {
         Channel.fromPath(params.vector_bed),
         result.reference_names,
         result.sample_name,
+        params.vector_type,
         params.target_gap_threshold,
         params.max_allowed_outside_vector,
         params.max_allowed_missing_flanking,

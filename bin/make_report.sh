@@ -1,12 +1,13 @@
 #!/bin/bash -ex
 sample_name=$1
-target_gap_threshold=$2
-max_allowed_outside_vector=$3
-max_allowed_missing_flanking=$4
-mapped_reads_sam=$5
-annotation_txt=$6
-flipflop_name=$7
-flipflop_fa=$8
+vector_type=$2
+target_gap_threshold=$3
+max_allowed_outside_vector=$4
+max_allowed_missing_flanking=$5
+mapped_reads_sam=$6
+annotation_txt=$7
+flipflop_name=$8
+flipflop_fa=$9
 
 ls -Alh
 
@@ -59,6 +60,6 @@ fi
 
 echo
 echo "Starting create_report"
-create_report.R "./${sample_name}" "$annotation_txt" "$sample_name" "$flipflop_assignments"
+create_report.R "./${sample_name}" "$annotation_txt" "$sample_name" "$vector_type" "$flipflop_assignments"
 echo "Finished create_report"
 ls -Alh
