@@ -1,3 +1,5 @@
+[![Test Status](https://github.com/formbio/laava/actions/workflows/ci.yaml/badge.svg)](https://github.com/formbio/laava/actions/workflows/ci.yaml)
+
 # LAAVA: Long-read AAV Analysis
 
 A software package and executable bioinformatics workflow for the analysis of recombinant adeno-associated virus (rAAV) products by PacBio long-read sequencing.
