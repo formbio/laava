@@ -7,12 +7,11 @@ message(paste("Working directory:", working_dir))
 args = commandArgs(trailingOnly = TRUE)
 
 input_prefix = args[1]
-annot_filename = args[2] # ex: annotation.txt
-sample_id = args[3]
-vector_type = args[4]
+sample_id = args[2]
+vector_type = args[3]
 flipflop_summary = ''
-if (length(args) > 4) {
-    flipflop_summary = args[5]
+if (length(args) > 3) {
+    flipflop_summary = args[4]
 }
 
 rmd_dir = dirname(sub("--file=", "", commandArgs(trailingOnly=FALSE)[4]))
@@ -26,7 +25,6 @@ message(paste("Output location:", out_path, sep=" "))
 
 input_params = list(
     input_prefix = input_prefix,
-    annot_filename = annot_filename,
     sample_id = sample_id,
     vector_type = vector_type,
     flipflop_summary = flipflop_summary)
