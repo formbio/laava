@@ -23,6 +23,21 @@ workflow laava {
     result = map_reads(reads,combine(vector_fa).combine(packaging_fa).combine(host_fa).combine(repcap_name))
 
     make_report( result.out.mapped_reads.combine(vector_bed).combine(vector_type).combine(target_gap_threshold).combine(max_allowed_outside_vector).combine(max_allowed_missing_flanking).combine(flipflop))
+    emit:
+    sam = result.out.mapped_reads
+    per_read_csv = make_report.out.per_read_csv
+    summary_csv = make_report.out.summary_csv
+    nonmatch_stat_csvgz = make_report.out.nonmatch_stat_csvgz
+    tagged_bam = make_report.out.tagged_bam
+    subtype_bams = make_report.out.subtype_bams
+    subtype_bais = make_report.out.subtype_bais
+    flipflop_assignments_txt = make_report.out.flipflop_assignments_txt
+    flipflop_bams = make_report.out.flipflop_bams
+    alignments_tsv = make_report.out.alignments_tsv
+    readsummary_tsv = make_report.out.readsummary_tsv
+    sequence_error_tsv = make_report.out.sequence_error_tsv
+    flipflop_tsv = make_report.out.flipflop_tsv
+    rdata = make_report.out.rdata
 }
 
 workflow {
