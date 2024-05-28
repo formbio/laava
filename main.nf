@@ -20,11 +20,11 @@ workflow laava {
     flipflop
     main:
 
-    result = map_reads(reads,combine(vector_fa).combine(packaging_fa).combine(host_fa).combine(repcap_name))
+    map_reads(reads,combine(vector_fa).combine(packaging_fa).combine(host_fa).combine(repcap_name))
 
-    make_report( result.out.mapped_reads.combine(vector_bed).combine(vector_type).combine(target_gap_threshold).combine(max_allowed_outside_vector).combine(max_allowed_missing_flanking).combine(flipflop))
+    make_report( map_reads.out.mapped_reads.combine(vector_bed).combine(vector_type).combine(target_gap_threshold).combine(max_allowed_outside_vector).combine(max_allowed_missing_flanking).combine(flipflop))
     emit:
-    sam = result.out.mapped_reads
+    sam = map_reads.out.mapped_reads
     per_read_csv = make_report.out.per_read_csv
     summary_csv = make_report.out.summary_csv
     nonmatch_stat_csvgz = make_report.out.nonmatch_stat_csvgz
