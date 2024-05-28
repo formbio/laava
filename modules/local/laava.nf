@@ -2,18 +2,10 @@ process map_reads() {
     publishDir "$params.output", mode: "copy"
 
     input:
-    val sample_name
-    path reads
-    path vector_fa
-    path packaging_fa
-    path host_fa
-    val repcap_name
+    tuple val(sample_name), path(reads), path(vector_fa),path(packaging_fa),path(host_fa),val(repcap_name)
 
     output:
-    path("${sample_name}.sort_by_name.sam"), emit: mapped_reads
-    path("reference_names.tsv"), emit: reference_names
-    val "${sample_name}", emit: sample_name
-
+    tuple val(sample_name),path("reference_names.tsv"),path("${sample_name}.sort_by_name.sam"), emit: mapped_reads
     script:
     // Hack for optional inputs
     def packaging_fa_path = packaging_fa.name != "NO_FILE" ? "$packaging_fa" : ""
@@ -29,16 +21,7 @@ process make_report() {
     publishDir "$params.output", mode: "copy"
 
     input:
-    path vector_annotation
-    path reference_names
-    val sample_name
-    val vector_type
-    val target_gap_threshold
-    val max_allowed_outside_vector
-    val max_allowed_missing_flanking
-    path mapped_reads
-    val flipflop_name
-    path flipflop_fa
+    tuple val(sample_name),path(reference_names),path(mapped_reads),path(vector_annotation), val(vector_type), val(target_gap_threshold), val(max_allowed_outside_vector), val(max_allowed_missing_flanking), val(flipflop_name),path(flipflop_fa)
 
     output:
     // summarize alignment
