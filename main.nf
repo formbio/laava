@@ -13,16 +13,30 @@ workflow laava {
     host_fa
     repcap_name
     vector_bed
-    vector_type,
+    vector_type
     target_gap_threshold
     max_allowed_outside_vector
     max_allowed_missing_flanking
-    flipflop
+    flipflop_name
+    flipflop_fa
+
     main:
+    map_reads(
+        reads
+        .combine(vector_fa)
+        .combine(packaging_fa)
+        .combine(host_fa)
+        .combine(repcap_name))
+    make_report(
+        map_reads.out.mapped_reads
+        .combine(vector_bed)
+        .combine(vector_type)
+        .combine(target_gap_threshold)
+        .combine(max_allowed_outside_vector)
+        .combine(max_allowed_missing_flanking)
+        .combine(flipflop_name)
+        .combine(flipflop_fa))
 
-    map_reads(reads,combine(vector_fa).combine(packaging_fa).combine(host_fa).combine(repcap_name))
-
-    make_report( map_reads.out.mapped_reads.combine(vector_bed).combine(vector_type).combine(target_gap_threshold).combine(max_allowed_outside_vector).combine(max_allowed_missing_flanking).combine(flipflop))
     emit:
     sam = map_reads.out.mapped_reads
     per_read_csv = make_report.out.per_read_csv
@@ -41,11 +55,21 @@ workflow laava {
 }
 
 workflow {
-    seqfiles = Channel.fromPath(params.seq_reads).map { file -> tuple( file.getName().split(/\.fq|\.fastq/)[0],file ) }
-    if (params.flipflop_fa) {
-        flipflop=Channel.fromPath("${params.flipflop_fa}", checkIfExists: true).map { file -> tuple( file.getName().split(/\.fq|\.fastq/)[0],file ) }
-    } else {
-        flipflop=Channel.of(tuple("NO_FILE", NO_FILE))
+    seqfiles = Channel.fromPath(params.seq_reads).map {
+        file -> tuple(file.getName().split(/\.fq|\.fastq/)[0], file)
     }
-    laava(seqfiles,Channel.fromPath(params.vector_fa),params.packaging_fa ? Channel.fromPath(params.packaging_fa) : NO_FILE, params.host_fa ? Channel.fromPath(params.host_fa): NO_FILE,params.repcap_name,Channel.fromPath(params.vector_bed),params.vector_type,params.target_gap_threshold, params.max_allowed_outside_vector,params.max_allowed_missing_flanking,flipflop)
+    laava(
+        seqfiles,
+        Channel.fromPath(params.vector_fa),
+        params.packaging_fa ? Channel.fromPath(params.packaging_fa) : Channel.of(NO_FILE),
+        params.host_fa ? Channel.fromPath(params.host_fa) : Channel.of(NO_FILE),
+        Channel.of(params.repcap_name),
+        Channel.fromPath(params.vector_bed),
+        Channel.of(params.vector_type),
+        Channel.of(params.target_gap_threshold),
+        Channel.of(params.max_allowed_outside_vector),
+        Channel.of(params.max_allowed_missing_flanking),
+        Channel.of(params.flipflop_name),
+        params.flipflop_fa ? Channel.fromPath(params.flipflop_fa) : Channel.of(NO_FILE)
+    )
 }

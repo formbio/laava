@@ -1,0 +1,13 @@
+{
+  "seq_reads": "test/small/scaav-cba-egfp.bam",
+  "vector_type": "scaav",
+  "vector_bed": "test/small/annotation.bed",
+  "vector_fa": "test/small/scAAV_CBA_eGFP.fasta",
+  "packaging_fa": "test/small/sc-packaging.fa",
+  "host_fa": "test/fasta/host_stub.fa",
+  "repcap_name": "pRep2Cap9",
+  "target_gap_threshold": 200,
+  "max_allowed_outside_vector": 100,
+  "max_allowed_missing_flanking": 100,
+  "container_version": ":latest"
+}
