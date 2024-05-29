@@ -8,18 +8,6 @@ output:
 params:
   input_prefix:
     value: ""
-  sample_id:
-    value: ""
-  vector_type:
-    value: "unspecified"
-  flipflop_summary:
-    value: ""
----
-
----
-title: "AAV Sequence Analysis"
-subtitle: 'Sample: `r params$sample_id`'
-date: 'Date: `r format(Sys.Date())`'
 ---
 
 ```{r setup, include=FALSE}
@@ -40,6 +28,12 @@ set_flextable_defaults(
 # Load precomputed dataframes etc.
 load(paste0(params$input_prefix, ".Rdata"))
 ```
+
+---
+title: "AAV Sequence Analysis"
+subtitle: 'Sample: `r r_params$sample_id`'
+date: 'Date: `r format(Sys.Date())`'
+---
 
 
 `\newpage`{=latex}

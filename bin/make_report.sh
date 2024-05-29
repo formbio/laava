@@ -66,6 +66,6 @@ ls -Alh
 
 echo
 echo "Starting create_report"
-create_report.R "./${sample_name}" "$sample_name" "$vector_type" "$flipflop_assignments"
+create_report.R "./${sample_name}"
 echo "Finished create_report"
 ls -Alh
