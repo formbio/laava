@@ -66,6 +66,6 @@ ls -Alh
 
 echo
 echo "Starting create_report"
-create_report.R "./${sample_name}"
+create_report.R "./${sample_name}.Rdata"
 echo "Finished create_report"
 ls -Alh

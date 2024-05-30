@@ -18,10 +18,11 @@ diffcheck:
 	diff build-snapshot/small.per_read.csv build/small.per_read.csv && echo "OK"
 	diff build-snapshot/small.flipflop.tsv build/small.flipflop.tsv && echo "OK"
 
-$(out_small_pfx)_AAV_report.html: ../src/create_report.R ../src/report.Rmd $(out_small_pfx).annotation.txt $(out_small_pfx).flipflop_assignments.txt
-	../src/calculate_rdata.R $(out_small_pfx) $(small_inputs)/annotation.txt pAV-CMV-GFP "scaav" $(out_small_pfx).flipflop_assignments.txt
-	$< $(out_small_pfx) pAV-CMV-GFP "scaav" $(out_small_pfx).flipflop_assignments.txt
+$(out_small_pfx)_AAV_report.html: ../src/create_report.R $(out_small_pfx).Rdata
+	$^
 
+$(out_small_pfx).Rdata: ../src/calculate_rdata.R ../src/report.Rmd $(out_small_pfx).annotation.txt $(out_small_pfx).flipflop_assignments.txt
+	$< $(out_small_pfx) $(small_inputs)/annotation.txt pAV-CMV-GFP "scaav" $(out_small_pfx).flipflop_assignments.txt
 
 $(out_small_pfx).flipflop_assignments.txt: ../src/get_flipflop_config.py $(out_small_pfx).tagged.bam $(out_small_pfx).per_read.csv
 	$^ -o $(out_small_pfx)

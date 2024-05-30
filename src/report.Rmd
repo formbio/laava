@@ -6,7 +6,7 @@ output:
   pdf_document:
     toc: true
 params:
-  input_prefix:
+  rdata_path:
     value: ""
 ---
 
@@ -29,7 +29,7 @@ set_flextable_defaults(
 )
 
 # Load precomputed dataframes etc.
-load(paste0(params$input_prefix, ".Rdata"))
+load(params$rdata_path)
 ```
 
 ---
