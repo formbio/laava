@@ -17,16 +17,16 @@ if (length(args) > 4) {
 }
 
 
-# TODO:
-#  cross-check variable names vs. users (see spreadsheet)
+# Sort order
+valid_types <- c('ssAAV', 'scAAV', 'host', 'repcap', 'helper', 'lambda', 'unmapped', 'chimeric')
+valid_subtypes <- c('full', 'full-gap', 'left-partial', 'right-partial', 'wtITR-partial', 'mITR-partial', 'partial', 'backbone', 'vector+backbone')
 
 
-## read the annotation file to find the vector target region
-#
-#NAME=myHost;TYPE=host;
-#NAME=myVector;TYPE=vector;REGION=1795-6553;
-#NAME=mRepCap;TYPE=repcap;REGION=1895-5987;
-
+## Read the annotation file to find the vector target region
+# e.g.
+#   NAME=myHost;TYPE=host;
+#   NAME=myVector;TYPE=vector;REGION=1795-6553;
+#   NAME=mRepCap;TYPE=repcap;REGION=1895-5987;
 
 TARGET_REGION_START <- 0
 TARGET_REGION_END <- 0
@@ -49,14 +49,14 @@ for (i in 1:dim(annot)[1]) {
 }
 
 
-x.all.summary <- read_tsv(paste0(r_params$input_prefix, '.summary.csv')) %>%
+x.all.summary <- read_tsv(paste0(r_params$input_prefix, '.summary.csv'), show_col_types = FALSE) %>%
   mutate(map_start = map_start0, map_end = map_end1) %>%
   mutate(SampleID = r_params$sample_id, .before = read_id)
 write_tsv(x.all.summary, str_c(c(r_params$input_prefix, ".alignments.tsv"), collapse = ""))
 
-x.all.err <- read_tsv(paste0(r_params$input_prefix, '.nonmatch_stat.csv.gz')) %>%
+x.all.err <- read_tsv(paste0(r_params$input_prefix, '.nonmatch_stat.csv.gz'), show_col_types = FALSE) %>%
   mutate(SampleID = r_params$sample_id, .before = read_id)
-x.all.read <- read_tsv(paste0(r_params$input_prefix, '.per_read.csv')) %>%
+x.all.read <- read_tsv(paste0(r_params$input_prefix, '.per_read.csv'), show_col_types = FALSE) %>%
   mutate(SampleID = r_params$sample_id, .before = read_id)
 
 x.all.err[x.all.err$type == 'D', "type"] <- 'deletion'
@@ -102,10 +102,22 @@ df.read_stat_N_summary <- data.frame(
 )
 
 x.read.vector$subtype <- x.read.vector$assigned_subtype
+x.read.vector[!x.read.vector$subtype %in% valid_subtypes, "subtype"] <- 'other'
 
-# Sort order
-valid_types <- c('ssAAV', 'scAAV', 'host', 'repcap', 'helper', 'lambda', 'unmapped', 'chimeric')
-valid_subtypes <- c('full', 'full-gap', 'left-partial', 'right-partial', 'wtITR-partial', 'mITR-partial', 'partial', 'backbone', 'vector+backbone')
+total_read_count.vector <- sum(x.read.vector$effective_count)
+df.read.vector1 <- x.read.vector %>%
+  group_by(assigned_type) %>%
+  summarise(e_count = sum(effective_count)) %>%
+  mutate(freq = round(e_count * 100 / total_read_count.vector, 2))
+df.read.vector1 <- df.read.vector1[order(-df.read.vector1$freq), ]
+
+
+df.read.vector2 <- x.read.vector %>%
+  group_by(assigned_type, assigned_subtype) %>%
+  summarise(e_count = sum(effective_count)) %>%
+  mutate(freq = round(e_count * 100 / total_read_count.vector, 2))
+df.read.vector2 <- df.read.vector2[order(-df.read.vector2$freq), ]
+
 
 x.all.read[is.na(x.all.read$assigned_type), "assigned_type"] <- 'unmapped'
 x.all.read[grep("|", as.character(x.all.read$assigned_type), fixed = T), "assigned_type"] <- 'chimeric'
@@ -113,12 +125,46 @@ x.all.read[!(x.all.read$assigned_type %in% valid_types), "assigned_type"] <- 'ot
 x.all.read[!(x.all.read$assigned_subtype %in% valid_subtypes), "assigned_subtype"] <- 'other'
 write_tsv(x.all.read, str_c(c(r_params$input_prefix, ".readsummary.tsv"), collapse = ""))
 
-# XXX TODO: move flip/flop write_tsv to here from report.Rmd
+
+# Calculate stats and generate plot for flip/flop analysis (if available)
+if (file.exists(r_params$flipflop_summary)) {
+  df.read.ssaav <- dplyr::filter(df.read.vector2, assigned_type == 'ssAAV') %>%
+    filter(
+      assigned_subtype == 'full' |
+        assigned_subtype == 'right-partial' |
+        assigned_subtype == 'left-partial'
+    ) %>%
+    select(e_count) %>%
+    as.data.frame()
+  total_ssaav <- sum(df.read.ssaav$e_count)
+
+  data.flipflop <- read.table(r_params$flipflop_summary,
+    sep = '\t',
+    header = T
+  )
+  df.flipflop <- data.flipflop %>%
+    group_by(type, subtype, leftITR, rightITR) %>%
+    summarise(count = n())
+  scff <- filter(df.flipflop, type == 'scAAV')
+  ssff <- filter(df.flipflop, type == 'ssAAV')
+
+  # Double single-stranded counts if appropriate
+  numssff <- sum(ssff$count)
+  if (is.numeric(numssff) & is.numeric(total_ssaav)) {
+    if (total_ssaav > 0 & numssff > 0 & numssff * 2 == total_ssaav) {
+      ssff <- ssff %>% mutate(count = count * 2)
+    } else {
+      ssff <- ssff %>% mutate(count = count)
+    }
+  }
+  # Write TSV of flip flop configurations
+  fftbl <- bind_rows(scff, ssff)
+  write_tsv(fftbl, str_c(c(r_params$input_prefix, ".flipflop.tsv"), collapse = ""))
+}
 
 
 
 ## Extra plots
-
 # Unused here, but available for downstream consumers
 
 ERR_SAMPLE_SIZE <- 50000

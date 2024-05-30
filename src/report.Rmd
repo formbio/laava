@@ -112,14 +112,6 @@ ggplot(countreads, aes(x = "", y = e_count, fill = assigned_type)) +
 ## Single-stranded vs self-complementary frequency
 
 ```{r sopt2, message=FALSE, warning=FALSE}
-x.read.vector[!x.read.vector$subtype %in% valid_subtypes, "subtype"] <- 'other'
-
-total_read_count.vector <- sum(x.read.vector$effective_count)
-df.read.vector1 <- x.read.vector %>%
-  group_by(assigned_type) %>%
-  summarise(e_count = sum(effective_count)) %>%
-  mutate(freq = round(e_count * 100 / total_read_count.vector, 2))
-df.read.vector1 <- df.read.vector1[order(-df.read.vector1$freq), ]
 sopt2 <- df.read.vector1 %>%
   mutate(totfreq = round(100 * e_count / total_read_count.all, 2))
 
@@ -158,11 +150,6 @@ p2.atype_violin
 ## Assigned AAV types (top 20)
 
 ```{r sopt3, message=FALSE, warning=FALSE}
-df.read.vector2 <- x.read.vector %>%
-  group_by(assigned_type, assigned_subtype) %>%
-  summarise(e_count = sum(effective_count)) %>%
-  mutate(freq = round(e_count * 100 / total_read_count.vector, 2))
-df.read.vector2 <- df.read.vector2[order(-df.read.vector2$freq), ]
 sopt3 <- df.read.vector2 %>%
   mutate(totfreq = round(100 * e_count / total_read_count.all, 2)) %>%
   arrange(
@@ -203,42 +190,7 @@ Flip/Flop|One ITR is formed by two palindromic arms, called B–B' and C–C', e
 
 
 ```{r flipflopplot, message=FALSE, warning=FALSE, results='asis'}
-df.read.ssaav <- dplyr::filter(df.read.vector2, assigned_type == 'ssAAV') %>%
-  filter(
-    assigned_subtype == 'full' |
-      assigned_subtype == 'right-partial' |
-      assigned_subtype == 'left-partial'
-  ) %>%
-  select(e_count) %>%
-  as.data.frame()
-total_ssaav <- sum(df.read.ssaav$e_count)
-
-# Calculate stats and generate plot for flip/flop analysis (if available)
-if (file.exists(r_params$flipflop_summary)) {
-  data.flipflop <- read.table(r_params$flipflop_summary,
-                              sep = '\t',
-                              header = T)
-  df.flipflop <- data.flipflop %>%
-    group_by(type, subtype, leftITR, rightITR) %>%
-    summarise(count = n())
-  scff <- filter(df.flipflop, type == 'scAAV')
-  ssff <- filter(df.flipflop, type == 'ssAAV')
-
-  # Double single-stranded counts if appropriate
-  numssff <- sum(ssff$count)
-  if (is.numeric(numssff) & is.numeric(total_ssaav)) {
-    if (total_ssaav > 0 & numssff > 0 & numssff * 2 == total_ssaav) {
-      ssff <-  ssff %>% mutate(count = count * 2)
-    } else {
-      ssff <-  ssff %>% mutate(count = count)
-    }
-  }
-  # Write TSV of flip flop configurations
-  fftbl <- bind_rows(scff, ssff)
-  write_tsv(fftbl, str_c(c(params$input_prefix, ".flipflop.tsv"), collapse = ""))
-  # XXX TODO: move to calculate_rdata.R
-  # Then take Rdata as explicit input instead of input_prefix
-
+if (exists("df.flipflop")) {
   # Generate flip/flop summary plot
   ffplot <- df.flipflop %>%
     mutate(
