@@ -39,13 +39,13 @@ workflow laava {
 
     emit:
     sam = map_reads.out.mapped_reads
-    per_read_csv = make_report.out.per_read_csv
-    summary_csv = make_report.out.summary_csv
-    nonmatch_stat_csvgz = make_report.out.nonmatch_stat_csvgz
+    per_read_tsv = make_report.out.per_read_tsv
+    summary_tsv = make_report.out.summary_tsv
+    nonmatch_stat_tsvgz = make_report.out.nonmatch_stat_tsvgz
     tagged_bam = make_report.out.tagged_bam
     subtype_bams = make_report.out.subtype_bams
     subtype_bais = make_report.out.subtype_bais
-    flipflop_assignments_txt = make_report.out.flipflop_assignments_txt
+    flipflop_assignments_tsv = make_report.out.flipflop_assignments_tsv
     flipflop_bams = make_report.out.flipflop_bams
     alignments_tsv = make_report.out.alignments_tsv
     readsummary_tsv = make_report.out.readsummary_tsv

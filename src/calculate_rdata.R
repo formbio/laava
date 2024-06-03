@@ -49,14 +49,14 @@ for (i in 1:dim(annot)[1]) {
 }
 
 
-x.all.summary <- read_tsv(paste0(r_params$input_prefix, '.summary.csv'), show_col_types = FALSE) %>%
+x.all.summary <- read_tsv(paste0(r_params$input_prefix, '.summary.tsv'), show_col_types = FALSE) %>%
   mutate(map_start = map_start0, map_end = map_end1) %>%
   mutate(SampleID = r_params$sample_id, .before = read_id)
 write_tsv(x.all.summary, str_c(c(r_params$input_prefix, ".alignments.tsv"), collapse = ""))
 
-x.all.err <- read_tsv(paste0(r_params$input_prefix, '.nonmatch_stat.csv.gz'), show_col_types = FALSE) %>%
+x.all.err <- read_tsv(paste0(r_params$input_prefix, '.nonmatch_stat.tsv.gz'), show_col_types = FALSE) %>%
   mutate(SampleID = r_params$sample_id, .before = read_id)
-x.all.read <- read_tsv(paste0(r_params$input_prefix, '.per_read.csv'), show_col_types = FALSE) %>%
+x.all.read <- read_tsv(paste0(r_params$input_prefix, '.per_read.tsv'), show_col_types = FALSE) %>%
   mutate(SampleID = r_params$sample_id, .before = read_id)
 
 x.all.err[x.all.err$type == 'D', "type"] <- 'deletion'

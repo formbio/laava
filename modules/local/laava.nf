@@ -41,14 +41,14 @@ process make_report() {
 
     output:
     // summarize alignment
-    path("${sample_name}.per_read.csv"), emit: per_read_csv
-    path("${sample_name}.summary.csv"), emit: summary_csv
-    path("${sample_name}.nonmatch_stat.csv.gz"), emit: nonmatch_stat_csvgz
+    path("${sample_name}.per_read.tsv"), emit: per_read_tsv
+    path("${sample_name}.summary.tsv"), emit: summary_tsv
+    path("${sample_name}.nonmatch_stat.tsv.gz"), emit: nonmatch_stat_tsvgz
     path("${sample_name}.tagged.bam"), emit: tagged_bam
     path("${sample_name}.*.tagged.sorted.bam"), emit: subtype_bams
     path("${sample_name}.*.tagged.sorted.bam.bai"), emit: subtype_bais
     // flip-flop
-    path("${sample_name}.flipflop_assignments.txt"), emit: flipflop_assignments_txt, optional: true
+    path("${sample_name}.flipflop_assignments.tsv"), emit: flipflop_assignments_tsv, optional: true
     path("${sample_name}.*-flipflop.bam"), emit: flipflop_bams, optional: true
     // report
     path("${sample_name}.alignments.tsv"), emit: alignments_tsv

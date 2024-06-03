@@ -142,7 +142,7 @@ def main(per_read_csv, tagged_bam, output_prefix, flipflop_fasta):
 
     read_info = load_per_read_info(per_read_csv)
 
-    with open(output_prefix + ".flipflop_assignments.txt", "w") as fout:
+    with open(output_prefix + ".flipflop_assignments.tsv", "w") as fout:
         fout.write("name\ttype\tsubtype\tstart\tend\tleftITR\trightITR\n")
         reader = pysam.AlignmentFile(open(tagged_bam), "rb", check_sq=False)
         writer1 = pysam.AlignmentFile(
