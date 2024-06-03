@@ -280,16 +280,16 @@ def process_alignment_bam(
     ]
     NONMATCH_FIELDS = ["read_id", "pos0", "type", "type_len"]
 
-    f1 = open(output_prefix + ".summary.tsv", "w")
-    f2 = open(output_prefix + ".nonmatch_stat.tsv", "w")
-    f3 = open(output_prefix + ".per_read.tsv", "w")
+    f_summary = open(output_prefix + ".summary.tsv", "w")
+    f_nonmatch = open(output_prefix + ".nonmatch_stat.tsv", "w")
+    f_per_read = open(output_prefix + ".per_read.tsv", "w")
 
-    writer1 = DictWriter(f1, SUMMARY_FIELDS, delimiter="\t")
-    writer2 = DictWriter(f2, NONMATCH_FIELDS, delimiter="\t")
-    writer3 = DictWriter(f3, PER_READ_FIELDS, delimiter="\t")
-    writer1.writeheader()
-    writer2.writeheader()
-    writer3.writeheader()
+    out_summary = DictWriter(f_summary, SUMMARY_FIELDS, delimiter="\t")
+    out_nonmatch = DictWriter(f_nonmatch, NONMATCH_FIELDS, delimiter="\t")
+    out_per_read = DictWriter(f_per_read, PER_READ_FIELDS, delimiter="\t")
+    out_summary.writeheader()
+    out_nonmatch.writeheader()
+    out_per_read.writeheader()
 
     reader = pysam.AlignmentFile(sorted_sam_filename, check_sq=False)
     bam_writer = pysam.AlignmentFile(
@@ -318,7 +318,7 @@ def process_alignment_bam(
                 break
             if cur_r.qname != records[-1].qname:
                 process_alignment_records_for_a_read(
-                    records, annotation, writer1, writer2, writer3, bam_writer
+                    records, annotation, out_summary, out_nonmatch, out_per_read, bam_writer
                 )
                 records = [cur_r]
             else:
@@ -327,13 +327,13 @@ def process_alignment_bam(
             break
 
     process_alignment_records_for_a_read(
-        records, annotation, writer1, writer2, writer3, bam_writer
+        records, annotation, out_summary, out_nonmatch, out_per_read, bam_writer
     )
     bam_writer.close()
-    f1.close()
-    f2.close()
-    f3.close()
-    return f3.name, output_prefix + ".tagged.bam"
+    f_summary.close()
+    f_nonmatch.close()
+    f_per_read.close()
+    return f_per_read.name, output_prefix + ".tagged.bam"
 
 
 MIN_PRIM_SUPP_COV = 0.8  # at minimum the total of prim + main supp should cover this much of the original sequence
@@ -399,7 +399,7 @@ def add_assigned_types_to_record(r, a_type, a_subtype):
 
 
 def process_alignment_records_for_a_read(
-    records, annotation, writer1, writer2, writer3, bam_writer
+    records, annotation, out_summary, out_nonmatch, out_per_read, bam_writer
 ):
     """For each, find the most probable assignment.
 
@@ -447,7 +447,7 @@ def process_alignment_records_for_a_read(
             info["map_start0"] = r.reference_start
             info["map_end1"] = r.reference_end
             info["map_len"] = r.reference_end - r.reference_start
-            total_err, total_len = iter_cigar_w_aligned_pair(r, writer2)
+            total_err, total_len = iter_cigar_w_aligned_pair(r, out_nonmatch)
             info["map_iden"] = 1 - total_err * 1.0 / total_len
 
             a_type, a_subtype = assign_read_type(r, annotation)
@@ -461,7 +461,7 @@ def process_alignment_records_for_a_read(
             else:
                 assert read_tally["primary"] is None
                 read_tally["primary"] = info
-        # writer1.writerow(info) # not writing here -- writing later when we rule out non-compatible subs
+        # out_summary.writerow(info) # not writing here -- writing later when we rule out non-compatible subs
 
     # summarize it per read, now that all relevant alignments have been processed
     prim = read_tally["primary"]
@@ -485,7 +485,7 @@ def process_alignment_records_for_a_read(
         )
     )
     del prim["rec"]
-    writer1.writerow(prim)
+    out_summary.writerow(prim)
     if supp is not None:
         bam_writer.write(
             pysam.AlignedSegment.from_dict(
@@ -496,7 +496,7 @@ def process_alignment_records_for_a_read(
             )
         )
         del supp["rec"]
-        writer1.writerow(supp)
+        out_summary.writerow(supp)
 
     sum_info = {
         "read_id": prim["read_id"],
@@ -559,7 +559,7 @@ def process_alignment_records_for_a_read(
         # elif sum_info['read_id'].endswith('/ccs/fwd') or sum_info['read_id'].endswith('/ccs/rev'):
         #    sum_info['effective_count'] = 1  # not needed, default is to 1
 
-    writer3.writerow(sum_info)
+    out_per_read.writerow(sum_info)
     logging.debug("%s", sum_info)
     # pdb.set_trace()
 
@@ -607,45 +607,45 @@ def run_processing_parallel(
     # copy the first chunk over
     o_first = output_prefix + ".1"
 
-    f1 = gzip.open(output_prefix + ".nonmatch_stat.tsv.gz", "wb")
-    f2 = open(output_prefix + ".per_read.tsv", "w")
-    f3 = open(output_prefix + ".summary.tsv", "w")
+    f_nonmatch = gzip.open(output_prefix + ".nonmatch_stat.tsv.gz", "wb")
+    f_per_read = open(output_prefix + ".per_read.tsv", "w")
+    f_summary = open(output_prefix + ".summary.tsv", "w")
 
     with open(o_first + ".nonmatch_stat.tsv") as h:
         for line in h:
-            f1.write(line.encode())
+            f_nonmatch.write(line.encode())
     with open(o_first + ".per_read.tsv") as h:
         for line in h:
-            f2.write(line)
+            f_per_read.write(line)
     with open(o_first + ".summary.tsv") as h:
         for line in h:
-            f3.write(line)
+            f_summary.write(line)
     reader = pysam.AlignmentFile(o_first + ".tagged.bam", "rb", check_sq=False)
-    f4 = pysam.AlignmentFile(output_prefix + ".tagged.bam", "wb", template=reader)
+    f_tagged_bam = pysam.AlignmentFile(output_prefix + ".tagged.bam", "wb", template=reader)
     for r in reader:
-        f4.write(r)
+        f_tagged_bam.write(r)
 
     logging.debug("Combining chunk data...")
     for i in range(1, num_chunks):
         o_rest = output_prefix + "." + str(i + 1)
         with open(o_rest + ".nonmatch_stat.tsv") as h:
             h.readline()  # ignore the header
-            f1.write(h.read().encode())
+            f_nonmatch.write(h.read().encode())
         with open(o_rest + ".per_read.tsv") as h:
             h.readline()  # ignore the header
-            f2.write(h.read())
+            f_per_read.write(h.read())
         with open(o_rest + ".summary.tsv") as h:
             h.readline()  # ignore the header
-            f3.write(h.read())
+            f_summary.write(h.read())
         for r in pysam.AlignmentFile(
             open(o_rest + ".tagged.bam"), "rb", check_sq=False
         ):
-            f4.write(r)
+            f_tagged_bam.write(r)
 
-    f1.close()
-    f2.close()
-    f3.close()
-    f4.close()
+    f_nonmatch.close()
+    f_per_read.close()
+    f_summary.close()
+    f_tagged_bam.close()
     reader.close()
 
     # delete the chunk data
