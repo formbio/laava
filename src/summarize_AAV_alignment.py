@@ -6,6 +6,7 @@ import itertools
 import logging
 import os
 import re
+import shutil
 import subprocess
 import sys
 from csv import DictReader, DictWriter
@@ -318,7 +319,12 @@ def process_alignment_bam(
                 break
             if cur_r.qname != records[-1].qname:
                 process_alignment_records_for_a_read(
-                    records, annotation, out_summary, out_nonmatch, out_per_read, bam_writer
+                    records,
+                    annotation,
+                    out_summary,
+                    out_nonmatch,
+                    out_per_read,
+                    bam_writer,
                 )
                 records = [cur_r]
             else:
@@ -601,61 +607,74 @@ def run_processing_parallel(
         logging.debug(f"DEBUG: Waiting for {i}th pool to finish.")
         p.join()
 
-    # combine the data together for
-    # *.nonmatch_stat.tsv, *.per_read.tsv, *.summary.tsv, *.tagged.bam
+    # Combine the data together for *.nonmatch_stat.tsv, *.per_read.tsv, *.summary.tsv
 
-    # copy the first chunk over
-    o_first = output_prefix + ".1"
+    # Closes over: output_prefix, num_chunks
+    def gather_text_chunks(suffix, compress=False):
+        logging.info("Combining chunk data... (*%s)", suffix)
+        # Copy the first chunk over
+        if compress:
+            out_path = output_prefix + suffix + ".gz"
+            f_out = gzip.open(out_path, "wb")
+        else:
+            out_path = output_prefix + suffix
+            f_out = open(out_path, "w")
+        first_chunk = f"{output_prefix}.1{suffix}"
+        chunk_paths = [first_chunk]
+        with open(first_chunk) as f_in:
+            if compress:
+                for line in f_in:
+                    f_out.write(line.encode())
+            else:
+                shutil.copyfileobj(f_in, f_out)
+        # Copy the remaining chunks
+        for i in range(1, num_chunks):
+            chunk_path = f"{output_prefix}.{i+1}{suffix}"
+            with open(chunk_path) as f_in:
+                f_in.readline()  # Skip the header
+                if compress:
+                    for line in f_in:
+                        f_out.write(line.encode())
+                else:
+                    shutil.copyfileobj(f_in, f_out)
+            chunk_paths.append(chunk_path)
+        f_out.close()
+        # Delete the chunk data
+        logging.info("Data combining complete. Deleting chunk data (*%s).", suffix)
+        for chunk_path in chunk_paths:
+            os.remove(chunk_path)
+        return out_path
 
-    f_nonmatch = gzip.open(output_prefix + ".nonmatch_stat.tsv.gz", "wb")
-    f_per_read = open(output_prefix + ".per_read.tsv", "w")
-    f_summary = open(output_prefix + ".summary.tsv", "w")
+    outpath_nonmatch = gather_text_chunks(
+        ".nonmatch_stat.tsv", compress=True
+    )  # -> .nonmatch_stat.tsv.gz
+    outpath_per_read = gather_text_chunks(".per_read.tsv")
+    outpath_summary = gather_text_chunks(".summary.tsv")
 
-    with open(o_first + ".nonmatch_stat.tsv") as h:
-        for line in h:
-            f_nonmatch.write(line.encode())
-    with open(o_first + ".per_read.tsv") as h:
-        for line in h:
-            f_per_read.write(line)
-    with open(o_first + ".summary.tsv") as h:
-        for line in h:
-            f_summary.write(line)
-    reader = pysam.AlignmentFile(o_first + ".tagged.bam", "rb", check_sq=False)
-    f_tagged_bam = pysam.AlignmentFile(output_prefix + ".tagged.bam", "wb", template=reader)
-    for r in reader:
+    # Combine the data together for *.tagged.bam
+    # TODO - samtools cat/merge?
+    logging.info("Combining BAM chunk data...")
+    # Copy the first chunk over
+    first_bam_chunk = f"{output_prefix}.1.tagged.bam"
+    bam_chunk_paths = [first_bam_chunk]
+    bam_reader = pysam.AlignmentFile(first_bam_chunk, "rb", check_sq=False)
+    f_tagged_bam = pysam.AlignmentFile(
+        output_prefix + ".tagged.bam", "wb", template=bam_reader
+    )
+    for r in bam_reader:
         f_tagged_bam.write(r)
-
-    logging.debug("Combining chunk data...")
+    # Copy the remaining chunks
     for i in range(1, num_chunks):
-        o_rest = output_prefix + "." + str(i + 1)
-        with open(o_rest + ".nonmatch_stat.tsv") as h:
-            h.readline()  # ignore the header
-            f_nonmatch.write(h.read().encode())
-        with open(o_rest + ".per_read.tsv") as h:
-            h.readline()  # ignore the header
-            f_per_read.write(h.read())
-        with open(o_rest + ".summary.tsv") as h:
-            h.readline()  # ignore the header
-            f_summary.write(h.read())
-        for r in pysam.AlignmentFile(
-            open(o_rest + ".tagged.bam"), "rb", check_sq=False
-        ):
+        chunk_path = f"{output_prefix}.{i+1}.tagged.bam"
+        for r in pysam.AlignmentFile(chunk_path, "rb", check_sq=False):
             f_tagged_bam.write(r)
-
-    f_nonmatch.close()
-    f_per_read.close()
-    f_summary.close()
+        bam_chunk_paths.append(chunk_path)
     f_tagged_bam.close()
-    reader.close()
-
-    # delete the chunk data
-    logging.debug("Data combining complete. Deleting chunk data.")
-    for i in range(num_chunks):
-        o_each = output_prefix + "." + str(i + 1)
-        os.remove(o_each + ".nonmatch_stat.tsv")
-        os.remove(o_each + ".per_read.tsv")
-        os.remove(o_each + ".summary.tsv")
-        os.remove(o_each + ".tagged.bam")
+    bam_reader.close()
+    # Delete the chunk data
+    logging.info("Data combining complete. Deleting BAM chunk data.")
+    for chunk_path in bam_chunk_paths:
+        os.remove(chunk_path)
 
     return output_prefix + ".per_read.tsv", output_prefix + ".tagged.bam"
 
