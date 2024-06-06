@@ -276,7 +276,7 @@ p1.ssAAV_len_hist
 
 ```{r lenhisto2_construct, message=FALSE, warning=FALSE}
 p1.map_starts <- ggplot(x.summary.vector, aes(map_start0 + 1, fill = map_subtype)) +
-  geom_histogram(aes(y = ..count.. / sum(..count..))) +
+  geom_histogram(aes(y = after_stat(count) / sum(after_stat(count)))) +
   geom_vline(xintercept = TARGET_REGION_START,
              color = 'red',
              lty = 2) +
@@ -288,7 +288,7 @@ p1.map_starts <- ggplot(x.summary.vector, aes(map_start0 + 1, fill = map_subtype
   labs(title = "Distribution of mapped read starts on construct")
 
 p1.map_ends <- ggplot(x.summary.vector, aes(map_end1, fill = map_subtype)) +
-  geom_histogram(aes(y = ..count.. / sum(..count..))) +
+  geom_histogram(aes(y = after_stat(count) / sum(after_stat(count)))) +
   geom_vline(xintercept = TARGET_REGION_START,
              color = 'red',
              lty = 2) +
@@ -300,7 +300,7 @@ p1.map_ends <- ggplot(x.summary.vector, aes(map_end1, fill = map_subtype)) +
   labs(title = "Distribution of mapped read ends on construct")
 
 p1.map_len <- ggplot(x.summary.vector, aes(map_len, fill = map_subtype)) +
-  geom_histogram(aes(y = ..count.. / sum(..count..))) +
+  geom_histogram(aes(y = after_stat(count) / sum(after_stat(count)))) +
   xlab("Mapped Reference Length") +
   ylab("Fraction of Reads") +
   labs(title = "Distribution of mapped spanning region sizes on construct")
@@ -314,40 +314,47 @@ p1.map_len
 
 ```{r lenhisto2_rc, message=FALSE, warning=FALSE, results='asis'}
 x.read.repcap <- filter(x.all.read, assigned_type == 'repcap')
-x.summary.repcap <- filter(x.all.summary, read_id %in% x.read.repcap$read_id)
 
 # Only render this subsection if enough reads mapped to repcap
 if (dim(x.read.repcap)[1] > 10) {
+  x.summary.repcap <- filter(x.all.summary, read_id %in% x.read.repcap$read_id)
+
   # Subsection heading in Markdown
   cat("## RepCap\n\n")
 
-  p1.map_starts.repcap <- ggplot(x.summary.repcap, aes(map_start0 + 1, fill =
-                                                         map_subtype)) +
-    geom_histogram(aes(y = ..count.. / sum(..count..))) +
+  p1.map_starts.repcap <- ggplot(x.summary.repcap, aes(map_start0 + 1)) +
+    geom_histogram(aes(y = after_stat(count) / sum(after_stat(count)))) +
     geom_vline(xintercept = TARGET_REGION_START_REPCAP,
                color = 'red',
                lty = 2) +
     xlab("Mapped Reference Start Position") +
     ylab("Fraction of Reads") +
     labs(title = "Distribution of mapped read starts on RepCap")
+  p1.map_starts.repcap
+}
+```
 
-  p1.map_ends.repcap <- ggplot(x.summary.repcap, aes(map_end1, fill = map_subtype)) +
-    geom_histogram(aes(y = ..count.. / sum(..count..))) +
+```{r lenhisto2_rc_end, message=FALSE, warning=FALSE, results='asis'}
+if (exists("x.summary.repcap")) {
+  p1.map_ends.repcap <- ggplot(x.summary.repcap, aes(map_end1)) +
+    geom_histogram(aes(y = after_stat(count) / sum(after_stat(count)))) +
     geom_vline(xintercept = TARGET_REGION_END_REPCAP,
                color = 'red',
                lty = 2) +
     xlab("Mapped Reference End Position") +
     ylab("Fraction of Reads") +
     labs(title = "Distribution of mapped read ends on RepCap")
+  p1.map_ends.repcap
+}
+```
 
-  p1.map_len.repcap <- ggplot(x.summary.repcap, aes(map_len, fill = map_subtype)) +
-    geom_histogram(aes(y = ..count.. / sum(..count..))) +
+```{r lenhisto2_rc_len, message=FALSE, warning=FALSE, results='asis'}
+if (exists("x.summary.repcap")) {
+  p1.map_len.repcap <- ggplot(x.summary.repcap, aes(map_len)) +
+    geom_histogram(aes(y = after_stat(count) / sum(after_stat(count)))) +
     xlab("Mapped Reference Length") +
     ylab("Fraction of Reads") +
     labs(title = "Distribution of mapped spanning region sizes on RepCap")
-
-  p1.map_starts.repcap
-  p1.map_ends.repcap
   p1.map_len.repcap
 }
 ```
