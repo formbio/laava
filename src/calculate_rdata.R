@@ -1,6 +1,10 @@
 #!/usr/bin/env Rscript
 library(tidyverse)
 
+# Hush a benign message about "grouped output"
+options(dplyr.summarise.inform = FALSE)
+
+
 working_dir = getwd()
 message(paste("Working directory:", working_dir))
 
@@ -22,7 +26,9 @@ valid_types <- c('ssAAV', 'scAAV', 'host', 'repcap', 'helper', 'lambda', 'unmapp
 valid_subtypes <- c('full', 'full-gap', 'left-partial', 'right-partial', 'wtITR-partial', 'mITR-partial', 'partial', 'backbone', 'vector+backbone')
 
 
+# ----------------------------------------------------------
 ## Read the annotation file to find the vector target region
+# ----------------------------------------------------------
 # e.g.
 #   NAME=myHost;TYPE=host;
 #   NAME=myVector;TYPE=vector;REGION=1795-6553;
@@ -64,9 +70,11 @@ x.all.err[x.all.err$type == 'I', "type"] <- 'insertion'
 x.all.err[x.all.err$type == 'X', "type"] <- 'mismatch'
 x.all.err[x.all.err$type == 'N', "type"] <- 'gaps'
 
-# ----------------------------------------------------
+
+# ----------------------------------------------------------
 # produce stats for vector only (ssAAV or scAAV)
-# ----------------------------------------------------
+# ----------------------------------------------------------
+
 x.read.vector <- filter(x.all.read, assigned_type %in% c('scAAV', 'ssAAV'))
 x.err.vector <- filter(x.all.err, read_id %in% x.read.vector$read_id)
 x.summary.vector <- filter(x.all.summary, read_id %in% x.read.vector$read_id)
@@ -126,7 +134,10 @@ x.all.read[!(x.all.read$assigned_subtype %in% valid_subtypes), "assigned_subtype
 write_tsv(x.all.read, str_c(c(r_params$input_prefix, ".readsummary.tsv"), collapse = ""))
 
 
-# Calculate stats and generate plot for flip/flop analysis (if available)
+# ----------------------------------------------------------
+# Stats and plot for flip/flop analysis (if available)
+# ----------------------------------------------------------
+
 if (file.exists(r_params$flipflop_summary)) {
   df.read.ssaav <- dplyr::filter(df.read.vector2, assigned_type == 'ssAAV') %>%
     filter(
@@ -164,7 +175,9 @@ if (file.exists(r_params$flipflop_summary)) {
 
 
 
-## Extra plots
+# ----------------------------------------------------
+## Extra plots & dataframes
+# ----------------------------------------------------
 # Unused here, but available for downstream consumers
 
 ERR_SAMPLE_SIZE <- 50000
