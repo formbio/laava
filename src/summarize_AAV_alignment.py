@@ -6,6 +6,7 @@ import itertools
 import logging
 import os
 import re
+import shutil
 import subprocess
 import sys
 from csv import DictReader, DictWriter
@@ -39,7 +40,7 @@ TARGET_GAP_THRESHOLD = 200  # skipping through the on-target region for more tha
 def subset_sam_by_readname_list(
     in_bam,
     out_bam,
-    per_read_csv,
+    per_read_tsv,
     wanted_types,
     wanted_subtypes,
     max_count=None,
@@ -47,7 +48,7 @@ def subset_sam_by_readname_list(
     exclude_type=False,
 ):
     qname_list = {}  # qname --> (a_type, a_subtype)
-    for r in DictReader(open(per_read_csv), delimiter="\t"):
+    for r in DictReader(open(per_read_tsv), delimiter="\t"):
         # pdb.set_trace()
         if (
             wanted_types is None
@@ -280,16 +281,16 @@ def process_alignment_bam(
     ]
     NONMATCH_FIELDS = ["read_id", "pos0", "type", "type_len"]
 
-    f1 = open(output_prefix + ".summary.csv", "w")
-    f2 = open(output_prefix + ".nonmatch_stat.csv", "w")
-    f3 = open(output_prefix + ".per_read.csv", "w")
+    f_summary = open(output_prefix + ".summary.tsv", "w")
+    f_nonmatch = open(output_prefix + ".nonmatch_stat.tsv", "w")
+    f_per_read = open(output_prefix + ".per_read.tsv", "w")
 
-    writer1 = DictWriter(f1, SUMMARY_FIELDS, delimiter="\t")
-    writer2 = DictWriter(f2, NONMATCH_FIELDS, delimiter="\t")
-    writer3 = DictWriter(f3, PER_READ_FIELDS, delimiter="\t")
-    writer1.writeheader()
-    writer2.writeheader()
-    writer3.writeheader()
+    out_summary = DictWriter(f_summary, SUMMARY_FIELDS, delimiter="\t")
+    out_nonmatch = DictWriter(f_nonmatch, NONMATCH_FIELDS, delimiter="\t")
+    out_per_read = DictWriter(f_per_read, PER_READ_FIELDS, delimiter="\t")
+    out_summary.writeheader()
+    out_nonmatch.writeheader()
+    out_per_read.writeheader()
 
     reader = pysam.AlignmentFile(sorted_sam_filename, check_sq=False)
     bam_writer = pysam.AlignmentFile(
@@ -318,7 +319,12 @@ def process_alignment_bam(
                 break
             if cur_r.qname != records[-1].qname:
                 process_alignment_records_for_a_read(
-                    records, annotation, writer1, writer2, writer3, bam_writer
+                    records,
+                    annotation,
+                    out_summary,
+                    out_nonmatch,
+                    out_per_read,
+                    bam_writer,
                 )
                 records = [cur_r]
             else:
@@ -327,13 +333,13 @@ def process_alignment_bam(
             break
 
     process_alignment_records_for_a_read(
-        records, annotation, writer1, writer2, writer3, bam_writer
+        records, annotation, out_summary, out_nonmatch, out_per_read, bam_writer
     )
     bam_writer.close()
-    f1.close()
-    f2.close()
-    f3.close()
-    return f3.name, output_prefix + ".tagged.bam"
+    f_summary.close()
+    f_nonmatch.close()
+    f_per_read.close()
+    return f_per_read.name, output_prefix + ".tagged.bam"
 
 
 MIN_PRIM_SUPP_COV = 0.8  # at minimum the total of prim + main supp should cover this much of the original sequence
@@ -399,7 +405,7 @@ def add_assigned_types_to_record(r, a_type, a_subtype):
 
 
 def process_alignment_records_for_a_read(
-    records, annotation, writer1, writer2, writer3, bam_writer
+    records, annotation, out_summary, out_nonmatch, out_per_read, bam_writer
 ):
     """For each, find the most probable assignment.
 
@@ -447,7 +453,7 @@ def process_alignment_records_for_a_read(
             info["map_start0"] = r.reference_start
             info["map_end1"] = r.reference_end
             info["map_len"] = r.reference_end - r.reference_start
-            total_err, total_len = iter_cigar_w_aligned_pair(r, writer2)
+            total_err, total_len = iter_cigar_w_aligned_pair(r, out_nonmatch)
             info["map_iden"] = 1 - total_err * 1.0 / total_len
 
             a_type, a_subtype = assign_read_type(r, annotation)
@@ -461,7 +467,7 @@ def process_alignment_records_for_a_read(
             else:
                 assert read_tally["primary"] is None
                 read_tally["primary"] = info
-        # writer1.writerow(info) # not writing here -- writing later when we rule out non-compatible subs
+        # out_summary.writerow(info) # not writing here -- writing later when we rule out non-compatible subs
 
     # summarize it per read, now that all relevant alignments have been processed
     prim = read_tally["primary"]
@@ -485,7 +491,7 @@ def process_alignment_records_for_a_read(
         )
     )
     del prim["rec"]
-    writer1.writerow(prim)
+    out_summary.writerow(prim)
     if supp is not None:
         bam_writer.write(
             pysam.AlignedSegment.from_dict(
@@ -496,7 +502,7 @@ def process_alignment_records_for_a_read(
             )
         )
         del supp["rec"]
-        writer1.writerow(supp)
+        out_summary.writerow(supp)
 
     sum_info = {
         "read_id": prim["read_id"],
@@ -559,7 +565,7 @@ def process_alignment_records_for_a_read(
         # elif sum_info['read_id'].endswith('/ccs/fwd') or sum_info['read_id'].endswith('/ccs/rev'):
         #    sum_info['effective_count'] = 1  # not needed, default is to 1
 
-    writer3.writerow(sum_info)
+    out_per_read.writerow(sum_info)
     logging.debug("%s", sum_info)
     # pdb.set_trace()
 
@@ -601,97 +607,110 @@ def run_processing_parallel(
         logging.debug(f"DEBUG: Waiting for {i}th pool to finish.")
         p.join()
 
-    # combine the data together for
-    # *.nonmatch_stat.csv, *.per_read.csv, *.summary.csv, *.tagged.bam
+    # Combine the data together for *.nonmatch_stat.tsv, *.per_read.tsv, *.summary.tsv
 
-    # copy the first chunk over
-    o_first = output_prefix + ".1"
+    # Closes over: output_prefix, num_chunks
+    def gather_text_chunks(suffix, compress=False):
+        logging.info("Combining chunk data... (*%s)", suffix)
+        # Copy the first chunk over
+        if compress:
+            out_path = output_prefix + suffix + ".gz"
+            f_out = gzip.open(out_path, "wb")
+        else:
+            out_path = output_prefix + suffix
+            f_out = open(out_path, "w")
+        first_chunk = f"{output_prefix}.1{suffix}"
+        chunk_paths = [first_chunk]
+        with open(first_chunk) as f_in:
+            if compress:
+                for line in f_in:
+                    f_out.write(line.encode())
+            else:
+                shutil.copyfileobj(f_in, f_out)
+        # Copy the remaining chunks
+        for i in range(1, num_chunks):
+            chunk_path = f"{output_prefix}.{i+1}{suffix}"
+            with open(chunk_path) as f_in:
+                f_in.readline()  # Skip the header
+                if compress:
+                    for line in f_in:
+                        f_out.write(line.encode())
+                else:
+                    shutil.copyfileobj(f_in, f_out)
+            chunk_paths.append(chunk_path)
+        f_out.close()
+        # Delete the chunk data
+        logging.info("Data combining complete. Deleting chunk data (*%s).", suffix)
+        for chunk_path in chunk_paths:
+            os.remove(chunk_path)
+        return out_path
 
-    f1 = gzip.open(output_prefix + ".nonmatch_stat.csv.gz", "wb")
-    f2 = open(output_prefix + ".per_read.csv", "w")
-    f3 = open(output_prefix + ".summary.csv", "w")
+    outpath_nonmatch = gather_text_chunks(
+        ".nonmatch_stat.tsv", compress=True
+    )  # -> .nonmatch_stat.tsv.gz
+    outpath_per_read = gather_text_chunks(".per_read.tsv")
+    outpath_summary = gather_text_chunks(".summary.tsv")
 
-    with open(o_first + ".nonmatch_stat.csv") as h:
-        for line in h:
-            f1.write(line.encode())
-    with open(o_first + ".per_read.csv") as h:
-        for line in h:
-            f2.write(line)
-    with open(o_first + ".summary.csv") as h:
-        for line in h:
-            f3.write(line)
-    reader = pysam.AlignmentFile(o_first + ".tagged.bam", "rb", check_sq=False)
-    f4 = pysam.AlignmentFile(output_prefix + ".tagged.bam", "wb", template=reader)
-    for r in reader:
-        f4.write(r)
-
-    logging.debug("Combining chunk data...")
+    # Combine the data together for *.tagged.bam
+    # TODO - samtools cat/merge?
+    logging.info("Combining BAM chunk data...")
+    # Copy the first chunk over
+    first_bam_chunk = f"{output_prefix}.1.tagged.bam"
+    bam_chunk_paths = [first_bam_chunk]
+    bam_reader = pysam.AlignmentFile(first_bam_chunk, "rb", check_sq=False)
+    f_tagged_bam = pysam.AlignmentFile(
+        output_prefix + ".tagged.bam", "wb", template=bam_reader
+    )
+    for r in bam_reader:
+        f_tagged_bam.write(r)
+    # Copy the remaining chunks
     for i in range(1, num_chunks):
-        o_rest = output_prefix + "." + str(i + 1)
-        with open(o_rest + ".nonmatch_stat.csv") as h:
-            h.readline()  # ignore the header
-            f1.write(h.read().encode())
-        with open(o_rest + ".per_read.csv") as h:
-            h.readline()  # ignore the header
-            f2.write(h.read())
-        with open(o_rest + ".summary.csv") as h:
-            h.readline()  # ignore the header
-            f3.write(h.read())
-        for r in pysam.AlignmentFile(
-            open(o_rest + ".tagged.bam"), "rb", check_sq=False
-        ):
-            f4.write(r)
+        chunk_path = f"{output_prefix}.{i+1}.tagged.bam"
+        for r in pysam.AlignmentFile(chunk_path, "rb", check_sq=False):
+            f_tagged_bam.write(r)
+        bam_chunk_paths.append(chunk_path)
+    f_tagged_bam.close()
+    bam_reader.close()
+    # Delete the chunk data
+    logging.info("Data combining complete. Deleting BAM chunk data.")
+    for chunk_path in bam_chunk_paths:
+        os.remove(chunk_path)
 
-    f1.close()
-    f2.close()
-    f3.close()
-    f4.close()
-    reader.close()
-
-    # delete the chunk data
-    logging.debug("Data combining complete. Deleting chunk data.")
-    for i in range(num_chunks):
-        o_each = output_prefix + "." + str(i + 1)
-        os.remove(o_each + ".nonmatch_stat.csv")
-        os.remove(o_each + ".per_read.csv")
-        os.remove(o_each + ".summary.csv")
-        os.remove(o_each + ".tagged.bam")
-
-    return output_prefix + ".per_read.csv", output_prefix + ".tagged.bam"
+    return output_prefix + ".per_read.tsv", output_prefix + ".tagged.bam"
 
 
 def main(args):
     """Entry point."""
     annotation = read_annotation_file(args.annotation_txt)
     if args.cpus == 1:
-        per_read_csv, full_out_bam = process_alignment_bam(
+        per_read_tsv, full_out_bam = process_alignment_bam(
             args.sam_filename, annotation, args.output_prefix
         )
     else:
-        per_read_csv, full_out_bam = run_processing_parallel(
+        per_read_tsv, full_out_bam = run_processing_parallel(
             args.sam_filename, annotation, args.output_prefix, num_chunks=args.cpus
         )
 
     # subset BAM files into major categories for ease of loading into IGV for viewing
-    # subset_sam_by_readname_list(in_bam, out_bam, per_read_csv, wanted_types, wanted_subtypes)
+    # subset_sam_by_readname_list(in_bam, out_bam, per_read_tsv, wanted_types, wanted_subtypes)
     subset_sam_by_readname_list(
         full_out_bam,
         args.output_prefix + ".scAAV-full.tagged.bam",
-        per_read_csv,
+        per_read_tsv,
         ["scAAV"],
         ["full"],
     )
     subset_sam_by_readname_list(
         full_out_bam,
         args.output_prefix + ".scAAV-partials.tagged.bam",
-        per_read_csv,
+        per_read_tsv,
         ["scAAV"],
         ["partial", "left-partial", "right-partial"],
     )
     subset_sam_by_readname_list(
         full_out_bam,
         args.output_prefix + ".scAAV-other.tagged.bam",
-        per_read_csv,
+        per_read_tsv,
         ["scAAV"],
         ["partial", "left-partial", "right-partial", "full"],
         exclude_subtype=True,
@@ -699,21 +718,21 @@ def main(args):
     subset_sam_by_readname_list(
         full_out_bam,
         args.output_prefix + ".ssAAV-full.tagged.bam",
-        per_read_csv,
+        per_read_tsv,
         ["ssAAV"],
         ["full"],
     )
     subset_sam_by_readname_list(
         full_out_bam,
         args.output_prefix + ".ssAAV-partials.tagged.bam",
-        per_read_csv,
+        per_read_tsv,
         ["ssAAV"],
         ["partial", "left-partial", "right-partial"],
     )
     subset_sam_by_readname_list(
         full_out_bam,
         args.output_prefix + ".ssAAV-other.tagged.bam",
-        per_read_csv,
+        per_read_tsv,
         ["ssAAV"],
         ["partial", "left-partial", "right-partial", "full"],
         exclude_subtype=True,
@@ -721,7 +740,7 @@ def main(args):
     subset_sam_by_readname_list(
         full_out_bam,
         args.output_prefix + ".others.tagged.bam",
-        per_read_csv,
+        per_read_tsv,
         ["ssAAV", "scAAV"],
         None,
         exclude_type=True,

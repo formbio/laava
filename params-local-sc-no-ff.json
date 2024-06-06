@@ -1,0 +1,13 @@
+{
+  "seq_reads": "test/samples/sc.subsample005.bam",
+  "vector_type": "scaav",
+  "vector_bed": "test/samples/sc.annotation.bed",
+  "vector_fa": "test/samples/sc.construct.fasta",
+  "packaging_fa": "test/fasta/packaging.fa",
+  "host_fa": "test/fasta/hg38.chr19trunc-chrM.fa",
+  "repcap_name": "pRep2Cap9",
+  "target_gap_threshold": 200,
+  "max_allowed_outside_vector": 100,
+  "max_allowed_missing_flanking": 100,
+  "container_version": ":latest"
+}

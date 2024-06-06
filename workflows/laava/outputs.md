@@ -22,7 +22,7 @@
   - Refence names: reference_names.tsv
 
 - Read count and classification tables
-  - SampleID.nonmatch_stat.csv.gz
-  - SampleID.per_read.csv
-  - SampleID.summary.csv
+  - SampleID.nonmatch_stat.tsv.gz
+  - SampleID.per_read.tsv
+  - SampleID.summary.tsv
   - SampleID.flipflop_assignments.txt (optional)

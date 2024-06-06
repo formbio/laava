@@ -2,7 +2,7 @@
   "schema": "v3",
   "id": "laava",
   "title": "formbio/laava",
-  "workflowVersion": "v2.5.0",
+  "workflowVersion": "v2.6.0",
   "displayName": "LAAVA: Long-read AAV Analysis",
   "description": "Perform standard analysis of AAV long-read sequencing data.",
   "type": "object",
@@ -23,6 +23,28 @@
       "hidden": false,
       "required": true,
       "type": "string"
+    },
+    "vector_type": {
+      "title": "Vector type",
+      "description": "Single-stranded or self-complementary",
+      "help_text": "Whether the vector construct is designed to be single-stranded AAV (ssAAV), self-complementary AAV (scAAV), or unknown/unspecified.",
+      "format": "enum",
+      "default": "unspecified",
+      "enum": [
+        {
+          "name": "Single-stranded AAV (ssAAV)",
+          "id": "ssaav"
+        },
+        {
+          "name": "Self-complementary AAV (scAAV)",
+          "id": "scaav"
+        },
+        {
+          "name": "Unknown / Unspecified",
+          "id": "unspecified"
+        }
+      ],
+      "required": true
     },
     "vector_bed": {
       "title": "Vector annotation",
@@ -147,6 +169,7 @@
         "id": "workflowinputs",
         "fields": [
           "seq_reads",
+          "vector_type",
           "vector_bed",
           "vector_fa",
           "packaging_fa",

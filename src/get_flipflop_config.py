@@ -5,7 +5,7 @@ Must have already run `summarize_AAV_alignment.py` to get a .tagged.BAM file!
 """
 
 import sys
-from csv import DictReader
+import csv
 from typing import NamedTuple
 
 import parasail
@@ -129,12 +129,14 @@ def identify_flip_flop(r, ff_seq):
 def load_per_read_info(fname):
     """Load per-read info, keyed by read IDs, from a CSV file."""
     with open(fname) as in_csv:
-        read_info = {r["read_id"]: r for r in DictReader(in_csv, delimiter="\t")}
+        read_info = {r["read_id"]: r for r in csv.DictReader(in_csv, delimiter="\t")}
     return read_info
 
 
 def main(per_read_csv, tagged_bam, output_prefix, flipflop_fasta):
     """Entry point."""
+    OUT_FIELDS = ["name", "type", "subtype", "start", "end", "leftITR", "rightITR"]
+
     if flipflop_fasta is None:
         flipflop_seqs = FlipFlopSeqSet(**SEQ_AAV2)
     else:
@@ -142,20 +144,21 @@ def main(per_read_csv, tagged_bam, output_prefix, flipflop_fasta):
 
     read_info = load_per_read_info(per_read_csv)
 
-    with open(output_prefix + ".flipflop_assignments.txt", "w") as fout:
-        fout.write("name\ttype\tsubtype\tstart\tend\tleftITR\trightITR\n")
+    with open(output_prefix + ".flipflop_assignments.tsv", "w") as fout:
+        out_tsv = csv.writer(fout, delimiter="\t")
+        out_tsv.writerow(OUT_FIELDS)
         reader = pysam.AlignmentFile(open(tagged_bam), "rb", check_sq=False)
-        writer1 = pysam.AlignmentFile(
+        out_bam_full = pysam.AlignmentFile(
             open(output_prefix + ".vector-full-flipflop.bam", "w"),
             "wb",
             header=reader.header,
         )
-        writer2 = pysam.AlignmentFile(
+        out_bam_leftp = pysam.AlignmentFile(
             open(output_prefix + ".vector-leftpartial-flipflop.bam", "w"),
             "wb",
             header=reader.header,
         )
-        writer3 = pysam.AlignmentFile(
+        out_bam_rightp = pysam.AlignmentFile(
             open(output_prefix + ".vector-rightpartial-flipflop.bam", "w"),
             "wb",
             header=reader.header,
@@ -175,30 +178,27 @@ def main(per_read_csv, tagged_bam, output_prefix, flipflop_fasta):
                 d["tags"].append("AF:Z:" + c_l + "-" + c_r)
                 d["tags"].append("AG:Z:" + a_type)
                 if t["AX"] == "vector-full":
-                    writer = writer1
+                    writer = out_bam_full
                 elif t["AX"] == "vector-right-partial":
-                    writer = writer2
+                    writer = out_bam_leftp
                 elif t["AX"] == "vector-left-partial":
-                    writer = writer3
+                    writer = out_bam_rightp
                 writer.write(pysam.AlignedSegment.from_dict(d, r.header))
-                fout.write(
-                    "\t".join(
-                        [
-                            r.qname,
-                            a_type,
-                            t["AX"],
-                            str(r.reference_start),
-                            str(r.reference_end),
-                            c_l,
-                            c_r,
-                        ]
-                    )
-                    + "\n"
+                out_tsv.writerow(
+                    [
+                        r.qname,
+                        a_type,
+                        t["AX"],
+                        str(r.reference_start),
+                        str(r.reference_end),
+                        c_l,
+                        c_r,
+                    ]
                 )
 
-        writer1.close()
-        writer2.close()
-        writer3.close()
+        out_bam_full.close()
+        out_bam_leftp.close()
+        out_bam_rightp.close()
         print("Output summmary:", fout.name)
 
     print(

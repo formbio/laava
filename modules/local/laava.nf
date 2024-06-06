@@ -2,18 +2,17 @@ process map_reads() {
     publishDir "$params.output", mode: "copy"
 
     input:
-    val sample_name
-    path reads
-    path vector_fa
-    path packaging_fa
-    path host_fa
-    val repcap_name
+    tuple val(sample_name),
+          path(reads),
+          path(vector_fa),
+          path(packaging_fa),
+          path(host_fa),
+          val(repcap_name)
 
     output:
-    path("${sample_name}.sort_by_name.sam"), emit: mapped_reads
-    path("reference_names.tsv"), emit: reference_names
-    val "${sample_name}", emit: sample_name
-
+    tuple val(sample_name),
+          path("reference_names.tsv"),
+          path("${sample_name}.sort_by_name.sam"), emit: mapped_reads
     script:
     // Hack for optional inputs
     def packaging_fa_path = packaging_fa.name != "NO_FILE" ? "$packaging_fa" : ""
@@ -29,27 +28,28 @@ process make_report() {
     publishDir "$params.output", mode: "copy"
 
     input:
-    path vector_annotation
-    path reference_names
-    val sample_name
-    val target_gap_threshold
-    val max_allowed_outside_vector
-    val max_allowed_missing_flanking
-    path mapped_reads
-    val flipflop_name
-    path flipflop_fa
+    tuple val(sample_name),
+          path(reference_names),
+          path(mapped_reads),
+          path(vector_annotation),
+          val(vector_type),
+          val(target_gap_threshold),
+          val(max_allowed_outside_vector),
+          val(max_allowed_missing_flanking),
+          val(flipflop_name),
+          path(flipflop_fa)
 
     output:
     // summarize alignment
-    path("${sample_name}.per_read.csv"), emit: per_read_csv
-    path("${sample_name}.summary.csv"), emit: summary_csv
-    path("${sample_name}.nonmatch_stat.csv.gz"), emit: nonmatch_stat_csvgz
+    path("${sample_name}.per_read.tsv"), emit: per_read_tsv
+    path("${sample_name}.summary.tsv"), emit: summary_tsv
+    path("${sample_name}.nonmatch_stat.tsv.gz"), emit: nonmatch_stat_tsvgz
     path("${sample_name}.tagged.bam"), emit: tagged_bam
     path("${sample_name}.*.tagged.sorted.bam"), emit: subtype_bams
     path("${sample_name}.*.tagged.sorted.bam.bai"), emit: subtype_bais
     // flip-flop
-    path("${sample_name}.flipflop_assignments.txt"), emit: flipflop_assignments_txt, optional: true
-    path("${sample_name}.*-flipflop.bam"), emit: flipflop_bams
+    path("${sample_name}.flipflop_assignments.tsv"), emit: flipflop_assignments_tsv, optional: true
+    path("${sample_name}.*-flipflop.bam"), emit: flipflop_bams, optional: true
     // report
     path("${sample_name}.alignments.tsv"), emit: alignments_tsv
     path("${sample_name}.readsummary.tsv"), emit: readsummary_tsv
@@ -63,9 +63,15 @@ process make_report() {
     def ff_fa_path = flipflop_fa.name != "NO_FILE" ? "$flipflop_fa" : ""
     """
     prepare_annotation.py "${vector_annotation}" "${reference_names}" -o annotation.txt
-    make_report.sh "${sample_name}" \\
-        $target_gap_threshold $max_allowed_outside_vector $max_allowed_missing_flanking \\
-        "${mapped_reads}" annotation.txt \\
-        "${flipflop_name}" "${ff_fa_path}"
+    make_report.sh \\
+        "${sample_name}" \\
+        $vector_type \\
+        $target_gap_threshold \\
+        $max_allowed_outside_vector \\
+        $max_allowed_missing_flanking \\
+        "${mapped_reads}" \\
+        annotation.txt \\
+        "${flipflop_name}" \\
+        "${ff_fa_path}"
     """
 }
