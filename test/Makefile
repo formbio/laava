@@ -8,7 +8,7 @@ NCPU = 4
 all: sc ss
 
 clean:
-	rm -vf build/*
+	rm -frv build/*
 
 sc: $(out_dir)/sc_AAV_report.html
 
