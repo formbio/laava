@@ -6,4 +6,5 @@ set -o errexit
 SCRIPT_DIR=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
 
 # Run nextflow locally
-nextflow run -profile local main.nf -params-file params-local-small-sc-no-ff.json
+nextflow run -profile local main.nf -params-file params-local-sc-no-ff.json
+#nextflow run -profile local main.nf -params-file params-local-ss-with-ff.json
