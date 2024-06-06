@@ -96,7 +96,18 @@ x.err.vector$type_len_cat <- ordered(x.err.vector$type_len_cat, levels = c('1-10
 write_tsv(x.err.vector, str_c(c(r_params$input_prefix, ".sequence-error.tsv"), collapse = ""))
 
 x.read.vector$subtype <- x.read.vector$assigned_subtype
+# Call "other" all complex and multi-part AAV alignments
 x.read.vector[!x.read.vector$subtype %in% valid_subtypes, "subtype"] <- 'other'
+# Call "snapback" any scAAV with an ITR-containing partial alignment but no full
+# alignment
+if (r_params$vector_type == "ssaav") {
+  x.read.vector[((x.read.vector$assigned_type == "scAAV") &
+    (x.read.vector$assigned_subtype == "left-partial")
+  ), "subtype"] <- "left-snapback"
+  x.read.vector[((x.read.vector$assigned_type == "scAAV") &
+    (x.read.vector$assigned_subtype == "right-partial")
+  ), "subtype"] <- "right-snapback"
+}
 
 total_read_count.vector <- sum(x.read.vector$effective_count)
 df.read.vector1 <- x.read.vector %>%
