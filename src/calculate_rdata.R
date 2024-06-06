@@ -87,27 +87,13 @@ x.err.vector$pos0_div <- (x.err.vector$pos0 %/% 10 * 10)
 df.err.vector <- x.err.vector %>%
   group_by(pos0_div, type) %>%
   summarise(count = n())
+
 x.err.vector$type_len_cat <- "1-10"
 x.err.vector[x.err.vector$type_len > 10, "type_len_cat"] <- "11-100"
 x.err.vector[x.err.vector$type_len > 100, "type_len_cat"] <- "100-500"
 x.err.vector[x.err.vector$type_len > 500, "type_len_cat"] <- ">500"
 x.err.vector$type_len_cat <- ordered(x.err.vector$type_len_cat, levels = c('1-10', '11-100', '100-500', '>500'))
 write_tsv(x.err.vector, str_c(c(r_params$input_prefix, ".sequence-error.tsv"), collapse = ""))
-
-df.err_len_cat.vector <- x.err.vector %>%
-  group_by(type, type_len_cat) %>%
-  summarise(count = n()) %>%
-  mutate(freq = round(100 * count / total_err, 2))
-
-df.read_stat_N <- filter(x.err.vector, type == 'gaps') %>%
-  group_by(read_id) %>%
-  summarise(max_del_size = max(type_len))
-num_reads_large_del <- sum(df.read_stat_N$max_del_size >= 200)
-freq_reads_large_del <- round(num_reads_large_del * 100 / total_num_reads, 2)
-df.read_stat_N_summary <- data.frame(
-  category = c("Total Reads", "Reads with gaps >200bp"),
-  value = c(total_num_reads, paste0(num_reads_large_del, " (", freq_reads_large_del, "%)"))
-)
 
 x.read.vector$subtype <- x.read.vector$assigned_subtype
 x.read.vector[!x.read.vector$subtype %in% valid_subtypes, "subtype"] <- 'other'
@@ -172,52 +158,6 @@ if (file.exists(r_params$flipflop_summary)) {
   fftbl <- bind_rows(scff, ssff)
   write_tsv(fftbl, str_c(c(r_params$input_prefix, ".flipflop.tsv"), collapse = ""))
 }
-
-
-
-# ----------------------------------------------------
-## Extra plots & dataframes
-# ----------------------------------------------------
-# Unused here, but available for downstream consumers
-
-ERR_SAMPLE_SIZE <- 50000
-x.err2.vector <- x.err.vector[sample(1:dim(x.err.vector)[1], ERR_SAMPLE_SIZE), ]
-p1.err_dot <- ggplot(x.err2.vector, aes(x = pos0 + 1, y = type_len)) +
-  geom_point(aes(color = type), alpha = 0.5) +
-  xlim(c(TARGET_REGION_START, TARGET_REGION_END)) +
-  xlab("Reference Position") +
-  ylab("Sub/Ins/Del Length") +
-  labs(title = "Distribution of non-matches", subtitle = "Each point is a non-match from a read, only 50k points at most")
-
-p1.err_dot_close <- ggplot(x.err2.vector, aes(x = pos0 + 1, y = type_len)) +
-  geom_point(aes(color = type), alpha = 0.5) +
-  xlim(c(TARGET_REGION_START, TARGET_REGION_END)) +
-  ylim(c(0, 100)) +
-  xlab("Reference Position") +
-  ylab("Sub/Ins/Del Length") +
-  labs(title = "Distribution of non-matches (of sizes <100 only)", subtitle = "Each point is a non-match from a read, only 50k points at most")
-
-p1.map_iden <- ggplot(x.summary.vector, aes(map_iden * 100, fill = map_subtype)) +
-  geom_histogram(binwidth = 0.01) +
-  xlab("Mapping Identity (%)") +
-  ylab("Read Count") +
-  labs(title = "Distribution of mapped identity to reference")
-
-p3.err_Ns <- ggplot(filter(df.err.vector, type == 'gaps'), aes(x = pos0_div, y = count)) +
-  geom_bar(fill = 'orange', stat = 'identity') +
-  xlim(c(TARGET_REGION_START, TARGET_REGION_END)) +
-  labs(
-    title = "Distribution of large deletion events (cigar 'N'), by position",
-    subtitle = "Higher bars indicate hot spots for large deletions w.r.t reference"
-  ) +
-  xlab("Reference Position") +
-  ylab("Frequency")
-
-p3.err_size_Ns <- ggplot(df.read_stat_N, aes(max_del_size)) +
-  geom_histogram(binwidth = 100) +
-  xlab("Maximum large deletion size") +
-  ylab("Number of Reads") +
-  labs(title = "Distribution of biggest deletion for reads")
 
 
 ## For downstream consumers
