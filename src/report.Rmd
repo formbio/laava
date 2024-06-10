@@ -20,7 +20,9 @@ options(scipen = 999)
 knitr::opts_chunk$set(echo = FALSE,
                       fig.align = "center",
                       out.width = "80%")
-# Table aesthetic
+# Global ggplot2 theme
+theme_set(theme_minimal())
+# Table style and theme
 set_flextable_defaults(
   font.family = "Verdana",
   padding = 5,
@@ -99,8 +101,9 @@ countreads <- df.read1 %>% dplyr::filter(assigned_type != 'Lambda')
 ggplot(countreads, aes(x = assigned_type, y = freq, fill = assigned_type)) +
   geom_bar(stat = 'identity') +
   xlab("Sequence") +
-  ylab("Percent of Reads") +
-  theme_bw()
+  scale_y_continuous("Reads (%)",
+                     limits = c(0, NA),
+                     expand = expansion(mult = c(0, 0.05)))
 
 # Pie chart
 ggplot(countreads, aes(x = "", y = e_count, fill = assigned_type)) +
@@ -138,9 +141,11 @@ p2.atype_violin <- ggplot(
   )
 ) +
   geom_violin() +
-  xlab("Assigned AAV Type") +
-  ylab("Read Length") +
-  labs(title = "Distribution of read lengths by assigned AAV type") +
+  labs(title = "Distribution of read lengths by assigned AAV type",
+       x = "Assigned AAV type") +
+  scale_y_continuous("Read length",
+                     limits = c(0, NA),
+                     expand = expansion(mult = c(0, 0.05))) +
   theme(axis.text.x = element_text(angle = -45, hjust = 0))
 
 p2.atype_violin
@@ -208,13 +213,10 @@ if (exists("df.flipflop")) {
     filter(subtype == 'vector-full')
   ggplot(ffplot, aes(x = type, y = classct, fill = class)) +
     geom_bar(stat = 'identity') +
-    labs(x = 'Assigned Type', y = 'Number of Reads') +
-    theme(
-      panel.grid.major = element_blank(),
-      panel.grid.minor = element_blank(),
-      panel.border = element_blank(),
-      panel.background = element_blank()
-    )
+    labs(x = 'Assigned type') +
+    scale_y_continuous("Number of reads",
+                       limits = c(0, NA),
+                       expand = expansion(mult = c(0, 0.05)))
 
 } else {
   cat("No flip/flop analysis results available to display.")
@@ -253,17 +255,25 @@ if (exists("ssff")) {
 p1.scAAV_len_hist <- ggplot(filter(x.read.vector, assigned_type == 'scAAV'),
                             aes(x = read_len, color = subtype)) +
   geom_freqpoly() +
-  xlab("Read length (bp)") +
-  ylab("Count") +
-  labs(title = "Distribution of scAAV read length by subtype")
+  labs(title = "Distribution of scAAV read length by subtype") +
+  scale_x_continuous("Read length (bp)",
+                     limits = c(0, NA),
+                     expand = expansion(mult = c(0, 0.05))) +
+  scale_y_continuous("Count",
+                     limits = c(0, NA),
+                     expand = expansion(mult = c(0, 0.05)))
 
 # ssAAV length histogram
 p1.ssAAV_len_hist <- ggplot(filter(x.read.vector, assigned_type == 'ssAAV'),
                             aes(x = read_len, color = subtype)) +
   geom_freqpoly() +
-  xlab("Read length (bp)") +
-  ylab("Count") +
-  labs(title = "Distribution of ssAAV read length by subtype")
+  labs(title = "Distribution of ssAAV read length by subtype") +
+  scale_x_continuous("Read length (bp)",
+                     limits = c(0, NA),
+                     expand = expansion(mult = c(0, 0.05))) +
+  scale_y_continuous("Count",
+                     limits = c(0, NA),
+                     expand = expansion(mult = c(0, 0.05)))
 
 p1.scAAV_len_hist
 p1.ssAAV_len_hist
@@ -276,33 +286,54 @@ p1.ssAAV_len_hist
 
 ```{r lenhisto2_construct, message=FALSE, warning=FALSE}
 p1.map_starts <- ggplot(x.summary.vector, aes(map_start0 + 1, fill = map_subtype)) +
-  geom_histogram(aes(y = after_stat(count) / sum(after_stat(count)))) +
+  geom_histogram(aes(y = after_stat(count) / sum(after_stat(count))),
+                 binwidth = 150,
+                 boundary = 0,
+                 closed = "left") +
   geom_vline(xintercept = TARGET_REGION_START,
              color = 'red',
              lty = 2) +
   geom_vline(xintercept = TARGET_REGION_END,
              color = 'red',
              lty = 2) +
-  xlab("Mapped Reference Start Position") +
-  ylab("Fraction of Reads") +
+  scale_x_continuous("Mapped reference start position",
+                     limits = c(0, NA),
+                     expand = expansion(mult = c(0, 0.05))) +
+  scale_y_continuous("Fraction of reads",
+                     limits = c(0, 1),
+                     expand = c(0, 0)) +
   labs(title = "Distribution of mapped read starts on construct")
 
 p1.map_ends <- ggplot(x.summary.vector, aes(map_end1, fill = map_subtype)) +
-  geom_histogram(aes(y = after_stat(count) / sum(after_stat(count)))) +
+  geom_histogram(aes(y = after_stat(count) / sum(after_stat(count))),
+                 binwidth = 150,
+                 boundary = 0,
+                 closed = "left") +
   geom_vline(xintercept = TARGET_REGION_START,
              color = 'red',
              lty = 2) +
   geom_vline(xintercept = TARGET_REGION_END,
              color = 'red',
              lty = 2) +
-  xlab("Mapped Reference End Position") +
-  ylab("Fraction of Reads") +
+  scale_x_continuous("mapped reference end position",
+                     limits = c(0, NA),
+                     expand = expansion(mult = c(0, 0.05))) +
+  scale_y_continuous("fraction of reads",
+                     limits = c(0, 1),
+                     expand = c(0, 0)) +
   labs(title = "Distribution of mapped read ends on construct")
 
 p1.map_len <- ggplot(x.summary.vector, aes(map_len, fill = map_subtype)) +
-  geom_histogram(aes(y = after_stat(count) / sum(after_stat(count)))) +
-  xlab("Mapped Reference Length") +
-  ylab("Fraction of Reads") +
+  geom_histogram(aes(y = after_stat(count) / sum(after_stat(count))),
+                 binwidth = 150,
+                 boundary = 0,
+                 closed = "left") +
+  scale_x_continuous("mapped reference length",
+                     limits = c(0, NA),
+                     expand = expansion(mult = c(0, 0.05))) +
+  scale_y_continuous("fraction of reads",
+                     limits = c(0, 1),
+                     expand = c(0, 0)) +
   labs(title = "Distribution of mapped spanning region sizes on construct")
 
 p1.map_starts
@@ -323,13 +354,21 @@ if (dim(x.read.repcap)[1] > 10) {
   cat("## RepCap\n\n")
 
   p1.map_starts.repcap <- ggplot(x.summary.repcap, aes(map_start0 + 1)) +
-    geom_histogram(aes(y = after_stat(count) / sum(after_stat(count)))) +
+    geom_histogram(aes(y = after_stat(count) / sum(after_stat(count))),
+                   binwidth = 150,
+                   boundary = 0,
+                   closed = "left") +
     geom_vline(xintercept = TARGET_REGION_START_REPCAP,
                color = 'red',
                lty = 2) +
-    xlab("Mapped Reference Start Position") +
-    ylab("Fraction of Reads") +
-    labs(title = "Distribution of mapped read starts on RepCap")
+    labs(title = "Distribution of mapped read starts on RepCap") +
+    scale_x_continuous("Mapped reference start position",
+                       limits = c(0, NA),
+                       expand = expansion(mult = c(0, 0.05))) +
+    scale_y_continuous("Fraction of reads",
+                       limits = c(0, NA),
+                       expand = expansion(mult = c(0, 0.05)))
+
   p1.map_starts.repcap
 }
 ```
@@ -337,13 +376,21 @@ if (dim(x.read.repcap)[1] > 10) {
 ```{r lenhisto2_rc_end, message=FALSE, warning=FALSE, results='asis'}
 if (exists("x.summary.repcap")) {
   p1.map_ends.repcap <- ggplot(x.summary.repcap, aes(map_end1)) +
-    geom_histogram(aes(y = after_stat(count) / sum(after_stat(count)))) +
+    geom_histogram(aes(y = after_stat(count) / sum(after_stat(count))),
+                   binwidth = 150,
+                   boundary = 0,
+                   closed = "left") +
     geom_vline(xintercept = TARGET_REGION_END_REPCAP,
                color = 'red',
                lty = 2) +
-    xlab("Mapped Reference End Position") +
-    ylab("Fraction of Reads") +
-    labs(title = "Distribution of mapped read ends on RepCap")
+    labs(title = "Distribution of mapped read ends on RepCap") +
+    scale_x_continuous("Mapped reference end position",
+                       limits = c(0, NA),
+                       expand = expansion(mult = c(0, 0.05))) +
+    scale_y_continuous("Fraction of reads",
+                       limits = c(0, NA),
+                       expand = expansion(mult = c(0, 0.05)))
+
   p1.map_ends.repcap
 }
 ```
@@ -351,10 +398,18 @@ if (exists("x.summary.repcap")) {
 ```{r lenhisto2_rc_len, message=FALSE, warning=FALSE, results='asis'}
 if (exists("x.summary.repcap")) {
   p1.map_len.repcap <- ggplot(x.summary.repcap, aes(map_len)) +
-    geom_histogram(aes(y = after_stat(count) / sum(after_stat(count)))) +
-    xlab("Mapped Reference Length") +
-    ylab("Fraction of Reads") +
-    labs(title = "Distribution of mapped spanning region sizes on RepCap")
+    geom_histogram(aes(y = after_stat(count) / sum(after_stat(count))),
+                   binwidth = 150,
+                   boundary = 0,
+                   closed = "left") +
+    labs(title = "Distribution of mapped spanning region sizes on RepCap") +
+    scale_x_continuous("Mapped reference length",
+                       limits = c(0, NA),
+                       expand = expansion(mult = c(0, 0.05))) +
+    scale_y_continuous("Fraction of reads",
+                       limits = c(0, NA),
+                       expand = expansion(mult = c(0, 0.05)))
+
   p1.map_len.repcap
 }
 ```
@@ -367,25 +422,34 @@ p1.err_sub <- ggplot(filter(df.err.vector, type == 'mismatch'),
                      aes(x = pos0_div, y = count)) +
   geom_bar(fill = 'darkgreen', stat = 'identity') +
   xlim(c(TARGET_REGION_START, TARGET_REGION_END)) +
-  labs(title = "Substitutions by reference position", subtitle = "Higher bars indicate hot spots for substitutions w.r.t reference") +
-  xlab("Reference Position") +
-  ylab("Frequency")
+  labs(title = "Substitutions by reference position",
+       subtitle = "Higher bars indicate hot spots for substitutions w.r.t reference",
+       x = "Reference position") +
+  scale_y_continuous("Frequency",
+                     limits = c(0, NA),
+                     expand = expansion(mult = c(0, 0.05)))
 
 p1.err_del <- ggplot(filter(df.err.vector, type == 'deletion'),
                      aes(x = pos0_div, y = count)) +
   geom_bar(fill = 'darkred', stat = 'identity') +
   xlim(c(TARGET_REGION_START, TARGET_REGION_END)) +
-  labs(title = "Deletions by reference position", subtitle = "Higher bars indicate hot spots for deletion w.r.t reference") +
-  xlab("Reference Position") +
-  ylab("Frequency")
+  labs(title = "Deletions by reference position",
+       subtitle = "Higher bars indicate hot spots for deletion w.r.t reference",
+       x = "Reference position") +
+  scale_y_continuous("Frequency",
+                     limits = c(0, NA),
+                     expand = expansion(mult = c(0, 0.05)))
 
 p1.err_ins <- ggplot(filter(df.err.vector, type == 'insertion'),
                      aes(x = pos0_div, y = count)) +
   geom_bar(fill = 'darkblue', stat = 'identity') +
   xlim(c(TARGET_REGION_START, TARGET_REGION_END)) +
-  labs(title = "Insertions by reference position", subtitle = "Higher bars indicate hot spots for insertion w.r.t reference") +
-  xlab("Reference Position") +
-  ylab("Frequency")
+  labs(title = "Insertions by reference position",
+       subtitle = "Higher bars indicate hot spots for insertion w.r.t reference",
+       x = "Reference position") +
+  scale_y_continuous("Frequency",
+                     limits = c(0, NA),
+                     expand = expansion(mult = c(0, 0.05)))
 
 p1.err_sub
 p1.err_del
