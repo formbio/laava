@@ -8,7 +8,7 @@ NCPU = 4
 all: sc ss
 
 clean:
-	rm -vf build/*
+	rm -frv build/*
 
 sc: $(out_dir)/sc_AAV_report.html
 
@@ -30,7 +30,7 @@ $(out_dir)/sc.Rdata: ../src/calculate_rdata.R ../src/report.Rmd $(out_dir)/sc.an
 	$< $(out_dir)/sc $(out_dir)/sc.annotation.txt pAV-CMV-GFP "scaav"
 
 $(out_dir)/ss.Rdata: ../src/calculate_rdata.R ../src/report.Rmd $(out_dir)/ss.annotation.txt $(out_dir)/ss.flipflop_assignments.tsv $(out_dir)/ss.tagged.bam
-	$< $(out_dir)/ss $(out_dir)/ss.annotation.txt pAV-CMV-GFP "scaav" $(out_dir)/ss.flipflop_assignments.tsv
+	$< $(out_dir)/ss $(out_dir)/ss.annotation.txt pAV-CMV-GFP "ssaav" $(out_dir)/ss.flipflop_assignments.tsv
 
 
 $(out_dir)/ss.flipflop_assignments.tsv: ../src/get_flipflop_config.py $(out_dir)/ss.tagged.bam $(out_dir)/ss.per_read.tsv
