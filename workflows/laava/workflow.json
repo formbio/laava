@@ -16,9 +16,9 @@
   "inputs": {
     "seq_reads": {
       "title": "Sequencing reads",
-      "description": "PacBio long-read sequencing data (BAM)",
-      "help_text": "PacBio AAV sequencing read set, as HiFi/CCS reads in unaligned BAM format. The PacBio instrument should have been run in AAV mode.",
-      "filetype": ".bam",
+      "description": "PacBio long-read sequencing data (BAM/FASTQ)",
+      "help_text": "PacBio AAV sequencing read set, as HiFi/CCS reads in unaligned BAM or FASTQ format. The PacBio instrument should have been run in AAV mode.",
+      "filetype": ".bam|.fastq|fastq.gz|.fq|.fq.gz",
       "format": "file",
       "hidden": false,
       "required": true,
