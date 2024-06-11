@@ -69,8 +69,15 @@ echo
 grep '^>' all_refs.fa
 echo
 
-samtools fastq -n -0 reads.fq "$reads"
-minimap2 --eqx -a --secondary=no -t $(nproc) all_refs.fa reads.fq > mapped.sam
-samtools sort -n -O SAM mapped.sam > "$sample_name.sort_by_name.sam"
+if [[ $reads == *.bam ]]; then
+    echo "Converting $reads from BAM to FASTQ"
+    samtools fastq -n -0 reads.fq "$reads"
+    reads_fn=reads.fq
+else
+    # NB: minimap2 handles .gz automatically
+    reads_fn="$reads"
+fi
+minimap2 --eqx -a --secondary=no -t $(nproc) all_refs.fa "$reads_fn" > mapped.sam
+samtools sort -n -O SAM -o "$sample_name.sort_by_name.sam" mapped.sam
 
 ls -Alh
