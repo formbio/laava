@@ -1,7 +1,7 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-include { map_reads; make_report } from './modules/local/laava'
+include { map_reads; make_report; hostgenect; bamqc } from './modules/local/laava'
 
 NO_FILE = file("$projectDir/bin/NO_FILE")
 
@@ -36,7 +36,8 @@ workflow laava {
         .combine(max_allowed_missing_flanking)
         .combine(flipflop_name)
         .combine(flipflop_fa))
-
+    hostgenect(map_reads.out.bam)
+    bamqc(map_reads.out.bam)
     emit:
     sam = map_reads.out.mapped_reads
     per_read_tsv = make_report.out.per_read_tsv
@@ -52,6 +53,8 @@ workflow laava {
     sequence_error_tsv = make_report.out.sequence_error_tsv
     flipflop_tsv = make_report.out.flipflop_tsv
     rdata = make_report.out.rdata
+    qc=bamqc.out.qc
+    hostgenect=hostgenect.out
 }
 
 workflow {
