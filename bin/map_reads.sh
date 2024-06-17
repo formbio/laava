@@ -69,8 +69,12 @@ echo
 grep '^>' all_refs.fa
 echo
 threads=$(nproc)
-samtools fastq -n -0 reads.fq "$reads"
-minimap2 --eqx -a --secondary=no -t ${threads} all_refs.fa reads.fq > mapped.sam
+if [[ "$reads"  =~ bam$ ]]
+then
+  samtools fastq -n -0 reads.fq "$reads"
+  reads=reads.fq
+fi
+minimap2 --eqx -a --secondary=no -t ${threads} all_refs.fa ${reads} > mapped.sam
 samtools sort -@ ${threads} -n -O SAM mapped.sam > "$sample_name.sort_by_name.sam"
 # Make BAM File
 samtools view -@ ${threads} -1 -F 4 -o out.bam mapped.sam
