@@ -11,6 +11,7 @@ workflow laava {
     vector_fa
     packaging_fa
     host_fa
+    host_exons
     repcap_name
     vector_bed
     vector_type
@@ -36,7 +37,12 @@ workflow laava {
         .combine(max_allowed_missing_flanking)
         .combine(flipflop_name)
         .combine(flipflop_fa))
-    hostgenect(map_reads.out.bam)
+    if (host_exons) {
+      hostgenect(map_reads.out.bam.combine(host_exons))
+      hostct=hostgenect.out
+    } else {
+      hostct=Channel.of(NO_FILE)
+    }
     bamqc(map_reads.out.bam)
     emit:
     sam = map_reads.out.mapped_reads
@@ -54,7 +60,7 @@ workflow laava {
     flipflop_tsv = make_report.out.flipflop_tsv
     rdata = make_report.out.rdata
     qc=bamqc.out.qc
-    hostgenect=hostgenect.out
+    hostct=hostgenect.out
 }
 
 workflow {
@@ -66,6 +72,7 @@ workflow {
         Channel.fromPath(params.vector_fa),
         params.packaging_fa ? Channel.fromPath(params.packaging_fa) : Channel.of(NO_FILE),
         params.host_fa ? Channel.fromPath(params.host_fa) : Channel.of(NO_FILE),
+        params.host_exons ? Channel.fromPath(params.host_exons) : false,
         Channel.of(params.repcap_name),
         Channel.fromPath(params.vector_bed),
         Channel.of(params.vector_type),

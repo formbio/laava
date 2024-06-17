@@ -5,6 +5,7 @@
   "vector_fa": "test/samples/sc.construct.fasta",
   "packaging_fa": "test/fasta/packaging.fa",
   "host_fa": "test/fasta/hg38.chr19trunc-chrM.fa",
+  "host_exons": "test/fasta/exons.bed",
   "repcap_name": "pRep2Cap9",
   "target_gap_threshold": 200,
   "max_allowed_outside_vector": 100,

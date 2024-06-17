@@ -29,12 +29,12 @@ process hostgenect {
   label 'laavasupp'
   publishDir "${params.output}", mode: 'copy'
   input:
-  tuple val(sid),path(sbam)
+  tuple val(sid),path(sbam),path(exonbed)
   output:
   path("${sid}.bedtools.cov.txt")
   script:
   """
-  hostgenect.sh -p ${sid} ${sbam}
+  hostgenect.sh -p ${sid} -e ${exonbed} ${sbam}
   """
 }
 process bamqc {
