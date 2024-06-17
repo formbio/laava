@@ -12,5 +12,5 @@ dependencies:
     - pysam
     - r-flextable
     - r-lintr
-    - r-markdown
+    - r-rmarkdown
     - r-tidyverse
