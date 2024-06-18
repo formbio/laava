@@ -60,7 +60,7 @@ workflow laava {
     flipflop_tsv = make_report.out.flipflop_tsv
     rdata = make_report.out.rdata
     qc=bamqc.out.qc
-    hostct=hostgenect.out
+    hostct=hostct
 }
 
 workflow {
