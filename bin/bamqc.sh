@@ -32,7 +32,7 @@ then
     sbam="${prefix}.sort.bam"
 fi
 
-samtools view -@ ${threads} -F 1024 -1 -o ${prefix}.filt.bam ${sbam}
+samtools view -@ ${threads} -F 2304 -1 -o ${prefix}.filt.bam ${sbam}
 sbam="${prefix}.filt.bam"
 samtools index -@ ${threads} ${sbam}
 

@@ -1,5 +1,5 @@
 # Development environment for running the scripts, no scripts, extra dependencies
-FROM --platform=linux/amd64 continuumio/miniconda3:23.10.0-1
+FROM --platform=linux/amd64 continuumio/miniconda3:24.4.0-0
 
 # Set the container's timezone to match this local machine
 RUN ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
@@ -17,11 +17,16 @@ RUN apt-get update \
         texlive-latex-extra \
         texlive-latex-recommended \
         vim \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get remove -y \
+        fonts-urw-base35 \
+        libgs9 \
+        libgs9-common \
+        libjbig2dec0 \
+        poppler-data \
+    && apt-get autoremove -y
 
 # Install directly into 'base' conda environment
 COPY laava_dev.conda_env.yml ./conda_env.yml
-RUN conda install -y -n base conda-libmamba-solver && conda config --set solver libmamba
 RUN conda install -y -n base python=3.10
 RUN conda env update -v -n base -f conda_env.yml
 
