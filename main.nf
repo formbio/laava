@@ -4,6 +4,7 @@ nextflow.enable.dsl=2
 include { map_reads; make_report } from './modules/local/laava'
 
 NO_FILE = file("$projectDir/bin/NO_FILE")
+NO_FILE2 = file("$projectDir/bin/NO_FILE2")
 
 workflow laava {
     take:
@@ -73,7 +74,7 @@ workflow {
         seq_files,
         Channel.fromPath(params.vector_fa),
         params.packaging_fa ? Channel.fromPath(params.packaging_fa) : Channel.of(NO_FILE),
-        params.host_fa ? Channel.fromPath(params.host_fa) : Channel.of(NO_FILE),
+        params.host_fa ? Channel.fromPath(params.host_fa) : Channel.of(NO_FILE2),
         Channel.of(params.repcap_name),
         Channel.fromPath(params.vector_bed),
         Channel.of(params.vector_type),

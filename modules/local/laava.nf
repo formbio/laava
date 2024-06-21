@@ -20,7 +20,7 @@ process map_reads() {
     script:
     // Hack for optional inputs
     def packaging_fa_path = packaging_fa.name != "NO_FILE" ? "$packaging_fa" : ""
-    def host_fa_path = host_fa.name != "NO_FILE" ? "$host_fa" : ""
+    def host_fa_path = host_fa.name != "NO_FILE2" ? "$host_fa" : ""
     """
     map_reads.sh ${sample_name} "${reads}" "${vector_fa}" \\
         "${packaging_fa_path}" "${host_fa_path}" "${repcap_name}"
