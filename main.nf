@@ -1,7 +1,7 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-include { map_reads; make_report } from './modules/local/laava'
+include { map_reads; make_report; hostgenect; bamqc } from './modules/local/laava'
 
 NO_FILE = file("$projectDir/bin/NO_FILE")
 
@@ -11,6 +11,7 @@ workflow laava {
     vector_fa
     packaging_fa
     host_fa
+    host_exons
     repcap_name
     vector_bed
     vector_type
@@ -36,7 +37,13 @@ workflow laava {
         .combine(max_allowed_missing_flanking)
         .combine(flipflop_name)
         .combine(flipflop_fa))
-
+    if (host_exons) {
+      hostgenect(map_reads.out.bam.combine(host_exons))
+      hostct=hostgenect.out
+    } else {
+      hostct=Channel.of(NO_FILE)
+    }
+    bamqc(map_reads.out.bam)
     emit:
     mapped_sam = map_reads.out.mapped_sam
     mapped_bam = map_reads.out.mapped_bam
@@ -53,6 +60,8 @@ workflow laava {
     sequence_error_tsv = make_report.out.sequence_error_tsv
     flipflop_tsv = make_report.out.flipflop_tsv
     rdata = make_report.out.rdata
+    qc=bamqc.out.qc
+    hostct=hostct
 }
 
 workflow {
@@ -74,6 +83,7 @@ workflow {
         Channel.fromPath(params.vector_fa),
         params.packaging_fa ? Channel.fromPath(params.packaging_fa) : Channel.of(NO_FILE),
         params.host_fa ? Channel.fromPath(params.host_fa) : Channel.of(NO_FILE),
+        params.host_exons ? Channel.fromPath(params.host_exons) : false,
         Channel.of(params.repcap_name),
         Channel.fromPath(params.vector_bed),
         Channel.of(params.vector_type),

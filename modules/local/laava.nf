@@ -1,4 +1,5 @@
 process map_reads() {
+   label 'laava'
     publishDir "$params.output", mode: "copy"
 
     input:
@@ -26,10 +27,33 @@ process map_reads() {
         "${packaging_fa_path}" "${host_fa_path}" "${repcap_name}"
     """
 }
-
-
+process hostgenect {
+  label 'laavasupp'
+  publishDir "${params.output}", mode: 'copy'
+  input:
+  tuple val(sid),path(sbam),path(exonbed)
+  output:
+  path("${sid}.bedtools.cov.txt")
+  script:
+  """
+  hostgenect.sh -p ${sid} -e ${exonbed} ${sbam}
+  """
+}
+process bamqc {
+  label 'laavasupp'
+  publishDir "$params.output/qc", mode: 'copy'
+  input:
+  tuple val(sid),path(bam)
+  output:
+  path("${sid}*"), emit: qc optional true
+  script:
+  """
+  bamqc.sh -b ${bam} -p ${sid} 
+  """
+}
 process make_report() {
-    publishDir "$params.output", mode: "copy"
+   label 'laava'
+   publishDir "$params.output", mode: "copy"
 
     input:
     tuple val(sample_name),

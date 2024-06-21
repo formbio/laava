@@ -141,6 +141,14 @@ df.read1 <- x.all.read %>%
 df.read1 <- df.read1[order(-df.read1$freq), ]
 
 
+total_read_count.all <- sum(x.all.read$effective_count) #dim(x.all.read)[1]
+df.read1 <- x.all.read %>%
+  group_by(assigned_type) %>%
+  summarise(e_count = sum(effective_count)) %>%
+  mutate(freq = round(e_count * 100 / total_read_count.all, 2))
+df.read1 <- df.read1[order(-df.read1$freq), ]
+
+
 # ----------------------------------------------------------
 # Stats and plot for flip/flop analysis (if available)
 # ----------------------------------------------------------

@@ -69,6 +69,7 @@ echo
 grep '^>' all_refs.fa
 echo
 
+threads=$(nproc)
 if [[ $reads == *.bam ]]; then
     echo "Converting $reads from BAM to FASTQ"
     samtools fastq -n -0 reads.fq "$reads"

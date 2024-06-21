@@ -53,6 +53,7 @@
     },
     "vector_type": {
       "title": "Vector type",
+      "required": true,
       "description": "Single-stranded or self-complementary",
       "help_text": "Whether the vector construct is designed to be single-stranded AAV (ssAAV), self-complementary AAV (scAAV), or unknown/unspecified.",
       "format": "radio",
@@ -131,6 +132,16 @@
       "description": "Host genome reference sequence (FASTA)",
       "help_text": "Reference sequence for the host genome.",
       "filetype": ".fa|.fasta|.dna|.fna",
+      "format": "file",
+      "hidden": false,
+      "required": false,
+      "type": "string"
+    },
+    "host_exons": {
+      "title": "Host Regions File",
+      "description": "Host Gene Regions File (BED)",
+      "help_text": "Workflow will calculate the number of reads that overlap regions in the is file.  If they are exons, the workflow will combine regions from the same gene if the name of the region follows the pattern: GeneSymbol|GeneName|TranscriptID|ExonNumber|Strand",
+      "filetype": ".bed",
       "format": "file",
       "hidden": false,
       "required": false,
@@ -249,6 +260,7 @@
           "vector_fa",
           "packaging_fa",
           "host_fa",
+          "host_exons",
           "repcap_name",
           "flipflop_name",
           "flipflop_fa"
