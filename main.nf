@@ -28,7 +28,7 @@ workflow laava {
         .combine(host_fa)
         .combine(repcap_name))
     make_report(
-        map_reads.out.mapped_reads
+        map_reads.out.mapped_sam
         .combine(vector_bed)
         .combine(vector_type)
         .combine(target_gap_threshold)
@@ -38,7 +38,8 @@ workflow laava {
         .combine(flipflop_fa))
 
     emit:
-    sam = map_reads.out.mapped_reads
+    mapped_sam = map_reads.out.mapped_sam
+    mapped_bam = map_reads.out.mapped_bam
     per_read_tsv = make_report.out.per_read_tsv
     summary_tsv = make_report.out.summary_tsv
     nonmatch_stat_tsvgz = make_report.out.nonmatch_stat_tsvgz
