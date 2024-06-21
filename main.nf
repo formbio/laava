@@ -55,11 +55,21 @@ workflow laava {
 }
 
 workflow {
-    seqfiles = Channel.fromPath(params.seq_reads).map {
-        file -> tuple(file.getName().split(/\.fq|\.fastq/)[0], file)
+    if (params.seq_reads_folder) {
+        seq_source = Channel.fromPath([
+                "${params.seq_reads_folder}/*.fastq.gz",
+                "${params.seq_reads_folder}/*.fq.gz",
+                "${params.seq_reads_folder}/*.fastq",
+                "${params.seq_reads_folder}/*.fq"])
+    } else {
+        seq_source = Channel.fromPath(params.seq_reads_file)
     }
+    seq_files = seq_source.map {
+        file -> tuple(file.getName().split(/\.bam|\.fq|\.fastq/)[0], file)
+    }
+
     laava(
-        seqfiles,
+        seq_files,
         Channel.fromPath(params.vector_fa),
         params.packaging_fa ? Channel.fromPath(params.packaging_fa) : Channel.of(NO_FILE),
         params.host_fa ? Channel.fromPath(params.host_fa) : Channel.of(NO_FILE),
