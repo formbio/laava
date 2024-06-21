@@ -19,6 +19,8 @@ r_params$flipflop_summary = ''
 if (length(args) > 4) {
   r_params$flipflop_summary = args[5]
 }
+message("Parameters:")
+print(r_params)
 
 
 # Sort order
@@ -58,7 +60,7 @@ for (i in 1:dim(annot)[1]) {
 x.all.summary <- read_tsv(paste0(r_params$input_prefix, '.summary.tsv'), show_col_types = FALSE) %>%
   mutate(map_start = map_start0, map_end = map_end1) %>%
   mutate(SampleID = r_params$sample_id, .before = read_id)
-write_tsv(x.all.summary, str_c(c(r_params$input_prefix, ".alignments.tsv"), collapse = ""))
+write_tsv(x.all.summary, paste0(r_params$input_prefix, ".alignments.tsv"))
 
 x.all.err <- read_tsv(paste0(r_params$input_prefix, '.nonmatch_stat.tsv.gz'), show_col_types = FALSE) %>%
   mutate(SampleID = r_params$sample_id, .before = read_id)
@@ -93,7 +95,7 @@ x.err.vector[x.err.vector$type_len > 10, "type_len_cat"] <- "11-100"
 x.err.vector[x.err.vector$type_len > 100, "type_len_cat"] <- "100-500"
 x.err.vector[x.err.vector$type_len > 500, "type_len_cat"] <- ">500"
 x.err.vector$type_len_cat <- ordered(x.err.vector$type_len_cat, levels = c('1-10', '11-100', '100-500', '>500'))
-write_tsv(x.err.vector, str_c(c(r_params$input_prefix, ".sequence-error.tsv"), collapse = ""))
+write_tsv(x.err.vector, paste0(r_params$input_prefix, ".sequence-error.tsv"))
 
 x.read.vector$subtype <- x.read.vector$assigned_subtype
 # Call "other" all complex and multi-part AAV alignments
@@ -128,7 +130,15 @@ x.all.read[is.na(x.all.read$assigned_type), "assigned_type"] <- 'unmapped'
 x.all.read[grep("|", as.character(x.all.read$assigned_type), fixed = T), "assigned_type"] <- 'chimeric'
 x.all.read[!(x.all.read$assigned_type %in% valid_types), "assigned_type"] <- 'other'
 x.all.read[!(x.all.read$assigned_subtype %in% valid_subtypes), "assigned_subtype"] <- 'other'
-write_tsv(x.all.read, str_c(c(r_params$input_prefix, ".readsummary.tsv"), collapse = ""))
+write_tsv(x.all.read, paste0(r_params$input_prefix, ".readsummary.tsv"))
+
+
+total_read_count.all <- sum(x.all.read$effective_count) #dim(x.all.read)[1]
+df.read1 <- x.all.read %>%
+  group_by(assigned_type) %>%
+  summarise(e_count = sum(effective_count)) %>%
+  mutate(freq = round(e_count * 100 / total_read_count.all, 2))
+df.read1 <- df.read1[order(-df.read1$freq), ]
 
 
 # ----------------------------------------------------------
@@ -167,7 +177,7 @@ if (file.exists(r_params$flipflop_summary)) {
   }
   # Write TSV of flip flop configurations
   fftbl <- bind_rows(scff, ssff)
-  write_tsv(fftbl, str_c(c(r_params$input_prefix, ".flipflop.tsv"), collapse = ""))
+  write_tsv(fftbl, paste0(r_params$input_prefix, ".flipflop.tsv"))
 }
 
 

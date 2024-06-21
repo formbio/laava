@@ -52,7 +52,7 @@ if [[ -n "$flipflop_name" || -n "$flipflop_fa" ]]; then
         -o "$sample_name"
     echo "Finished get_flipflop_config"
     ls -Alh
-    flipflop_assignments="${sample_name}.flipflop_assignments.txt"
+    flipflop_assignments="${sample_name}.flipflop_assignments.tsv"
 else
     echo "Skipping flip/flop analysis"
     flipflop_assignments=""

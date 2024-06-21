@@ -14,21 +14,50 @@
       "executionEngine": "nextflow-single-node"
   },
   "inputs": {
-    "seq_reads": {
-      "title": "Sequencing reads",
-      "description": "PacBio long-read sequencing data (BAM)",
-      "help_text": "PacBio AAV sequencing read set, as HiFi/CCS reads in unaligned BAM format. The PacBio instrument should have been run in AAV mode.",
-      "filetype": ".bam",
+    "ui_source_type": {
+      "title": "Sequence input source (file or folder)",
+      "format": "radio",
+      "required": true,
+      "type": "string",
+      "default": "file_source",
+      "enum": [
+        {
+          "name": "File (uBAM or FASTQ)",
+          "id": "file_source"
+        },
+        {
+          "name": "Folder (FASTQs)",
+          "id": "folder_source"
+        }
+      ]
+    },
+    "seq_reads_file": {
+      "title": "Sequencing reads file",
+      "description": "PacBio long-read sequencing data (uBAM/FASTQ)",
+      "help_text": "PacBio AAV sequencing HiFi/CCS reads as a file in unaligned BAM or FASTQ format. The PacBio instrument should have been run in AAV mode.",
+      "filetype": ".bam|.fastq|fastq.gz|.fq|.fq.gz",
       "format": "file",
       "hidden": false,
       "required": true,
+      "type": "string"
+    },
+    "seq_reads_folder": {
+      "title": "Sequencing reads folder",
+      "description": "PacBio long-read sequencing data (folder of FASTQs)",
+      "help_text": "Folder of PacBio AAV sequencing HiFi/CCS reads in unaligned FASTQ format. The PacBio instrument should have been run in AAV mode.",
+      "filetype": ".fastq|fastq.gz|.fq|.fq.gz",
+      "format": "dir-path",
+      "hidden": true,
+      "required": false,
       "type": "string"
     },
     "vector_type": {
       "title": "Vector type",
       "description": "Single-stranded or self-complementary",
       "help_text": "Whether the vector construct is designed to be single-stranded AAV (ssAAV), self-complementary AAV (scAAV), or unknown/unspecified.",
-      "format": "enum",
+      "format": "radio",
+      "required": true,
+      "type": "string",
       "default": "unspecified",
       "enum": [
         {
@@ -43,18 +72,39 @@
           "name": "Unknown / Unspecified",
           "id": "unspecified"
         }
-      ],
-      "required": true
+      ]
     },
     "vector_bed": {
       "title": "Vector annotation",
       "description": "Vector sequence annotation (BED)",
       "help_text": "Annotated vector region coordinates in 4-column BED format. Must include 1 region with the label 'vector'.",
       "filetype": ".bed",
-      "format": "file",
+      "format": "spreadsheet",
       "hidden": false,
       "required": true,
-      "type": "string"
+      "type": "string",
+      "columnConfig": {
+        ".bed": {
+          "staticColumns": true,
+          "columns": [
+            {
+              "name": "chrom",
+              "required": true
+            },
+            {
+              "name": "chromStart",
+              "required": true
+            },
+            {
+              "name": "chromEnd",
+              "required": true
+            },
+            {
+              "name": "name"
+            }
+          ]
+        }
+      }
     },
     "vector_fa": {
       "title": "Vector sequence",
@@ -159,16 +209,41 @@
       "type": "string"
     }
   },
+  "conditionals": [
+    {
+      "if": [
+        {
+          "ui_source_type": {
+            "eq": "folder_source"
+          }
+        }
+      ],
+      "then": {
+        "inputs": {
+          "seq_reads_file": {
+            "hidden": true,
+            "required": false
+          },
+          "seq_reads_folder": {
+            "hidden": false,
+            "required": true
+          }
+        }
+      }
+    }
+  ],
   "ui": {
     "inputs": [
       {
-        "title": "Inputs",
-        "description": "All analysis inputs",
-        "hidden": false,
-        "help_text": "All input files for analysis",
         "id": "workflowinputs",
+        "title": "Inputs",
+        "description": "Analysis inputs",
+        "hidden": false,
+        "help_text": "Input files for analysis",
         "fields": [
-          "seq_reads",
+          "ui_source_type",
+          "seq_reads_file",
+          "seq_reads_folder",
           "vector_type",
           "vector_bed",
           "vector_fa",
@@ -176,7 +251,16 @@
           "host_fa",
           "repcap_name",
           "flipflop_name",
-          "flopflop_fa",
+          "flipflop_fa"
+        ]
+      },
+      {
+        "id": "workflowconfigs",
+        "title": "Advanced Configuration",
+        "description": "Advanced configuration settings",
+        "hidden": false,
+        "help_text": "Advanced configuration values for read classification",
+        "fields": [
           "target_gap_threshold",
           "max_allowed_outside_vector",
           "max_allowed_missing_flanking"

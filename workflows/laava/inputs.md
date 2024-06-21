@@ -2,7 +2,7 @@
 
 ### Files
 
-- Sequencing reads (unmapped BAM)
+- Sequencing reads (unmapped BAM or FASTQ)
   - PacBio AAV sequencing read set, as HiFi/CCS reads in unaligned BAM format. The
     PacBio instrument should be run in AAV mode.
 - Vector annotation (BED)
