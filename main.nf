@@ -29,7 +29,7 @@ workflow laava {
         .combine(host_fa)
         .combine(repcap_name))
     make_report(
-        map_reads.out.mapped_reads
+        map_reads.out.mapped_sam
         .combine(vector_bed)
         .combine(vector_type)
         .combine(target_gap_threshold)
@@ -45,7 +45,8 @@ workflow laava {
     }
     bamqc(map_reads.out.bam)
     emit:
-    sam = map_reads.out.mapped_reads
+    mapped_sam = map_reads.out.mapped_sam
+    mapped_bam = map_reads.out.mapped_bam
     per_read_tsv = make_report.out.per_read_tsv
     summary_tsv = make_report.out.summary_tsv
     nonmatch_stat_tsvgz = make_report.out.nonmatch_stat_tsvgz
@@ -64,15 +65,21 @@ workflow laava {
 }
 
 workflow {
-    if (params.inputdir) {
-      seqfiles = Channel.fromPath(["${params.inputdir}/*.fastq.gz","${params.inputdir}/*.fq.gz","${params.inputdir}/*.fastq","${params.inputdir}/*.fq"])
-        .map { file -> tuple( file.getName().split(/\.fq|\.fastq/)[0],file ) }
+    if (params.seq_reads_folder) {
+        seq_source = Channel.fromPath([
+                "${params.seq_reads_folder}/*.fastq.gz",
+                "${params.seq_reads_folder}/*.fq.gz",
+                "${params.seq_reads_folder}/*.fastq",
+                "${params.seq_reads_folder}/*.fq"])
     } else {
-      seqfiles = Channel.fromPath(params.seq_reads)
-        .map { file -> tuple(file.getName().split(/\.fq|\.fastq/)[0], file) }
+        seq_source = Channel.fromPath(params.seq_reads_file)
     }
+    seq_files = seq_source.map {
+        file -> tuple(file.getName().split(/\.bam|\.fq|\.fastq/)[0], file)
+    }
+
     laava(
-        seqfiles,
+        seq_files,
         Channel.fromPath(params.vector_fa),
         params.packaging_fa ? Channel.fromPath(params.packaging_fa) : Channel.of(NO_FILE),
         params.host_fa ? Channel.fromPath(params.host_fa) : Channel.of(NO_FILE),

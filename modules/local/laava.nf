@@ -13,16 +13,18 @@ process map_reads() {
     output:
     tuple val(sample_name),
           path("reference_names.tsv"),
-          path("${sample_name}.sort_by_name.sam"), emit: mapped_reads
+          path("${sample_name}.sort_by_name.sam"), emit: mapped_sam
     tuple val(sample_name),
-          path("${sample_name}.bam"), emit: bam
+          path("${sample_name}.sort_by_pos.bam"),
+          path("${sample_name}.sort_by_pos.bam.bai"), emit: mapped_bam
+
     script:
     // Hack for optional inputs
     def packaging_fa_path = packaging_fa.name != "NO_FILE" ? "$packaging_fa" : ""
     def host_fa_path = host_fa.name != "NO_FILE" ? "$host_fa" : ""
     """
     map_reads.sh ${sample_name} "${reads}" "${vector_fa}" \\
-        "${packaging_fa_path}" "${host_fa_path}" "${repcap_name}" 
+        "${packaging_fa_path}" "${host_fa_path}" "${repcap_name}"
     """
 }
 process hostgenect {
@@ -76,12 +78,13 @@ process make_report() {
     // flip-flop
     path("${sample_name}.flipflop_assignments.tsv"), emit: flipflop_assignments_tsv, optional: true
     path("${sample_name}.*-flipflop.bam"), emit: flipflop_bams, optional: true
-    // report
+    // intermediate data
     path("${sample_name}.alignments.tsv"), emit: alignments_tsv
     path("${sample_name}.readsummary.tsv"), emit: readsummary_tsv
     path("${sample_name}.sequence-error.tsv"), emit: sequence_error_tsv
     path("${sample_name}.flipflop.tsv"), emit: flipflop_tsv, optional: true
     path("${sample_name}.Rdata"), emit: rdata, optional: true
+    // report
     path("${sample_name}_AAV_report.html"), emit: aav_report_html
     path("${sample_name}_AAV_report.pdf"), emit: aav_report_pdf
 

@@ -1,5 +1,5 @@
 {
-  "seq_reads": "test/samples/ss.subsample005.bam",
+  "seq_reads_file": "test/samples/ss.subsample005.bam",
   "vector_type": "ssaav",
   "vector_bed": "test/samples/ss.annotation.bed",
   "vector_fa": "test/samples/ss.construct.fasta",
