@@ -136,10 +136,51 @@
       "required": false,
       "type": "string"
     },
+    "itr_label_1": {
+      "title": "ITR region label 1",
+      "description": "Left ITR label in annotation BED",
+      "help_text": "Region label used in the vector annotation BED file to indicate the first (i.e. left, 5') inverted terminal repeat (ITR). This label is often 'ITR' or 'ITR-L', but can vary. Not case-sensitive.",
+      "format": "text",
+      "hidden": false,
+      "required": false,
+      "default": "ITR",
+      "type": "string"
+    },
+    "itr_label_2": {
+      "title": "ITR region label 2",
+      "description": "Right ITR label in annotation BED",
+      "help_text": "Region label used in the vector annotation BED file to indicate the second (i.e. right, 3') inverted terminal repeat (ITR). This label is often 'ITR' or 'ITR-R', but can vary. Not case-sensitive.",
+      "format": "text",
+      "hidden": false,
+      "required": false,
+      "default": "ITR",
+      "type": "string"
+    },
     "repcap_name": {
       "title": "RepCap sequence ID",
-      "description": "RepCap sequence identifier used in the packaging FASTA file",
+      "description": "RepCap plasmid sequence identifier used in the packaging FASTA file",
       "help_text": "Sequence identifier used in the packaging FASTA file (above) corresponding to the rep/cap plasmid reference sequence, if used. Leave this blank if a dual construct was used (rep/cap on the vector backbone) or you're unsure.",
+      "format": "text",
+      "hidden": false,
+      "required": false,
+      "default": "",
+      "type": "string"
+    },
+
+    "helper_name": {
+      "title": "Helper sequence ID",
+      "description": "Helper plasmid sequence identifier used in the packaging FASTA file",
+      "help_text": "Sequence identifier used in the packaging FASTA file (above) corresponding to the helper plasmid reference sequence, if used. Leave this blank if you're unsure.",
+      "format": "text",
+      "hidden": false,
+      "required": false,
+      "default": "",
+      "type": "string"
+    },
+    "lambda_name": {
+      "title": "Lambda sequence ID",
+      "description": "Lambda phage sequence identifier used in the packaging FASTA file",
+      "help_text": "Sequence identifier used in the packaging FASTA file (above) corresponding to the lambda phage reference sequence, if used.",
       "format": "text",
       "hidden": false,
       "required": false,
@@ -249,7 +290,11 @@
           "vector_fa",
           "packaging_fa",
           "host_fa",
+          "itr_label_1",
+          "itr_label_2",
           "repcap_name",
+          "helper_name",
+          "lambda_name",
           "flipflop_name",
           "flipflop_fa"
         ]

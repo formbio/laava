@@ -7,7 +7,9 @@ process map_reads() {
           path(vector_fa),
           path(packaging_fa),
           path(host_fa),
-          val(repcap_name)
+          val(repcap_name),
+          val(helper_name),
+          val(lambda_name)
 
     output:
     tuple val(sample_name),
@@ -23,7 +25,8 @@ process map_reads() {
     def host_fa_path = host_fa.name != "NO_FILE2" ? "$host_fa" : ""
     """
     map_reads.sh ${sample_name} "${reads}" "${vector_fa}" \\
-        "${packaging_fa_path}" "${host_fa_path}" "${repcap_name}"
+        "${packaging_fa_path}" "${host_fa_path}" \\
+        "${repcap_name}" "${helper_name}" "${lambda_name}"
     """
 }
 
@@ -36,6 +39,8 @@ process make_report() {
           path(reference_names),
           path(mapped_reads),
           path(vector_annotation),
+          val(itr_label_1),
+          val(itr_label_2),
           val(vector_type),
           val(target_gap_threshold),
           val(max_allowed_outside_vector),
@@ -67,7 +72,9 @@ process make_report() {
     script:
     def ff_fa_path = flipflop_fa.name != "NO_FILE" ? "$flipflop_fa" : ""
     """
-    prepare_annotation.py "${vector_annotation}" "${reference_names}" -o annotation.txt
+    prepare_annotation.py "${vector_annotation}" "${reference_names}" \\
+        "${itr_label_1}" "${itr_label_2}" \\
+        -o annotation.txt
     make_report.sh \\
         "${sample_name}" \\
         $vector_type \\

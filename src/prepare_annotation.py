@@ -133,6 +133,8 @@ if __name__ == "__main__":
         "reference_names",
         help="Reference sequence names and their sources, in 2 columns.",
     )
+    AP.add_argument("itr_label_1", help="Left ITR label in annotation BED")
+    AP.add_argument("itr_label_2", help="Right ITR label in annotation BED")
     AP.add_argument("-o", "--output", help="Output filename (*.txt).")
     args = AP.parse_args()
 

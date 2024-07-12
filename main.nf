@@ -12,7 +12,11 @@ workflow laava {
     vector_fa
     packaging_fa
     host_fa
+    itr_label_1
+    itr_label_2
     repcap_name
+    helper_name
+    lambda_name
     vector_bed
     vector_type
     target_gap_threshold
@@ -27,10 +31,14 @@ workflow laava {
         .combine(vector_fa)
         .combine(packaging_fa)
         .combine(host_fa)
-        .combine(repcap_name))
+        .combine(repcap_name)
+        .combine(helper_name)
+        .combine(lambda_name))
     make_report(
         map_reads.out.mapped_sam
         .combine(vector_bed)
+        .combine(itr_label_1)
+        .combine(itr_label_2)
         .combine(vector_type)
         .combine(target_gap_threshold)
         .combine(max_allowed_outside_vector)
@@ -75,7 +83,11 @@ workflow {
         Channel.fromPath(params.vector_fa),
         params.packaging_fa ? Channel.fromPath(params.packaging_fa) : Channel.of(NO_FILE),
         params.host_fa ? Channel.fromPath(params.host_fa) : Channel.of(NO_FILE2),
+        Channel.of(params.itr_label_1),
+        Channel.of(params.itr_label_2),
         Channel.of(params.repcap_name),
+        Channel.of(params.helper_name),
+        Channel.of(params.lambda_name),
         Channel.fromPath(params.vector_bed),
         Channel.of(params.vector_type),
         Channel.of(params.target_gap_threshold),

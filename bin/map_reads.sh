@@ -5,6 +5,8 @@ vector_fa=$3
 packaging_fa=$4
 host_fa=$5
 repcap_name=$6
+helper_name=$7
+lambda_name=$8
 
 # NOTE: the sequence IDs should be free of blank spaces and symbols. Stick with numbers,
 # alphabet letters, and _ and -. If necessary, rename the sequence IDs in the combined
