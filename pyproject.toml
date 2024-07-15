@@ -1,4 +1,5 @@
 [tool.ruff]
+# Minimum version to assume for error checking
 target-version = "py39"
 
 [tool.ruff.lint]
