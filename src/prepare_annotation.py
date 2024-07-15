@@ -53,8 +53,6 @@ def read_annotation_bed(fname):
         "repcap": None,
         "vector": None,
     }
-    ann_row = None
-    rc_row = None
     with open(fname) as infile:
         for line in infile:
             # Require BED4 or more

@@ -645,11 +645,11 @@ def run_processing_parallel(
             os.remove(chunk_path)
         return out_path
 
-    outpath_nonmatch = gather_text_chunks(
+    _outpath_nonmatch = gather_text_chunks(
         ".nonmatch_stat.tsv", compress=True
     )  # -> .nonmatch_stat.tsv.gz
     outpath_per_read = gather_text_chunks(".per_read.tsv")
-    outpath_summary = gather_text_chunks(".summary.tsv")
+    _outpath_summary = gather_text_chunks(".summary.tsv")
 
     # Combine the data together for *.tagged.bam
     # TODO - samtools cat/merge?
@@ -658,8 +658,9 @@ def run_processing_parallel(
     first_bam_chunk = f"{output_prefix}.1.tagged.bam"
     bam_chunk_paths = [first_bam_chunk]
     bam_reader = pysam.AlignmentFile(first_bam_chunk, "rb", check_sq=False)
+    outpath_bam = output_prefix + ".tagged.bam"
     f_tagged_bam = pysam.AlignmentFile(
-        output_prefix + ".tagged.bam", "wb", template=bam_reader
+        outpath_bam, "wb", template=bam_reader
     )
     for r in bam_reader:
         f_tagged_bam.write(r)
@@ -676,7 +677,7 @@ def run_processing_parallel(
     for chunk_path in bam_chunk_paths:
         os.remove(chunk_path)
 
-    return output_prefix + ".per_read.tsv", output_prefix + ".tagged.bam"
+    return outpath_per_read, outpath_bam
 
 
 def main(args):
