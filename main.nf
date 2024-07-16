@@ -67,10 +67,11 @@ workflow laava {
 workflow {
     if (params.seq_reads_folder) {
         seq_source = Channel.fromPath([
-                "${params.seq_reads_folder}/*.fastq.gz",
-                "${params.seq_reads_folder}/*.fq.gz",
+                "${params.seq_reads_folder}/*.bam",
                 "${params.seq_reads_folder}/*.fastq",
-                "${params.seq_reads_folder}/*.fq"])
+                "${params.seq_reads_folder}/*.fastq.gz",
+                "${params.seq_reads_folder}/*.fq",
+                "${params.seq_reads_folder}/*.fq.gz"])
     } else {
         seq_source = Channel.fromPath(params.seq_reads_file)
     }

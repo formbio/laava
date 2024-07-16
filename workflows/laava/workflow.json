@@ -43,9 +43,9 @@
     },
     "seq_reads_folder": {
       "title": "Sequencing reads folder",
-      "description": "PacBio long-read sequencing data (folder of FASTQs)",
-      "help_text": "Folder of PacBio AAV sequencing HiFi/CCS reads in unaligned FASTQ format. The PacBio instrument should have been run in AAV mode.",
-      "filetype": ".fastq|fastq.gz|.fq|.fq.gz",
+      "description": "PacBio long-read sequencing data (folder of uBAM/FASTQ)",
+      "help_text": "Folder of PacBio AAV sequencing HiFi/CCS reads in unaligned BAM or FASTQ format. The PacBio instrument should have been run in AAV mode.",
+      "filetype": ".bam|.fastq|fastq.gz|.fq|.fq.gz",
       "format": "dir-path",
       "hidden": true,
       "required": false,
