@@ -6,9 +6,73 @@ include { map_reads; make_report } from './modules/local/laava'
 NO_FILE = file("$projectDir/bin/NO_FILE")
 NO_FILE2 = file("$projectDir/bin/NO_FILE2")
 
+// Unpack the input sample(s) and metadata
+def prepareInput(
+        seq_reads_file, seq_reads_folder, sample_unique_id, sample_display_name,
+        sample_in_metadata
+) {
+    // Known file extensions
+    def SAMPLE_FILE_GLOB = "*.{bam,fastq,fastq.gz,fq,fq.gz}"
+    def EXTENSION_REGEX = /\.(bam|fastq|fastq\.gz|fq|fq\.gz)$/
+
+    if (seq_reads_folder) {
+        // Multi-sample mode
+        def sampleFiles = file("${params.seq_reads_folder}/${SAMPLE_FILE_GLOB}")
+
+        if (params.sample_in_metadata) {
+            // Metadata provided - use it to match files
+            def csvData = channel
+                .fromPath(params.sample_in_metadata)
+                .splitCsv(header: true, sep='\t', strip=true)
+                .map { row -> [row.sample_unique_id, row.sample_display_name] }
+                .toList()
+                .val
+            def matchedSamples = csvData.collect { sampleId, sampleName ->
+                def matchingFiles = sampleFiles.findAll { it.name.contains(sampleId) }
+                if (matchingFiles.size() != 1) {
+                    error "Error: sample_unique_id '${sampleId}' matches ${matchingFiles.size()} files. Values must be unique."
+                }
+                [sampleId, sampleName, matchingFiles[0]]
+            }
+            // Check if all files were matched
+            def unmatchedFiles = sampleFiles - matchedSamples.collect { it[2] }
+            if (unmatchedFiles) {
+                error "Error: The following files were not matched to any sample_unique_id: ${unmatchedFiles.join(', ')}"
+            }
+            return channel.fromList(matchedSamples)
+
+        } else {
+            // No metadata provided - generate sampleId and sampleName from filenames
+            return channel.fromList(sampleFiles.collect { sampleFile ->
+                def stem = sampleFile.baseName.replaceFirst(EXTENSION_REGEX, '')
+                [stem, stem, sampleFile]
+            })
+        }
+    } else if (params.seq_reads_file) {
+        // Single-sample mode
+        def sampleFile = file(params.seq_reads_file)
+        if (!sampleFile.name.matches(/.*${EXTENSION_REGEX}/)) {
+            error "Error: The provided sample file '${sampleFile.name}' does not have a supported extension (${SAMPLE_FILE_GLOB})"
+        }
+
+        def stem = sampleFile.baseName.replaceFirst(EXTENSION_REGEX, '')
+        def sampleId = params.sample_unique_id ?: stem
+        def sampleName = params.sample_display_name ?: params.sample_unique_id ?: stem
+        return channel.of([sampleId, sampleName, sampleFile])
+
+    } else {
+        error "Invalid input parameters. Provide either a sample folder path or a single sample file."
+    }
+}
+
+
 workflow laava {
     take:
-    reads
+    seq_reads_file
+    seq_reads_folder
+    sample_unique_id
+    sample_display_name
+    sample_in_metadata
     vector_fa
     packaging_fa
     host_fa
@@ -26,25 +90,32 @@ workflow laava {
     flipflop_fa
 
     main:
+    // Get a tuple of (ID, name, file) each given sample file and metadata
+    sample_channel = prepareInput(
+        seq_reads_file, seq_reads_folder, sample_unique_id, sample_display_name,
+        sample_in_metadata
+    )
     map_reads(
-        reads
-        .combine(vector_fa)
-        .combine(packaging_fa)
-        .combine(host_fa)
-        .combine(repcap_name)
-        .combine(helper_name)
-        .combine(lambda_name))
+        sample_channel
+        .combine( channel.fromPath( vector_fa ) )
+        .combine( packaging_fa ? channel.fromPath( packaging_fa ) : channel.of( NO_FILE ) )
+        .combine( host_fa ? Channel.fromPath( host_fa ) : Channel.of( NO_FILE2 ) )
+        .combine( channel.of( repcap_name ) )
+        .combine( channel.of( helper_name ) )
+        .combine( channel.of( lambda_name ) )
+    )
     make_report(
         map_reads.out.mapped_sam
-        .combine(vector_bed)
-        .combine(itr_label_1)
-        .combine(itr_label_2)
-        .combine(vector_type)
-        .combine(target_gap_threshold)
-        .combine(max_allowed_outside_vector)
-        .combine(max_allowed_missing_flanking)
-        .combine(flipflop_name)
-        .combine(flipflop_fa))
+        .combine( channel.fromPath( vector_bed ) )
+        .combine( channel.of( itr_label_1 ) )
+        .combine( channel.of( itr_label_2 ) )
+        .combine( channel.of( vector_type ) )
+        .combine( channel.of( target_gap_threshold ) )
+        .combine( channel.of( max_allowed_outside_vector ) )
+        .combine( channel.of( max_allowed_missing_flanking ) )
+        .combine( channel.of( flipflop_name ) )
+        .combine( flipflop_fa ? channel.fromPath( flipflop_fa ) : Channel.of( NO_FILE ) )
+    )
 
     emit:
     mapped_sam = map_reads.out.mapped_sam
@@ -64,37 +135,28 @@ workflow laava {
     rdata = make_report.out.rdata
 }
 
-workflow {
-    if (params.seq_reads_folder) {
-        seq_source = Channel.fromPath([
-                "${params.seq_reads_folder}/*.bam",
-                "${params.seq_reads_folder}/*.fastq",
-                "${params.seq_reads_folder}/*.fastq.gz",
-                "${params.seq_reads_folder}/*.fq",
-                "${params.seq_reads_folder}/*.fq.gz"])
-    } else {
-        seq_source = Channel.fromPath(params.seq_reads_file)
-    }
-    seq_files = seq_source.map {
-        file -> tuple(file.getName().split(/\.bam|\.fq|\.fastq/)[0], file)
-    }
 
+workflow {
     laava(
-        seq_files,
-        Channel.fromPath(params.vector_fa),
-        params.packaging_fa ? Channel.fromPath(params.packaging_fa) : Channel.of(NO_FILE),
-        params.host_fa ? Channel.fromPath(params.host_fa) : Channel.of(NO_FILE2),
-        Channel.of(params.itr_label_1),
-        Channel.of(params.itr_label_2),
-        Channel.of(params.repcap_name),
-        Channel.of(params.helper_name),
-        Channel.of(params.lambda_name),
-        Channel.fromPath(params.vector_bed),
-        Channel.of(params.vector_type),
-        Channel.of(params.target_gap_threshold),
-        Channel.of(params.max_allowed_outside_vector),
-        Channel.of(params.max_allowed_missing_flanking),
-        Channel.of(params.flipflop_name),
-        params.flipflop_fa ? Channel.fromPath(params.flipflop_fa) : Channel.of(NO_FILE)
+        params.seq_reads_file,
+        params.seq_reads_folder,
+        params.sample_unique_id,
+        params.sample_display_name,
+        params.sample_in_metadata,
+        params.vector_fa,
+        params.packaging_fa,
+        params.host_fa,
+        params.itr_label_1,
+        params.itr_label_2,
+        params.repcap_name,
+        params.helper_name,
+        params.lambda_name,
+        params.vector_bed,
+        params.vector_type,
+        params.target_gap_threshold,
+        params.max_allowed_outside_vector,
+        params.max_allowed_missing_flanking,
+        params.flipflop_name,
+        params.flipflop_fa
     )
 }

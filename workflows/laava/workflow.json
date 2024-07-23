@@ -51,6 +51,50 @@
       "required": false,
       "type": "string"
     },
+    "sample_unique_id": {
+      "title": "Sample unique ID",
+      "description": "Sample's barcode number or other unique ID",
+      "help_text": "A unique identifier to distinguish the sample from others in the same sequencing run. This may be the barcode number used in the sample sheet, or a generated UUID.",
+      "format": "text",
+      "hidden": false,
+      "required": false,
+      "default": "",
+      "type": "string"
+    },
+    "sample_display_name": {
+      "title": "Sample display name",
+      "description": "Sample name to display in output",
+      "help_text": "Sample name to display in the output report. Not required to be unique; e.g. replicates may share a display name but have different unique IDs.",
+      "format": "text",
+      "hidden": false,
+      "required": false,
+      "default": "",
+      "type": "string"
+    },
+    "sample_in_metadata": {
+      "title": "Sample metadata",
+      "description": "Unique ID and display name for each sample (TSV)",
+      "help_text": "Two-column, tab-separated file with headers 'sample_unique_id' (e.g. barcode number, unique within a sequencing run) and 'sample_display' name (to display in the report, not required to be unique).",
+      "format": "spreadsheet",
+      "hidden": true,
+      "required": false,
+      "type": "string",
+      "columnConfig": {
+        ".tsv|.txt": {
+          "staticColumns": false,
+          "columns": [
+            {
+              "name": "sample_unique_id",
+              "required": true
+            },
+            {
+              "name": "sample_display_name",
+              "required": true
+            }
+          ]
+        }
+      }
+    },
     "vector_type": {
       "title": "Vector type",
       "description": "Single-stranded or self-complementary",
@@ -268,6 +312,15 @@
           "seq_reads_folder": {
             "hidden": false,
             "required": true
+          },
+          "sample_unique_id": {
+            "hidden": true
+          },
+          "sample_display_name": {
+            "hidden": true
+          },
+          "sample_in_metadata": {
+            "hidden": false
           }
         }
       }
@@ -276,22 +329,34 @@
   "ui": {
     "inputs": [
       {
-        "id": "workflowinputs",
-        "title": "Inputs",
-        "description": "Analysis inputs",
+        "id": "vector_input",
+        "title": "Vector inputs",
+        "description": "Sequencing and vector data",
+        "help_text": "Sequencing and vector input files for analysis",
         "hidden": false,
-        "help_text": "Input files for analysis",
         "fields": [
           "ui_source_type",
           "seq_reads_file",
           "seq_reads_folder",
+          "sample_unique_id",
+          "sample_display_name",
+          "sample_in_metadata",
           "vector_type",
           "vector_bed",
           "vector_fa",
+          "itr_label_1",
+          "itr_label_2"
+        ]
+      },
+      {
+        "id": "other_input",
+        "title": "Other inputs",
+        "description": "Packaging and flip-flop data",
+        "help_text": "Packaging and flip-flop input files",
+        "hidden": false,
+        "fields": [
           "packaging_fa",
           "host_fa",
-          "itr_label_1",
-          "itr_label_2",
           "repcap_name",
           "helper_name",
           "lambda_name",
@@ -300,11 +365,11 @@
         ]
       },
       {
-        "id": "workflowconfigs",
+        "id": "adv_config",
         "title": "Advanced Configuration",
         "description": "Advanced configuration settings",
-        "hidden": false,
         "help_text": "Advanced configuration values for read classification",
+        "hidden": false,
         "fields": [
           "target_gap_threshold",
           "max_allowed_outside_vector",

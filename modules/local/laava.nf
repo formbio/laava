@@ -2,7 +2,8 @@ process map_reads() {
     publishDir "$params.output", mode: "copy"
 
     input:
-    tuple val(sample_name),
+    tuple val(sample_id),
+          val(sample_name),
           path(reads),
           path(vector_fa),
           path(packaging_fa),
@@ -12,19 +13,21 @@ process map_reads() {
           val(lambda_name)
 
     output:
-    tuple val(sample_name),
+    tuple val(sample_id),
+          val(sample_name),
           path("reference_names.tsv"),
-          path("${sample_name}.sort_by_name.sam"), emit: mapped_sam
-    tuple val(sample_name),
-          path("${sample_name}.sort_by_pos.bam"),
-          path("${sample_name}.sort_by_pos.bam.bai"), emit: mapped_bam
+          path("${sample_id}.sort_by_name.sam"), emit: mapped_sam
+    tuple val(sample_id),
+          val(sample_name),
+          path("${sample_id}.sort_by_pos.bam"),
+          path("${sample_id}.sort_by_pos.bam.bai"), emit: mapped_bam
 
     script:
     // Hack for optional inputs
     def packaging_fa_path = packaging_fa.name != "NO_FILE" ? "$packaging_fa" : ""
     def host_fa_path = host_fa.name != "NO_FILE2" ? "$host_fa" : ""
     """
-    map_reads.sh ${sample_name} "${reads}" "${vector_fa}" \\
+    map_reads.sh ${sample_id} "${reads}" "${vector_fa}" \\
         "${packaging_fa_path}" "${host_fa_path}" \\
         "${repcap_name}" "${helper_name}" "${lambda_name}"
     """
@@ -35,7 +38,8 @@ process make_report() {
     publishDir "$params.output", mode: "copy"
 
     input:
-    tuple val(sample_name),
+    tuple val(sample_id),
+          val(sample_name),
           path(reference_names),
           path(mapped_reads),
           path(vector_annotation),
@@ -50,24 +54,24 @@ process make_report() {
 
     output:
     // summarize alignment
-    path("${sample_name}.per_read.tsv"), emit: per_read_tsv
-    path("${sample_name}.summary.tsv"), emit: summary_tsv
-    path("${sample_name}.nonmatch_stat.tsv.gz"), emit: nonmatch_stat_tsvgz
-    path("${sample_name}.tagged.bam"), emit: tagged_bam
-    path("${sample_name}.*.tagged.sorted.bam"), emit: subtype_bams
-    path("${sample_name}.*.tagged.sorted.bam.bai"), emit: subtype_bais
+    path("${sample_id}.per_read.tsv"), emit: per_read_tsv
+    path("${sample_id}.summary.tsv"), emit: summary_tsv
+    path("${sample_id}.nonmatch_stat.tsv.gz"), emit: nonmatch_stat_tsvgz
+    path("${sample_id}.tagged.bam"), emit: tagged_bam
+    path("${sample_id}.*.tagged.sorted.bam"), emit: subtype_bams
+    path("${sample_id}.*.tagged.sorted.bam.bai"), emit: subtype_bais
     // flip-flop
-    path("${sample_name}.flipflop_assignments.tsv"), emit: flipflop_assignments_tsv, optional: true
-    path("${sample_name}.*-flipflop.bam"), emit: flipflop_bams, optional: true
+    path("${sample_id}.flipflop_assignments.tsv"), emit: flipflop_assignments_tsv, optional: true
+    path("${sample_id}.*-flipflop.bam"), emit: flipflop_bams, optional: true
     // intermediate data
-    path("${sample_name}.alignments.tsv"), emit: alignments_tsv
-    path("${sample_name}.readsummary.tsv"), emit: readsummary_tsv
-    path("${sample_name}.sequence-error.tsv"), emit: sequence_error_tsv
-    path("${sample_name}.flipflop.tsv"), emit: flipflop_tsv, optional: true
-    path("${sample_name}.Rdata"), emit: rdata, optional: true
+    path("${sample_id}.alignments.tsv"), emit: alignments_tsv
+    path("${sample_id}.readsummary.tsv"), emit: readsummary_tsv
+    path("${sample_id}.sequence-error.tsv"), emit: sequence_error_tsv
+    path("${sample_id}.flipflop.tsv"), emit: flipflop_tsv, optional: true
+    path("${sample_id}.Rdata"), emit: rdata, optional: true
     // report
-    path("${sample_name}_AAV_report.html"), emit: aav_report_html
-    path("${sample_name}_AAV_report.pdf"), emit: aav_report_pdf
+    path("${sample_id}_AAV_report.html"), emit: aav_report_html
+    path("${sample_id}_AAV_report.pdf"), emit: aav_report_pdf
 
     script:
     def ff_fa_path = flipflop_fa.name != "NO_FILE" ? "$flipflop_fa" : ""
@@ -76,7 +80,7 @@ process make_report() {
         "${itr_label_1}" "${itr_label_2}" \\
         -o annotation.txt
     make_report.sh \\
-        "${sample_name}" \\
+        "${sample_id}" \\
         $vector_type \\
         $target_gap_threshold \\
         $max_allowed_outside_vector \\
