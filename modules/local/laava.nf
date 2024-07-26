@@ -64,6 +64,7 @@ process make_report() {
     path("${sample_id}.flipflop_assignments.tsv"), emit: flipflop_assignments_tsv, optional: true
     path("${sample_id}.*-flipflop.bam"), emit: flipflop_bams, optional: true
     // intermediate data
+    path("${sample_id}.metadata.tsv"), emit: metadata_tsv
     path("${sample_id}.alignments.tsv"), emit: alignments_tsv
     path("${sample_id}.readsummary.tsv"), emit: readsummary_tsv
     path("${sample_id}.sequence-error.tsv"), emit: sequence_error_tsv
@@ -76,6 +77,8 @@ process make_report() {
     script:
     def ff_fa_path = flipflop_fa.name != "NO_FILE" ? "$flipflop_fa" : ""
     """
+    write_sample_metadata.py "${sample_id}" "${sample_name}" "${mapped_reads}" \\
+        -o "${sample_id}.metadata.tsv"
     prepare_annotation.py "${vector_annotation}" "${reference_names}" \\
         "${itr_label_1}" "${itr_label_2}" \\
         -o annotation.txt

@@ -133,6 +133,7 @@ workflow laava {
     sequence_error_tsv = make_report.out.sequence_error_tsv
     flipflop_tsv = make_report.out.flipflop_tsv
     rdata = make_report.out.rdata
+    metadata_out_tsv = make_report.out.metadata_tsv
 }
 
 
