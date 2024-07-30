@@ -53,5 +53,7 @@ $(out_dir)/sc.annotation.txt $(out_dir)/ss.annotation.txt: \
 $(out_dir)/sc.reference_names.tsv $(out_dir)/ss.reference_names.tsv: \
 	$(out_dir)/%.reference_names.tsv: \
 	samples/%.construct.fasta fasta/packaging.fa fasta/hg38.chr19trunc-chrM.fa
-	./get_reference_names.sh $^ "pRep2Cap9" $@
+	../src/get_reference_names.py -o $@ \
+		$< --packaging $(word 2,$^) --host $(word 3,$^) \
+		--repcap-name pRep2Cap9 --helper-name pHelper --lambda-name Lambda
 

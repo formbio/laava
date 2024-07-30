@@ -62,7 +62,7 @@ def read_annotation_bed(fname: str, itr_labels: list[str]):
         "repcap": None,
         "vector": None,
     }
-    #itr_labels = set(filter(None, (itr_label_1, itr_label_2)))
+    # itr_labels = set(filter(None, (itr_label_1, itr_label_2)))
     if len(itr_labels):
         assert all(itr_labels), itr_labels
     itr_slots = []
@@ -71,7 +71,7 @@ def read_annotation_bed(fname: str, itr_labels: list[str]):
         out_rows["itr_right"] = None
 
     # Collect known annotations from the BED file
-    with Path.open(fname) as infile:
+    with Path(fname).open() as infile:
         for line in infile:
             # Require BED4 or more
             seq_name, start0, end, label = line.rstrip().split("\t")[:4]
@@ -144,14 +144,16 @@ def read_annotation_bed(fname: str, itr_labels: list[str]):
 
 def read_reference_names(fname: str):
     """Read a 2-column TSV of reference sequence names and source types."""
-    with Path.open(fname) as infile:
+    with Path(fname).open() as infile:
         for line in infile:
             seq_name, source_type = line.split()
-            if source_type not in ANNOT_TYPES:
-                raise RuntimeError(
-                    f"{source_type} must be one of: vector, repcap, helper, host"
+            if source_type in ANNOT_TYPES:
+                yield AnnRow(seq_name, source_type, None, None)
+            else:
+                logging.warning(
+                    "Nonstandard %s; expected one of: vector, repcap, helper, host",
+                    source_type,
                 )
-            yield AnnRow(seq_name, source_type, None, None)
 
 
 def write_annotation_txt(out_fname: str, bed_rows: dict, other_rows: Iterable):
@@ -165,7 +167,7 @@ def write_annotation_txt(out_fname: str, bed_rows: dict, other_rows: Iterable):
     """
     vector_row = bed_rows["vector"]
     repcap_row = bed_rows["repcap"]
-    with Path.open(out_fname, "w+") as outf:
+    with Path(out_fname).open("w+") as outf:
         outf.write("NAME={};TYPE={};REGION={}-{};\n".format(*vector_row))
         seen_seq_names_and_sources = {vector_row.seq_name: vector_row.source_type}
         if repcap_row:
