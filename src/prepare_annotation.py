@@ -31,16 +31,25 @@ Specifically:
 """
 
 import argparse
+import logging
 import sys
-from collections import namedtuple
+from collections.abc import Iterable
+from pathlib import Path
+from typing import NamedTuple
 
-AnnRow = namedtuple("AnnRow", "seq_name source_type start1 end")
+
+class AnnRow(NamedTuple):
+    seq_name: str
+    source_type: str
+    start1: int
+    end: int
+
 
 # From summarize_AAV_alignment.py
 ANNOT_TYPES = {"vector", "repcap", "helper", "lambda", "host"}
 
 
-def read_annotation_bed(fname):
+def read_annotation_bed(fname: str, itr_labels: list[str]):
     """Read a UCSC BED4 file and extract the coordinates of a row labeled 'vector'.
 
     Take 'vector' information from a UCSC BED4 file of construct annotations (0-based
@@ -53,27 +62,89 @@ def read_annotation_bed(fname):
         "repcap": None,
         "vector": None,
     }
-    with open(fname) as infile:
+    #itr_labels = set(filter(None, (itr_label_1, itr_label_2)))
+    if len(itr_labels):
+        assert all(itr_labels), itr_labels
+    itr_slots = []
+    if itr_labels:
+        out_rows["itr_left"] = None
+        out_rows["itr_right"] = None
+
+    # Collect known annotations from the BED file
+    with Path.open(fname) as infile:
         for line in infile:
             # Require BED4 or more
             seq_name, start0, end, label = line.rstrip().split("\t")[:4]
+            region = AnnRow(seq_name, label, int(start0) + 1, end)
             if label in ("vector", "repcap"):
+                # Only allow 1 of each
                 if out_rows[label] is not None:
                     raise RuntimeError(
                         f"Input {args.annotation_bed} contains more than one row "
                         f"labeled '{label}'."
                     )
-                out_rows[label] = AnnRow(seq_name, label, int(start0) + 1, end)
-    if out_rows["vector"] is None:
+                out_rows[label] = region
+            elif label in itr_labels:
+                # Assign to left and then right slot; labels 1 & 2 are interchangeable
+                if len(itr_slots) > 1:
+                    raise RuntimeError(
+                        f"Input {args.annotation_bed} contains more than two rows "
+                        f"with potential ITR labels ('{itr_labels}')."
+                    )
+                if len(itr_slots) == 1 and itr_slots[0].seq_name != seq_name:
+                    raise RuntimeError(
+                        f"First observed ITR label {itr_slots[0].label} "
+                        f"is on sequence '{itr_slots[0].seq_name}', but second ITR "
+                        f"label {label} is on a different sequence '{seq_name}'."
+                    )
+                itr_slots.append(region)
+
+    # Verify the recognized annotations
+    if itr_labels:
+        orig_vector = out_rows.get("vector")
+        if len(itr_slots) == 2:
+            new_vector = AnnRow(
+                itr_slots[0].seq_name,
+                "vector",
+                min(itr_slots[0].start1, itr_slots[1].start1),
+                max(itr_slots[0].end, itr_slots[1].end),
+            )
+            out_rows["vector"] = new_vector
+            # Use this as "vector"
+            if orig_vector:
+                logging.warning(
+                    "Taking vector coordinates (%s, %s, %s) from ITR labels, "
+                    "overriding explicit 'vector' coordinates (%s, %s, %s)",
+                    new_vector.seq_name,
+                    new_vector.start1,
+                    new_vector.end,
+                    orig_vector.seq_name,
+                    orig_vector.start1,
+                    orig_vector.end,
+                )
+        elif len(itr_slots) == 1:
+            raise RuntimeError(
+                f"ITR labels were specified as {itr_labels}; expected to find 2, "
+                f"but only found 1 ({itr_slots[0]}) in "
+                f"the input annotation file {args.annotation_bed}"
+            )
+        else:
+            raise RuntimeError(
+                f"ITR labels were specified as {itr_labels}, but were not found in "
+                f"the input annotation file {args.annotation_bed}"
+            )
+    elif out_rows["vector"] is None:
+        # Legacy mode: require 'vector' label if ITR labels were not specified
         raise RuntimeError(
             f"Input {args.annotation_bed} must contain a row labeled 'vector'."
         )
+
     return out_rows
 
 
-def read_reference_names(fname):
+def read_reference_names(fname: str):
     """Read a 2-column TSV of reference sequence names and source types."""
-    with open(fname) as infile:
+    with Path.open(fname) as infile:
         for line in infile:
             seq_name, source_type = line.split()
             if source_type not in ANNOT_TYPES:
@@ -83,7 +154,7 @@ def read_reference_names(fname):
             yield AnnRow(seq_name, source_type, None, None)
 
 
-def write_annotation_txt(out_fname, bed_rows, other_rows):
+def write_annotation_txt(out_fname: str, bed_rows: dict, other_rows: Iterable):
     """Write PacBio-style annotations to `out_fname`.
 
     Take the vector annotations and non-'vector' sequence names and source types, format
@@ -94,7 +165,7 @@ def write_annotation_txt(out_fname, bed_rows, other_rows):
     """
     vector_row = bed_rows["vector"]
     repcap_row = bed_rows["repcap"]
-    with open(out_fname, "w+") as outf:
+    with Path.open(out_fname, "w+") as outf:
         outf.write("NAME={};TYPE={};REGION={}-{};\n".format(*vector_row))
         seen_seq_names_and_sources = {vector_row.seq_name: vector_row.source_type}
         if repcap_row:
@@ -131,13 +202,14 @@ if __name__ == "__main__":
         "reference_names",
         help="Reference sequence names and their sources, in 2 columns.",
     )
-    AP.add_argument("itr_label_1", help="Left ITR label in annotation BED")
-    AP.add_argument("itr_label_2", help="Right ITR label in annotation BED")
+    AP.add_argument("itr_labels", nargs="*", help="ITR label(s) in annotation BED")
     AP.add_argument("-o", "--output", help="Output filename (*.txt).")
     args = AP.parse_args()
 
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+
     try:
-        bed_rows = read_annotation_bed(args.annotation_bed)
+        bed_rows = read_annotation_bed(args.annotation_bed, args.itr_labels)
         otr_rows = read_reference_names(args.reference_names)
         write_annotation_txt(args.output, bed_rows, otr_rows)
     except RuntimeError as exc:
