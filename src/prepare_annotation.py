@@ -62,20 +62,16 @@ def read_annotation_bed(fname: str, itr_labels: list[str]):
         "repcap": None,
         "vector": None,
     }
-    # itr_labels = set(filter(None, (itr_label_1, itr_label_2)))
     if len(itr_labels):
-        assert all(itr_labels), itr_labels
+       itr_labels = set(filter(None, itr_labels))
     itr_slots = []
-    if itr_labels:
-        out_rows["itr_left"] = None
-        out_rows["itr_right"] = None
 
     # Collect known annotations from the BED file
     with Path(fname).open() as infile:
         for line in infile:
             # Require BED4 or more
             seq_name, start0, end, label = line.rstrip().split("\t")[:4]
-            region = AnnRow(seq_name, label, int(start0) + 1, end)
+            region = AnnRow(seq_name, label, int(start0) + 1, int(end))
             if label in ("vector", "repcap"):
                 # Only allow 1 of each
                 if out_rows[label] is not None:
@@ -98,6 +94,9 @@ def read_annotation_bed(fname: str, itr_labels: list[str]):
                         f"label {label} is on a different sequence '{seq_name}'."
                     )
                 itr_slots.append(region)
+                logging.info("Found an ITR region: %s", region)
+            else:
+                logging.info("Ignoring unrecognized label: %s", label)
 
     # Verify the recognized annotations
     if itr_labels:
@@ -112,7 +111,7 @@ def read_annotation_bed(fname: str, itr_labels: list[str]):
             out_rows["vector"] = new_vector
             # Use this as "vector"
             if orig_vector:
-                logging.warning(
+                logging.info(
                     "Taking vector coordinates (%s, %s, %s) from ITR labels, "
                     "overriding explicit 'vector' coordinates (%s, %s, %s)",
                     new_vector.seq_name,
@@ -150,8 +149,9 @@ def read_reference_names(fname: str):
             if source_type in ANNOT_TYPES:
                 yield AnnRow(seq_name, source_type, None, None)
             else:
-                logging.warning(
-                    "Nonstandard %s; expected one of: vector, repcap, helper, host",
+                logging.info(
+                    "Nonstandard reference source type %s; "
+                    "the standards are: vector, repcap, helper, host",
                     source_type,
                 )
 

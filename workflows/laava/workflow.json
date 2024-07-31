@@ -183,7 +183,7 @@
     "itr_label_1": {
       "title": "ITR region label 1",
       "description": "Left ITR label in annotation BED",
-      "help_text": "Region label used in the vector annotation BED file to indicate the first (i.e. left, 5') inverted terminal repeat (ITR). This label is often 'ITR' or 'ITR-L', but can vary. Not case-sensitive.",
+      "help_text": "Region label used in the vector annotation BED file to indicate the first (i.e. left, 5') inverted terminal repeat (ITR). This label is often 'ITR' or 'ITR-L', but can vary. Case-sensitive.",
       "format": "text",
       "hidden": false,
       "required": false,
@@ -193,7 +193,7 @@
     "itr_label_2": {
       "title": "ITR region label 2",
       "description": "Right ITR label in annotation BED",
-      "help_text": "Region label used in the vector annotation BED file to indicate the second (i.e. right, 3') inverted terminal repeat (ITR). This label is often 'ITR' or 'ITR-R', but can vary. Not case-sensitive.",
+      "help_text": "Region label used in the vector annotation BED file to indicate the second (i.e. right, 3') inverted terminal repeat (ITR). This label is often 'ITR' or 'ITR-R', but can vary. Case-sensitive.",
       "format": "text",
       "hidden": false,
       "required": false,

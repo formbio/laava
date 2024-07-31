@@ -44,10 +44,11 @@ $(out_dir)/ss.tagged.bam: ../src/summarize_AAV_alignment.py $(in_dir)/ss.subsamp
 	$^ $(out_dir)/ss --cpus $(NCPU)
 
 
-$(out_dir)/sc.annotation.txt $(out_dir)/ss.annotation.txt: \
-	$(out_dir)/%.annotation.txt: \
-	../src/prepare_annotation.py $(in_dir)/%.annotation.bed $(out_dir)/%.reference_names.tsv
-	$^ -o $@
+$(out_dir)/sc.annotation.txt: ../src/prepare_annotation.py $(in_dir)/sc.annotation.bed $(out_dir)/sc.reference_names.tsv
+	$^ ITR-L ITR-R -o $@
+
+$(out_dir)/ss.annotation.txt: ../src/prepare_annotation.py $(in_dir)/ss.annotation.bed $(out_dir)/ss.reference_names.tsv
+	$^ ITR -o $@
 
 
 $(out_dir)/sc.reference_names.tsv $(out_dir)/ss.reference_names.tsv: \

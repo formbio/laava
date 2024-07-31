@@ -15,7 +15,7 @@ process map_reads() {
     output:
     tuple val(sample_id),
           val(sample_name),
-          path("reference_names.tsv"),
+          path("${sample_id}.reference_names.tsv"),
           path("${sample_id}.sort_by_name.sam"), emit: mapped_sam
     tuple val(sample_id),
           val(sample_name),
@@ -24,12 +24,19 @@ process map_reads() {
 
     script:
     // Hack for optional inputs
+    def packaging_fa_opt = packaging_fa.name != "NO_FILE" ? "--packaging \"$packaging_fa\"" : ""
+    def host_fa_opt = host_fa.name != "NO_FILE2" ? "--host \"$host_fa\"" : ""
+    def repcap_name_opt = repcap_name ? "--repcap-name \"$repcap_name\"" : ""
+    def helper_name_opt = helper_name ? "--helper-name \"$helper_name\"" : ""
+    def lambda_name_opt = lambda_name ? "--lambda-name \"$lambda_name\"" : ""
     def packaging_fa_path = packaging_fa.name != "NO_FILE" ? "$packaging_fa" : ""
     def host_fa_path = host_fa.name != "NO_FILE2" ? "$host_fa" : ""
     """
+    get_reference_names.py "${vector_fa}" ${packaging_fa_opt} ${host_fa_opt} \\
+        ${repcap_name_opt} ${helper_name_opt} ${lambda_name_opt} \\
+        -o "${sample_id}.reference_names.tsv"
     map_reads.sh ${sample_id} "${reads}" "${vector_fa}" \\
-        "${packaging_fa_path}" "${host_fa_path}" \\
-        "${repcap_name}" "${helper_name}" "${lambda_name}"
+        "${packaging_fa_path}" "${host_fa_path}"
     """
 }
 
