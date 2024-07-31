@@ -50,20 +50,21 @@ ANNOT_TYPES = {"vector", "repcap", "helper", "lambda", "host"}
 
 
 def read_annotation_bed(fname: str, itr_labels: list[str]):
-    """Read a UCSC BED4 file and extract the coordinates of a row labeled 'vector'.
+    """Read a UCSC BED4 file and extract the coordinates of the ITR-to-ITR region.
 
-    Take 'vector' information from a UCSC BED4 file of construct annotations (0-based
-    coordinates), ignoring all rows aside from the one labeled 'vector', and format it
-    for annotation.txt.
+    Scan a UCSC BED4 file for the region coordinates of (a) the inverted terminal
+    repeats (ITRs), identified by `itr_labels`, or if those are not provided, (b) a row
+    with the label exactly named 'vector' (legacy mode).
 
-    Check that the input contains exactly one 'vector' row. Ignore all other BED rows.
+    Check that the input contains exactly (a) two ITR rows, or (b) one 'vector' row.
+    Ignore all other BED rows.
     """
     out_rows = {
         "repcap": None,
         "vector": None,
     }
     if len(itr_labels):
-       itr_labels = set(filter(None, itr_labels))
+        itr_labels = set(filter(None, itr_labels))
     itr_slots = []
 
     # Collect known annotations from the BED file
