@@ -21,6 +21,8 @@ sc: params-local-sc-no-ff.json
 ss: params-local-ss-with-ff.json
 	nextflow run -profile local main.nf -params-file $<
 
+min: params-local-no-file-sc.json
+	nextflow run -profile local main.nf -params-file $<
 
 diffcheck-sc: $(wf_out_dir)/sc.subsample005.bam.per_read.tsv
 	diff test/build-snapshot/sc.per_read.tsv $< && echo "OK"

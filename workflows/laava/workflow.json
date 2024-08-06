@@ -43,13 +43,57 @@
     },
     "seq_reads_folder": {
       "title": "Sequencing reads folder",
-      "description": "PacBio long-read sequencing data (folder of FASTQs)",
-      "help_text": "Folder of PacBio AAV sequencing HiFi/CCS reads in unaligned FASTQ format. The PacBio instrument should have been run in AAV mode.",
-      "filetype": ".fastq|fastq.gz|.fq|.fq.gz",
+      "description": "PacBio long-read sequencing data (folder of uBAM/FASTQ)",
+      "help_text": "Folder of PacBio AAV sequencing HiFi/CCS reads in unaligned BAM or FASTQ format. The PacBio instrument should have been run in AAV mode.",
+      "filetype": ".bam|.fastq|fastq.gz|.fq|.fq.gz",
       "format": "dir-path",
       "hidden": true,
       "required": false,
       "type": "string"
+    },
+    "sample_unique_id": {
+      "title": "Sample unique ID",
+      "description": "Sample's barcode number or other unique ID",
+      "help_text": "A unique identifier to distinguish the sample from others in the same sequencing run. This may be the barcode number used in the sample sheet, or a generated UUID.",
+      "format": "text",
+      "hidden": false,
+      "required": false,
+      "default": "",
+      "type": "string"
+    },
+    "sample_display_name": {
+      "title": "Sample display name",
+      "description": "Sample name to display in output",
+      "help_text": "Sample name to display in the output report. Not required to be unique; e.g. replicates may share a display name but have different unique IDs.",
+      "format": "text",
+      "hidden": false,
+      "required": false,
+      "default": "",
+      "type": "string"
+    },
+    "sample_in_metadata": {
+      "title": "Sample metadata",
+      "description": "Unique ID and display name for each sample (TSV)",
+      "help_text": "Two-column, tab-separated file with headers 'sample_unique_id' (e.g. barcode number, unique within a sequencing run) and 'sample_display' name (to display in the report, not required to be unique).",
+      "format": "spreadsheet",
+      "hidden": true,
+      "required": false,
+      "type": "string",
+      "columnConfig": {
+        ".tsv|.txt": {
+          "staticColumns": false,
+          "columns": [
+            {
+              "name": "sample_unique_id",
+              "required": true
+            },
+            {
+              "name": "sample_display_name",
+              "required": true
+            }
+          ]
+        }
+      }
     },
     "vector_type": {
       "title": "Vector type",
@@ -136,10 +180,51 @@
       "required": false,
       "type": "string"
     },
+    "itr_label_1": {
+      "title": "ITR region label 1",
+      "description": "First ITR label in annotation BED",
+      "help_text": "Region label used in the vector annotation BED file to indicate the first (i.e. left, 5') inverted terminal repeat (ITR). This label is often 'ITR' or 'ITR-L', but can vary. Case-sensitive.",
+      "format": "text",
+      "hidden": false,
+      "required": false,
+      "default": "ITR",
+      "type": "string"
+    },
+    "itr_label_2": {
+      "title": "ITR region label 2",
+      "description": "Second ITR label in annotation BED",
+      "help_text": "Region label used in the vector annotation BED file to indicate the second (i.e. right, 3') inverted terminal repeat (ITR). This label is often 'ITR' or 'ITR-R', but can vary. Case-sensitive. If the same label is used for both ITRs in the annotation BED (e.g. 'ITR'), it's not necessary to specify it again here; ITR region label 1 will correctly match both ITRs in that case.",
+      "format": "text",
+      "hidden": false,
+      "required": false,
+      "default": "",
+      "type": "string"
+    },
     "repcap_name": {
       "title": "RepCap sequence ID",
-      "description": "RepCap sequence identifier used in the packaging FASTA file",
+      "description": "RepCap plasmid sequence identifier used in the packaging FASTA file",
       "help_text": "Sequence identifier used in the packaging FASTA file (above) corresponding to the rep/cap plasmid reference sequence, if used. Leave this blank if a dual construct was used (rep/cap on the vector backbone) or you're unsure.",
+      "format": "text",
+      "hidden": false,
+      "required": false,
+      "default": "",
+      "type": "string"
+    },
+
+    "helper_name": {
+      "title": "Helper sequence ID",
+      "description": "Helper plasmid sequence identifier used in the packaging FASTA file",
+      "help_text": "Sequence identifier used in the packaging FASTA file (above) corresponding to the helper plasmid reference sequence, if used. Leave this blank if you're unsure.",
+      "format": "text",
+      "hidden": false,
+      "required": false,
+      "default": "",
+      "type": "string"
+    },
+    "lambda_name": {
+      "title": "Lambda sequence ID",
+      "description": "Lambda phage sequence identifier used in the packaging FASTA file",
+      "help_text": "Sequence identifier used in the packaging FASTA file (above) corresponding to the lambda phage reference sequence, if used.",
       "format": "text",
       "hidden": false,
       "required": false,
@@ -227,6 +312,15 @@
           "seq_reads_folder": {
             "hidden": false,
             "required": true
+          },
+          "sample_unique_id": {
+            "hidden": true
+          },
+          "sample_display_name": {
+            "hidden": true
+          },
+          "sample_in_metadata": {
+            "hidden": false
           }
         }
       }
@@ -235,31 +329,47 @@
   "ui": {
     "inputs": [
       {
-        "id": "workflowinputs",
-        "title": "Inputs",
-        "description": "Analysis inputs",
+        "id": "vector_input",
+        "title": "Vector inputs",
+        "description": "Sequencing and vector data",
+        "help_text": "Sequencing and vector input files for analysis",
         "hidden": false,
-        "help_text": "Input files for analysis",
         "fields": [
           "ui_source_type",
           "seq_reads_file",
           "seq_reads_folder",
+          "sample_unique_id",
+          "sample_display_name",
+          "sample_in_metadata",
           "vector_type",
           "vector_bed",
           "vector_fa",
+          "itr_label_1",
+          "itr_label_2"
+        ]
+      },
+      {
+        "id": "other_input",
+        "title": "Other inputs",
+        "description": "Packaging and flip-flop data",
+        "help_text": "Packaging and flip-flop input files",
+        "hidden": false,
+        "fields": [
           "packaging_fa",
           "host_fa",
           "repcap_name",
+          "helper_name",
+          "lambda_name",
           "flipflop_name",
           "flipflop_fa"
         ]
       },
       {
-        "id": "workflowconfigs",
+        "id": "adv_config",
         "title": "Advanced Configuration",
         "description": "Advanced configuration settings",
-        "hidden": false,
         "help_text": "Advanced configuration values for read classification",
+        "hidden": false,
         "fields": [
           "target_gap_threshold",
           "max_allowed_outside_vector",

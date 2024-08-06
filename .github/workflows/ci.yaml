@@ -55,7 +55,7 @@ jobs:
       - name: Lint Python scripts
         run: |
           # Stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          ruff check --isolated --no-cache src/
       - name: Lint R script
         run: |
           Rscript -e 'library(lintr); options(lintr.error_on_lint=TRUE); lint_dir(".", linters=linters_with_tags("correctness"))'

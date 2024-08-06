@@ -4,7 +4,6 @@
 Must have already run `summarize_AAV_alignment.py` to get a .tagged.BAM file!
 """
 
-import sys
 import csv
 from typing import NamedTuple
 
