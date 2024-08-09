@@ -7,9 +7,9 @@ all: laava laava_dev
 
 .PHONY: clean laava laava_dev sc ss diffcheck-sc diffcheck-ss
 clean:
-	rm -fv .nextflow.log*
-	rm -fv test/build/*
-	rm -rf workflow-outputs/*
+	rm -f .nextflow.log*
+	rm -f test/build/*
+	rm -f workflow-outputs/*
 
 laava laava_dev: %: %.dockerfile laava.conda_env.yml
 	docker build -t ghcr.io/formbio/$@:latest -f $< .
