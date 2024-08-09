@@ -85,6 +85,11 @@
           "columns": [
             {
               "name": "sample_unique_id",
+              "generateFromData": true,
+              "generateConfig": {
+                  "delimiterPattern": "\\.bam|\\.hifireads",
+                  "dataName": "seq_reads_folder"
+              },
               "required": true
             },
             {
