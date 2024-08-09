@@ -26,7 +26,7 @@
           "id": "file_source"
         },
         {
-          "name": "Folder (FASTQs)",
+          "name": "Folder (containing BAM or FASTQ files)",
           "id": "folder_source"
         }
       ]
@@ -54,7 +54,7 @@
     "sample_unique_id": {
       "title": "Sample unique ID",
       "description": "Sample's barcode number or other unique ID",
-      "help_text": "A unique identifier to distinguish the sample from others in the same sequencing run. This may be the barcode number used in the sample sheet, or a generated UUID.",
+      "help_text": "A unique identifier to distinguish the sample from others in the same sequencing run. This may be the barcode number used in the sample sheet, or a generated UUID. This string must also be present in the input sequencing reads BAM/FASTQ filename, i.e. that input filename starts with this ID or contains it as a substring.",
       "format": "text",
       "hidden": false,
       "required": false,
@@ -74,21 +74,32 @@
     "sample_in_metadata": {
       "title": "Sample metadata",
       "description": "Unique ID and display name for each sample (TSV)",
-      "help_text": "Two-column, tab-separated file with headers 'sample_unique_id' (e.g. barcode number, unique within a sequencing run) and 'sample_display' name (to display in the report, not required to be unique).",
+      "help_text": "Two-column, tab-separated file with headers 'sample_unique_id' (e.g. barcode number, unique within a sequencing run) and 'sample_display' name (to display in the report, not required to be unique). Each sample unique ID (column 1) must be present in exactly one sequencing reads filename (BAM/FASTQ), as a prefix or substring, so that each of these metadata rows can be mapped 1:1 to an input sequencing reads file.",
       "format": "spreadsheet",
+      "filetype": ".tsv",
       "hidden": true,
       "required": false,
       "type": "string",
       "columnConfig": {
-        ".tsv|.txt": {
+        ".tsv": {
           "staticColumns": false,
           "columns": [
             {
               "name": "sample_unique_id",
+              "generateFromData": true,
+              "generateConfig": {
+                  "delimiterPattern": "(\\.bam|\\.hifireads|\\.fastq|\\.fq)",
+                  "dataName": "seq_reads_folder"
+              },
               "required": true
             },
             {
               "name": "sample_display_name",
+              "generateFromData": true,
+              "generateConfig": {
+                  "delimiterPattern": "(\\.bam|\\.hifireads|\\.fastq|\\.fq)",
+                  "dataName": "seq_reads_folder"
+              },
               "required": true
             }
           ]
