@@ -1,3 +1,19 @@
+process match_metadata_to_files {
+    input:
+    path sample_in_metadata
+    path sample_folder
+
+    output:
+    path("metadata_with_paths.tsv")
+
+    script:
+    """
+    match_metadata_to_files.py ${sample_in_metadata} ${sample_folder} \\
+        > metadata_with_paths.tsv
+    """
+}
+
+
 process map_reads() {
     publishDir "$params.output", mode: "copy"
 

@@ -7,9 +7,11 @@ all: laava laava_dev
 
 .PHONY: clean laava laava_dev sc ss diffcheck-sc diffcheck-ss
 clean:
-	rm -fv .nextflow.log*
-	rm -fv test/build/*
-	rm -rf workflow-outputs/*
+	rm -f .nextflow.log*
+	rm -fr .nextflow/*
+	rm -fr test/build/*
+	rm -fr workflow-outputs/*
+
 
 laava laava_dev: %: %.dockerfile laava.conda_env.yml
 	docker build -t ghcr.io/formbio/$@:latest -f $< .
@@ -24,9 +26,13 @@ ss: params-local-ss-with-ff.json
 min: params-local-no-file-sc.json
 	nextflow run -profile local main.nf -params-file $<
 
-diffcheck-sc: $(wf_out_dir)/sc.subsample005.bam.per_read.tsv
-	diff test/build-snapshot/sc.per_read.tsv $< && echo "OK"
+folder: params-local-sc-folder.json
+	nextflow run -profile local main.nf -params-file $<
+
+
+diffcheck-sc: $(wf_out_dir)/sc.subsample005.bam.readsummary.tsv
+	diff test/build-snapshot/sc.readsummary.tsv $< && echo "OK"
 
 diffcheck-ss:  $(wf_out_dir)/ss.subsample005.bam.per_read.tsv $(wf_out_dir)/ss.subsample005.bam.flipflop.tsv
-	diff test/build-snapshot/ss.per_read.tsv $< && echo "OK"
+	diff test/build-snapshot/ss.readsummary.tsv $< && echo "OK"
 	diff test/build-snapshot/ss.flipflop.tsv $(lastword $^) && echo "OK"
