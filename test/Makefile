@@ -16,8 +16,10 @@ ss: $(out_dir)/ss_AAV_report.html
 
 
 diffcheck:
-	diff build-snapshot/sc.per_read.tsv build/sc.per_read.tsv && echo "OK"
-	diff build-snapshot/ss.per_read.tsv build/ss.per_read.tsv && echo "OK"
+	diff build-snapshot/sc.alignments.tsv build/sc.alignments.tsv && echo "OK"
+	diff build-snapshot/ss.alignments.tsv build/ss.alignments.tsv && echo "OK"
+	diff build-snapshot/sc.readsummary.tsv build/sc.readsummary.tsv && echo "OK"
+	diff build-snapshot/ss.readsummary.tsv build/ss.readsummary.tsv && echo "OK"
 	diff build-snapshot/ss.flipflop.tsv build/ss.flipflop.tsv && echo "OK"
 
 $(out_dir)/sc_AAV_report.html $(out_dir)/ss_AAV_report.html: \
