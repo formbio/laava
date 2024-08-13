@@ -28,8 +28,11 @@ valid_types <- c('ssAAV', 'scAAV', 'host', 'repcap', 'helper', 'lambda', 'unmapp
 valid_subtypes <- c('full', 'full-gap', 'left-partial', 'right-partial', 'wtITR-partial', 'mITR-partial', 'partial', 'backbone', 'vector+backbone')
 
 
-# ----------------------------------------------------------
-## Read the annotation file to find the vector target region
+
+# =========================
+# annotation.txt -> `annot`
+# -------------------------
+# Read the annotation file to find the vector target region
 # ----------------------------------------------------------
 # e.g.
 #   NAME=myHost;TYPE=host;
@@ -57,46 +60,34 @@ for (i in 1:dim(annot)[1]) {
 }
 
 
+# =====================================
+# {{{ summary.tsv -> alignments.tsv }}}
+# -------------------------------------
+
 x.all.summary <- read_tsv(paste0(r_params$input_prefix, '.summary.tsv'), show_col_types = FALSE) %>%
   mutate(map_start = map_start0, map_end = map_end1) %>%
   mutate(SampleID = r_params$sample_id, .before = read_id)
 write_tsv(x.all.summary, paste0(r_params$input_prefix, ".alignments.tsv"))
 
-x.all.err <- read_tsv(paste0(r_params$input_prefix, '.nonmatch_stat.tsv.gz'), show_col_types = FALSE) %>%
-  mutate(SampleID = r_params$sample_id, .before = read_id)
+
+
+# ---------------------------------------
+# {{{ per_read.tsv -> readsummary.tsv }}}
+# ---------------------------------------
+
 x.all.read <- read_tsv(paste0(r_params$input_prefix, '.per_read.tsv'), show_col_types = FALSE) %>%
   mutate(SampleID = r_params$sample_id, .before = read_id)
 
-x.all.err[x.all.err$type == 'D', "type"] <- 'deletion'
-x.all.err[x.all.err$type == 'I', "type"] <- 'insertion'
-x.all.err[x.all.err$type == 'X', "type"] <- 'mismatch'
-x.all.err[x.all.err$type == 'N', "type"] <- 'gaps'
-
-
-# ----------------------------------------------------------
-# produce stats for vector only (ssAAV or scAAV)
-# ----------------------------------------------------------
-
+# Filter to ssAAV/scAAV vector only
+# NB: also used by sequence-error.tsv below
 x.read.vector <- filter(x.all.read, assigned_type %in% c('scAAV', 'ssAAV'))
-x.err.vector <- filter(x.all.err, read_id %in% x.read.vector$read_id)
+
+# XXX only in Rdata, i.e. for the report -- but source is summary/alignments.tsv
+# Filter for ss/scAAV vector only
 x.summary.vector <- filter(x.all.summary, read_id %in% x.read.vector$read_id)
 
 
 total_num_reads <- dim(x.read.vector)[1]
-
-total_err <- dim(x.err.vector)[1]
-x.err.vector$pos0_div <- (x.err.vector$pos0 %/% 10 * 10)
-df.err.vector <- x.err.vector %>%
-  group_by(pos0_div, type) %>%
-  summarise(count = n())
-
-x.err.vector$type_len_cat <- "1-10"
-x.err.vector[x.err.vector$type_len > 10, "type_len_cat"] <- "11-100"
-x.err.vector[x.err.vector$type_len > 100, "type_len_cat"] <- "100-500"
-x.err.vector[x.err.vector$type_len > 500, "type_len_cat"] <- ">500"
-x.err.vector$type_len_cat <- ordered(x.err.vector$type_len_cat, levels = c('1-10', '11-100', '100-500', '>500'))
-write_tsv(x.err.vector, paste0(r_params$input_prefix, ".sequence-error.tsv"))
-
 x.read.vector$subtype <- x.read.vector$assigned_subtype
 # Call "other" all complex and multi-part AAV alignments
 x.read.vector[!x.read.vector$subtype %in% valid_subtypes, "subtype"] <- 'other'
@@ -111,6 +102,7 @@ if (r_params$vector_type == "ssaav") {
   ), "subtype"] <- "right-snapback"
 }
 
+# XXX only in Rdata
 total_read_count.vector <- sum(x.read.vector$effective_count)
 df.read.vector1 <- x.read.vector %>%
   group_by(assigned_type) %>%
@@ -118,13 +110,20 @@ df.read.vector1 <- x.read.vector %>%
   mutate(freq = round(e_count * 100 / total_read_count.vector, 2))
 df.read.vector1 <- df.read.vector1[order(-df.read.vector1$freq), ]
 
-
+# XXX only in Rdata; also used in flipflop code below
 df.read.vector2 <- x.read.vector %>%
   group_by(assigned_type, assigned_subtype) %>%
   summarise(e_count = sum(effective_count)) %>%
   mutate(freq = round(e_count * 100 / total_read_count.vector, 2))
 df.read.vector2 <- df.read.vector2[order(-df.read.vector2$freq), ]
 
+# XXX only in Rdata
+total_read_count.all <- sum(x.all.read$effective_count) #dim(x.all.read)[1]
+df.read1 <- x.all.read %>%
+  group_by(assigned_type) %>%
+  summarise(e_count = sum(effective_count)) %>%
+  mutate(freq = round(e_count * 100 / total_read_count.all, 2))
+df.read1 <- df.read1[order(-df.read1$freq), ]
 
 x.all.read[is.na(x.all.read$assigned_type), "assigned_type"] <- 'unmapped'
 x.all.read[grep("|", as.character(x.all.read$assigned_type), fixed = T), "assigned_type"] <- 'chimeric'
@@ -133,12 +132,35 @@ x.all.read[!(x.all.read$assigned_subtype %in% valid_subtypes), "assigned_subtype
 write_tsv(x.all.read, paste0(r_params$input_prefix, ".readsummary.tsv"))
 
 
-total_read_count.all <- sum(x.all.read$effective_count) #dim(x.all.read)[1]
-df.read1 <- x.all.read %>%
-  group_by(assigned_type) %>%
-  summarise(e_count = sum(effective_count)) %>%
-  mutate(freq = round(e_count * 100 / total_read_count.all, 2))
-df.read1 <- df.read1[order(-df.read1$freq), ]
+# ==================================================
+# {{{ nonmatch_stat.tsv.gz -> sequence-error.tsv }}}
+# --------------------------------------------------
+
+x.all.err <- read_tsv(paste0(r_params$input_prefix, '.nonmatch_stat.tsv.gz'), show_col_types = FALSE) %>%
+  mutate(SampleID = r_params$sample_id, .before = read_id)
+
+x.all.err[x.all.err$type == 'D', "type"] <- 'deletion'
+x.all.err[x.all.err$type == 'I', "type"] <- 'insertion'
+x.all.err[x.all.err$type == 'X', "type"] <- 'mismatch'
+x.all.err[x.all.err$type == 'N', "type"] <- 'gaps'
+# Filter for ss/scAAV vector only
+x.err.vector <- filter(x.all.err, read_id %in% x.read.vector$read_id)
+total_err <- dim(x.err.vector)[1]
+x.err.vector$pos0_div <- (x.err.vector$pos0 %/% 10 * 10)
+
+# XXX categories not used in report anymore
+x.err.vector$type_len_cat <- "1-10"
+x.err.vector[x.err.vector$type_len > 10, "type_len_cat"] <- "11-100"
+x.err.vector[x.err.vector$type_len > 100, "type_len_cat"] <- "100-500"
+x.err.vector[x.err.vector$type_len > 500, "type_len_cat"] <- ">500"
+x.err.vector$type_len_cat <- ordered(x.err.vector$type_len_cat, levels = c('1-10', '11-100', '100-500', '>500'))
+
+write_tsv(x.err.vector, paste0(r_params$input_prefix, ".sequence-error.tsv"))
+
+# XXX only in Rdata
+df.err.vector <- x.err.vector %>%
+  group_by(pos0_div, type) %>%
+  summarise(count = n())
 
 
 # ----------------------------------------------------------
