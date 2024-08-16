@@ -108,7 +108,6 @@ workflow laava {
     mapped_sam = map_reads.out.mapped_sam
     mapped_bam = map_reads.out.mapped_bam
     per_read_tsv = make_report.out.per_read_tsv
-    summary_tsv = make_report.out.summary_tsv
     nonmatch_stat_tsvgz = make_report.out.nonmatch_stat_tsvgz
     tagged_bam = make_report.out.tagged_bam
     subtype_bams = make_report.out.subtype_bams

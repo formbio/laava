@@ -61,14 +61,11 @@ for (i in 1:dim(annot)[1]) {
 
 
 # =====================================
-# {{{ summary.tsv -> alignments.tsv }}}
+# alignments.tsv
 # -------------------------------------
 
-x.all.summary <- read_tsv(paste0(r_params$input_prefix, '.summary.tsv'), show_col_types = FALSE) %>%
-  mutate(map_start = map_start0, map_end = map_end1) %>%
-  mutate(SampleID = r_params$sample_id, .before = read_id)
-write_tsv(x.all.summary, paste0(r_params$input_prefix, ".alignments.tsv"))
-
+x.all.summary <- read_tsv(paste0(r_params$input_prefix, '.alignments.tsv'), show_col_types = FALSE) %>%
+   mutate(map_start = map_start0, map_end = map_end1)
 
 
 # ---------------------------------------

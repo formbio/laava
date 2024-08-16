@@ -78,7 +78,6 @@ process make_report() {
     output:
     // summarize alignment
     path("${sample_id}.per_read.tsv"), emit: per_read_tsv
-    path("${sample_id}.summary.tsv"), emit: summary_tsv
     path("${sample_id}.nonmatch_stat.tsv.gz"), emit: nonmatch_stat_tsvgz
     path("${sample_id}.tagged.bam"), emit: tagged_bam
     path("${sample_id}.*.tagged.sorted.bam"), emit: subtype_bams

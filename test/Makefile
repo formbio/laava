@@ -17,8 +17,8 @@ ss: $(out_dir)/ss_AAV_report.html
 
 diffcheck:
 	diff build-snapshot/sc.alignments.tsv build/sc.alignments.tsv && echo "OK"
-	diff build-snapshot/ss.alignments.tsv build/ss.alignments.tsv && echo "OK"
 	diff build-snapshot/sc.readsummary.tsv build/sc.readsummary.tsv && echo "OK"
+	diff build-snapshot/ss.alignments.tsv build/ss.alignments.tsv && echo "OK"
 	diff build-snapshot/ss.readsummary.tsv build/ss.readsummary.tsv && echo "OK"
 	diff build-snapshot/ss.flipflop.tsv build/ss.flipflop.tsv && echo "OK"
 
@@ -29,10 +29,10 @@ $(out_dir)/sc_AAV_report.html $(out_dir)/ss_AAV_report.html: \
 
 
 $(out_dir)/sc.Rdata: ../src/calculate_rdata.R ../src/report.Rmd $(out_dir)/sc.annotation.txt $(out_dir)/sc.tagged.bam
-	$< $(out_dir)/sc $(out_dir)/sc.annotation.txt pAV-CMV-GFP "scaav"
+	$< $(out_dir)/sc $(out_dir)/sc.annotation.txt sc.subsample005 sc.subsample005 "scaav"
 
 $(out_dir)/ss.Rdata: ../src/calculate_rdata.R ../src/report.Rmd $(out_dir)/ss.annotation.txt $(out_dir)/ss.flipflop_assignments.tsv $(out_dir)/ss.tagged.bam
-	$< $(out_dir)/ss $(out_dir)/ss.annotation.txt pAV-CMV-GFP "ssaav" $(out_dir)/ss.flipflop_assignments.tsv
+	$< $(out_dir)/ss $(out_dir)/ss.annotation.txt ss.subsample005 "ssaav" $(out_dir)/ss.flipflop_assignments.tsv
 
 
 $(out_dir)/ss.flipflop_assignments.tsv: ../src/get_flipflop_config.py $(out_dir)/ss.tagged.bam $(out_dir)/ss.per_read.tsv
@@ -40,10 +40,10 @@ $(out_dir)/ss.flipflop_assignments.tsv: ../src/get_flipflop_config.py $(out_dir)
 
 
 $(out_dir)/sc.tagged.bam: ../src/summarize_AAV_alignment.py $(in_dir)/sc.subsample005.bam $(out_dir)/sc.annotation.txt
-	$^ $(out_dir)/sc --cpus $(NCPU)
+	$^ $(out_dir)/sc -i sc.subsample005 --cpus $(NCPU)
 
 $(out_dir)/ss.tagged.bam: ../src/summarize_AAV_alignment.py $(in_dir)/ss.subsample005.bam $(out_dir)/ss.annotation.txt
-	$^ $(out_dir)/ss --cpus $(NCPU)
+	$^ $(out_dir)/ss -i ss.subsample005 --cpus $(NCPU)
 
 
 $(out_dir)/sc.annotation.txt: ../src/prepare_annotation.py $(in_dir)/sc.annotation.bed $(out_dir)/sc.reference_names.tsv
