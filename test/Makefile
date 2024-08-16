@@ -15,12 +15,10 @@ sc: $(out_dir)/sc_AAV_report.html
 ss: $(out_dir)/ss_AAV_report.html
 
 
-diffcheck:
-	diff build-snapshot/sc.alignments.tsv build/sc.alignments.tsv && echo "OK"
-	diff build-snapshot/sc.readsummary.tsv build/sc.readsummary.tsv && echo "OK"
-	diff build-snapshot/ss.alignments.tsv build/ss.alignments.tsv && echo "OK"
-	diff build-snapshot/ss.readsummary.tsv build/ss.readsummary.tsv && echo "OK"
-	diff build-snapshot/ss.flipflop.tsv build/ss.flipflop.tsv && echo "OK"
+test: $(out_dir)/sc.Rdata $(out_dir)/ss.Rdata
+	./compare_tsvs.sh build-snapshot build \
+		sc.alignments.tsv sc.readsummary.tsv ss.alignments.tsv ss.readsummary.tsv ss.flipflop.tsv \
+		&& echo "OK" || echo "FAIL"
 
 $(out_dir)/sc_AAV_report.html $(out_dir)/ss_AAV_report.html: \
 	%_AAV_report.html: \
