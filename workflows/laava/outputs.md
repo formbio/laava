@@ -6,14 +6,6 @@
   - HTML report: SampleID_AAV_report.html
   - PDF report: SampleID_AAV_report.pdf
 
-- Summary tables
-  - SampleID.alignments.tsv
-  - SampleID.readsummary.tsv
-  - SampleID.sequence-error.tsv
-  - SampleID.flipflop.tsv
-  - SampleID.Rdata
-
-
 ### Supplementary data files
 
 - Alignment files
@@ -22,7 +14,10 @@
   - Refence names: reference_names.tsv
 
 - Read count and classification tables
-  - SampleID.nonmatch_stat.tsv.gz
+  - SampleID.alignments.tsv
   - SampleID.per_read.tsv
-  - SampleID.summary.tsv
+  - SampleID.nonmatch_stat.tsv.gz
+  - SampleID.sequence-error.tsv
   - SampleID.flipflop_assignments.txt (optional)
+  - SampleID.flipflop.tsv (optional)
+  - SampleID.Rdata

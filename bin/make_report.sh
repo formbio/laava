@@ -25,6 +25,7 @@ echo "Starting summarize_AAV_alignment"
 summarize_AAV_alignment.py \
     "$mapped_reads_sam" "$annotation_txt" "$sample_id" \
     --sample-id="$sample_id" \
+    --vector-type="$vector_type" \
     --target-gap-threshold=$target_gap_threshold \
     --max-allowed-outside-vector=$max_allowed_outside_vector \
     --max-allowed-missing-flanking=$max_allowed_missing_flanking \

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Summarize the AAV alignment."""
 
+from __future__ import annotations
+
 import gzip
 import itertools
 import logging
@@ -11,8 +13,8 @@ import subprocess
 import sys
 from csv import DictReader, DictWriter
 from multiprocessing import Process
-# import pdb
 
+# import pdb
 import pysam
 
 CIGAR_DICT = {
@@ -123,19 +125,20 @@ def iter_cigar_w_aligned_pair(rec, writer):
     return total_err, total_len
 
 
-def read_annotation_file(annot_filename):
-    """Read the annotation.txt file into a dictionary.
+def load_annotation_file(annot_filename):
+    """Parse the annotation.txt file into a dictionary.
 
     Example:
 
-    NAME=chr1;TYPE=host;
-    NAME=chr2;TYPE=host;
-    NAME=myVector;TYPE=vector;REGION=1795-6553;
-    NAME=myCapRep;TYPE=repcap;REGION=1895-5987;
-    NAME=myHelper;TYPE=helper;
+        NAME=chr1;TYPE=host;
+        NAME=chr2;TYPE=host;
+        NAME=myVector;TYPE=vector;REGION=1795-6553;
+        NAME=myCapRep;TYPE=repcap;REGION=1895-5987;
+        NAME=myHelper;TYPE=helper;
 
     :param annot_filename: Annotation file following the format indicated above. Only "vector" is required. Others optional.
     :return:
+
     """
     result = {}
     for line in open(annot_filename):
@@ -148,19 +151,21 @@ def read_annotation_file(annot_filename):
             )
 
         seq_name = m.group(1)
-        ref_type = m.group(2)
+        ref_label = m.group(2)
         coord_region = (
             None
             if m.group(3) is None
             else tuple(map(int, m.group(3).split("=")[1].split("-")))
         )
-        if ref_type in result:
-            raise RuntimeError(f"Annotation file has multiple {ref_type} types. Abort!")
-        if ref_type not in ANNOT_TYPE_PRIORITIES:
+        if ref_label in result:
             raise RuntimeError(
-                f"{ref_type} is not a valid type (host, repcap, vector, helper). Abort!"
+                f"Annotation file has multiple {ref_label} types. Abort!"
             )
-        result[seq_name] = {"type": ref_type, "region": coord_region}
+        if ref_label not in ANNOT_TYPE_PRIORITIES:
+            raise RuntimeError(
+                f"{ref_label} is not a valid type (host, repcap, vector, helper). Abort!"
+            )
+        result[seq_name] = {"label": ref_label, "region": coord_region}
     return result
 
 
@@ -225,7 +230,7 @@ def is_on_target(r, target_start, target_end):
     return "vector+backbone"
 
 
-def assign_read_type(r, annotation):
+def assign_alignment_type(r, annotation):
     """Determine the read alignment type and subtype.
 
     :param read_dict: dict of {'supp', 'primary'}
@@ -237,15 +242,15 @@ def assign_read_type(r, annotation):
     <map to: comma-delimited list of [chr:start-end]>,
     <comma-delimited list of unmapped portion, if any>,
     """
-    read_type = annotation[r.reference_name]["type"]
-    if annotation[r.reference_name]["region"] is not None:
-        return read_type, is_on_target(r, *annotation[r.reference_name]["region"])
-    else:
-        return read_type, "NA"
+    ref_label = annotation[r.reference_name]["label"]
+    ref_coords = annotation[r.reference_name]["region"]
+    target_overlap = is_on_target(r, *ref_coords) if ref_coords is not None else "NA"
+    return ref_label, target_overlap
 
 
 def process_alignment_bam(
     sample_id,
+    vector_type,
     sorted_sam_filename,
     annotation,
     output_prefix,
@@ -259,7 +264,7 @@ def process_alignment_bam(
     :param output_prefix:
     """
     ALIGNMENT_FIELDS = [
-        "sample_id",
+        "sample_unique_id",
         "read_id",
         "read_len",
         "is_mapped",
@@ -269,17 +274,19 @@ def process_alignment_bam(
         "map_end1",
         "map_len",
         "map_iden",
-        "map_type",
-        "map_subtype",
+        "map_ref_label",
+        "map_target_overlap",
     ]
     PER_READ_FIELDS = [
         "read_id",
-        "read_len",
+        "read_len",  # XXX redundant but used in the report
         "has_primary",
         "has_supp",
         "assigned_type",
         "assigned_subtype",
         "effective_count",
+        "read_ref_label",
+        "read_target_overlap",
     ]
     NONMATCH_FIELDS = ["read_id", "pos0", "type", "type_len"]
 
@@ -322,6 +329,7 @@ def process_alignment_bam(
             if cur_r.qname != records[-1].qname:
                 process_alignment_records_for_a_read(
                     sample_id,
+                    vector_type,
                     records,
                     annotation,
                     out_alignments,
@@ -338,6 +346,7 @@ def process_alignment_bam(
     # Finish processing the last records
     process_alignment_records_for_a_read(
         sample_id,
+        vector_type,
         records,
         annotation,
         out_alignments,
@@ -414,8 +423,15 @@ def add_assigned_types_to_record(r, a_type, a_subtype):
     return d
 
 
+def pipe_union(s1: str, s2: str | None):
+    if s2 is None or s1 == s2:
+        return s1
+    return f"{s1}|{s2}"
+
+
 def process_alignment_records_for_a_read(
     sample_id,
+    vector_type,
     records,
     annotation,
     out_alignments,
@@ -440,7 +456,7 @@ def process_alignment_records_for_a_read(
             )
 
         info = {
-            "sample_id": sample_id,
+            "sample_unique_id": sample_id,
             "read_id": r.qname,
             "read_len": r.query_length,
             "is_mapped": "N" if r.is_unmapped else "Y",
@@ -451,8 +467,8 @@ def process_alignment_records_for_a_read(
             "map_end1": "NA",
             "map_len": "NA",
             "map_iden": "NA",
-            "map_type": "NA",
-            "map_subtype": "NA",
+            "map_ref_label": "NA",
+            "map_target_overlap": "NA",
         }
         if r.is_unmapped:
             read_tally["primary"] = info
@@ -473,10 +489,10 @@ def process_alignment_records_for_a_read(
             total_err, total_len = iter_cigar_w_aligned_pair(r, out_nonmatch)
             info["map_iden"] = format(1.0 - total_err / total_len, ".10f")
 
-            a_type, a_subtype = assign_read_type(r, annotation)
-            info["map_type"] = a_type
-            info["map_subtype"] = a_subtype
-            logging.debug("%s %s %s", r.qname, a_type, a_subtype)
+            a_ref_label, a_target_overlap = assign_alignment_type(r, annotation)
+            info["map_ref_label"] = a_ref_label
+            info["map_target_overlap"] = a_target_overlap
+            logging.debug("%s %s %s", r.qname, a_ref_label, a_target_overlap)
             # pdb.set_trace()
 
             if r.is_supplementary:
@@ -485,6 +501,10 @@ def process_alignment_records_for_a_read(
                 assert read_tally["primary"] is None
                 read_tally["primary"] = info
         # NB: will write primary/supp to `out_alignments` after ruling out non-compatible subs
+
+    # -------------
+    # Classify read
+    # =============
 
     # summarize it per read, now that all relevant alignments have been processed
     prim = read_tally["primary"]
@@ -502,7 +522,7 @@ def process_alignment_records_for_a_read(
     bam_writer.write(
         pysam.AlignedSegment.from_dict(
             add_assigned_types_to_record(
-                prim["rec"], prim["map_type"], prim["map_subtype"]
+                prim["rec"], prim["map_ref_label"], prim["map_target_overlap"]
             ),
             prim["rec"].header,
         )
@@ -513,7 +533,7 @@ def process_alignment_records_for_a_read(
         bam_writer.write(
             pysam.AlignedSegment.from_dict(
                 add_assigned_types_to_record(
-                    supp["rec"], supp["map_type"], supp["map_subtype"]
+                    supp["rec"], supp["map_ref_label"], supp["map_target_overlap"]
                 ),
                 supp["rec"].header,
             )
@@ -521,76 +541,164 @@ def process_alignment_records_for_a_read(
         del supp["rec"]
         out_alignments.writerow(supp)
 
-    sum_info = {
+    read_info = {
         "read_id": prim["read_id"],
-        "read_len": prim["read_len"],
+        "read_len": prim["read_len"],  # XXX redundant but convenient
         "has_primary": prim["is_mapped"],
         "has_supp": "Y" if supp is not None else "N",
         "assigned_type": "NA",
         "assigned_subtype": "NA",
         "effective_count": 1,
+        "read_ref_label": "NA" if prim["is_mapped"] == "Y" else "unmapped",
+        "read_target_overlap": "NA",
     }
-    if sum_info["has_primary"] == "Y":
-        if prim["map_type"] == "vector":
-            if supp is None:  # special case: primary only, maps to vector --> is ssAAV
-                # double check the special case where there was supp candidates but no companion
-                if len(supps) > 0:
-                    sum_type = "unclassified"  # might be a weird case ex: a read covers the region twice as on + strand
-                    sum_subtype = prim["map_subtype"]
-                else:  # never had any supp candidates, def ssAAV
-                    sum_type = "ssAAV"
-                    sum_subtype = prim["map_subtype"]
-            elif supp["map_type"] == "vector":
-                if supp_orientation == "+/-":
-                    # special case, primary+ supp, maps to vector, --> is scAAV
-                    sum_type = "scAAV"
-                else:
-                    assert supp_orientation == "+/+"
-                    sum_type = "tandem"
-                if supp["map_subtype"] == prim["map_subtype"]:
-                    sum_subtype = prim["map_subtype"]
-                else:
-                    sum_subtype = prim["map_subtype"] + "|" + supp["map_subtype"]
-            else:  # primary is in vector, supp not in vector
-                sum_type = prim["map_type"] + "|" + supp["map_type"]
-                sum_subtype = prim["map_subtype"] + "|" + supp["map_subtype"]
-        # mapping to non-AAV vector region
-        elif supp is None:
-            sum_type = prim["map_type"]
-            sum_subtype = prim["map_subtype"]
-        elif supp["map_type"] == prim["map_type"]:
-            sum_type = prim["map_type"]
-            if supp["map_subtype"] == prim["map_subtype"]:
-                sum_subtype = prim["map_subtype"]
-            else:
-                sum_subtype = prim["map_subtype"] + "|" + supp["map_subtype"]
+    if read_info["has_primary"] == "Y":
+        # Set read_ref_label to a known label, chimeric-(non)vector, or leave as "NA" or "unmapped"
+        OLD_CHIMERIC_LOGIC = True
+        if OLD_CHIMERIC_LOGIC:
+            read_ref_labels = [prim["map_ref_label"]]
+            if supp is not None and supp["map_ref_label"] != prim["map_ref_label"]:
+                read_ref_labels.append(supp["map_ref_label"])
         else:
-            sum_type = prim["map_type"] + "|" + supp["map_type"]
-            sum_subtype = prim["map_subtype"] + "|" + supp["map_subtype"]
-        sum_info["assigned_type"] = sum_type
-        sum_info["assigned_subtype"] = sum_subtype
+            read_ref_labels = [
+                prim["map_ref_label"],
+                *{
+                    s["map_ref_label"]
+                    for s in supps
+                    if s["map_ref_label"] != prim["map_ref_label"]
+                },
+            ]
+        if len(read_ref_labels) == 1:
+            read_info["read_ref_label"] = read_ref_labels[0]
+        elif "vector" in read_ref_labels:
+            read_info["read_ref_label"] = "chimeric-vector"
+        else:
+            read_info["read_ref_label"] = "chimeric-nonvector"
 
-    # ###############################################################
-    # 'effective_count' - now look at whether this is an ssAAV type
-    # ex: <movie>/<zmw>/ccs   means potential two species (effective count of 2)
-    # ex: <movie>/<zmw>/ccs/fwd or rev   is just one
-    # NOTE: this can still be undercounting becuz not considering thing that are not ssAAV
-    # ###############################################################
-    if sum_info["assigned_type"] == "ssAAV":
-        if sum_info["read_id"].endswith("/ccs"):
-            sum_info["effective_count"] = 2
-        # elif sum_info['read_id'].endswith('/ccs/fwd') or sum_info['read_id'].endswith('/ccs/rev'):
-        #    sum_info['effective_count'] = 1  # not needed, default is to 1
+        # Set read_target_overlap from primary and supplementary target_overlap (if any)
+        if supp is None:
+            read_target_overlap = prim["map_target_overlap"]
+        else:
+            read_target_overlap = pipe_union(
+                prim["map_target_overlap"], supp["map_target_overlap"]
+            )
 
-    out_per_read.writerow(sum_info)
-    logging.debug("%s", sum_info)
+        # For vector reads, assigned type and subtype depending on context
+        # based on orientation, assigned_type, vector_type...
+        read_type, read_subtype = "NA", "NA"
+        if read_info["read_ref_label"] == "vector":
+            # Special cases, regardless of ss/scAAV
+            if read_target_overlap == "backbone":
+                read_type, read_subtype = "backbone", "backbone"
+            elif supp is None and len(supps) > 0:
+                # Primary and supplementary alignments diverge, instead of overlapping
+                read_type, read_subtype = "other-vector", "complex"
+            elif supp_orientation == "+/+":
+                # Supplementary alignment duplicates the primary in the same direction
+                read_type, read_subtype = "other-vector", "tandem"
+
+            # ssAAV classification
+            elif vector_type == "ssaav":
+                if supp is None:
+                    read_type = "ssAAV"
+                    # Proper ssAAV subtypes
+                    if read_target_overlap in (
+                        "full",
+                        "full-gap",
+                        "left-partial",
+                        "right-partial",
+                        "partial",
+                    ):
+                        read_subtype = read_target_overlap
+                    elif read_target_overlap == "vector+backbone":
+                        read_subtype = "read-through"
+                        # TODO - distinguish "reverse-packaging" w/ ITR coordinates
+                    else:
+                        raise NotImplementedError(
+                            f"Unrecognized {read_target_overlap=}"
+                        )
+                else:
+                    # Not-really-ssAAV subtypes
+                    read_type = "other-vector"
+                    assert (
+                        supp_orientation == "+/-"
+                    ), f"Unrecognized {supp_orientation=}"
+                    if read_target_overlap == "left-partial":
+                        read_subtype = "left-snapback"
+                    elif read_target_overlap == "right-partial":
+                        read_subtype = "right-snapback"
+                    elif read_target_overlap in ("full", "full-gap"):
+                        read_subtype = "unresolved-dimer"
+                    elif "|" in read_target_overlap:
+                        read_subtype = "complex"
+                    else:
+                        # XXX partial, vector+backbone, ...
+                        read_subtype = "complex"
+
+            # scAAV classification
+            elif vector_type == "scaav":
+                if supp_orientation == "+/-":
+                    read_type = "scAAV"
+                    # TODO - scAAV subtypes
+                    if read_target_overlap in ("full", "full-gap", "partial"):
+                        read_subtype = read_target_overlap
+                    elif read_target_overlap == "left-partial":
+                        read_subtype = "snapback"
+                    elif read_target_overlap == "right-partial":
+                        # NB: Replication from mITR shouldn't happen -- special case
+                        # Proposed term "direct-plasmid-packaged"
+                        read_type, read_subtype = "other-vector", "unclassified"
+                    elif read_target_overlap == "vector+backbone":
+                        read_subtype = "read-through"
+                        # TODO - distinguish "reverse-packaging" w/ ITR coordinates
+                    elif "|" in read_target_overlap:
+                        read_type, read_subtype = "other-vector", "complex"
+                    else:
+                        raise NotImplementedError(
+                            f"Unrecognized {read_target_overlap=}"
+                        )
+
+                else:
+                    read_type = "other-vector"
+                    assert supp_orientation is None, f"Unrecognized {supp_orientation=}"
+                    # TODO - not-really-scAAV subtypes
+                    if read_target_overlap == "left-partial":
+                        read_subtype = "itr-partial"
+                    else:
+                        read_subtype = "unclassified"
+
+            else:
+                raise NotImplementedError(f"Unimplemented vector_type: {vector_type}")
+
+        read_info["read_target_overlap"] = read_target_overlap
+        read_info["assigned_type"] = read_type
+        read_info["assigned_subtype"] = read_subtype
+
+    # Infer 'effective_count' from read names:
+    # * "<movie>/<zmw>/ccs" -- potentially two molecular species (effective count of 2)
+    # * "<movie>/<zmw>/ccs/fwd" or "/rev" -- just one (keep default effective count 1)
+    # NOTE: This fails to count some scAAV reads that also represent 2 species; these
+    # cannot be detected because the dumbell info is not included in the PacBio CCS or
+    # subread BAMs. But they are only a small fraction of the reads.
+
+    if (  # read_info["assigned_type"] == "ssAAV" # -- equivalent
+        read_info["has_primary"] == "Y"
+        and prim["map_ref_label"] == "vector"
+        and len(supps) == 0
+        and read_info["read_id"].endswith("/ccs")
+    ):
+        read_info["effective_count"] = 2
+
+    out_per_read.writerow(read_info)
+    logging.debug("%s", read_info)
     # pdb.set_trace()
 
 
 def run_processing_parallel(
-    sample_id, sorted_sam_filename, annotation, output_prefix, num_chunks=1
+    sample_id, vector_type, sorted_sam_filename, annotation, output_prefix, num_chunks=1
 ):
     reader = pysam.AlignmentFile(open(sorted_sam_filename), check_sq=False)
+    # Get all distinct read names, keeping input order
     readname_list = [next(reader).qname]
     for r in reader:
         if r.qname != readname_list[-1]:
@@ -599,30 +707,37 @@ def run_processing_parallel(
     total_num_reads = len(readname_list)
     chunk_size = (total_num_reads // num_chunks) + 1
     logging.info(
-        f"Total {total_num_reads} reads, dividing into {num_chunks} "
-        f"chunks of size {chunk_size}..."
+        "Total %d reads, dividing into %d chunks of size %d...",
+        total_num_reads,
+        num_chunks,
+        chunk_size,
     )
 
     pool = []
     for i in range(num_chunks):
+        starting_readname = readname_list[i * chunk_size]
+        ending_readname = (
+            None
+            if (i + 1) * chunk_size > total_num_reads
+            else readname_list[(i + 1) * chunk_size]
+        )
         p = Process(
             target=process_alignment_bam,
             args=(
                 sample_id,
+                vector_type,
                 sorted_sam_filename,
                 annotation,
                 output_prefix + "." + str(i + 1),
-                readname_list[i * chunk_size],
-                None
-                if (i + 1) * chunk_size > total_num_reads
-                else readname_list[(i + 1) * chunk_size],
+                starting_readname,
+                ending_readname,
             ),
         )
         p.start()
         pool.append(p)
         logging.info("Going from %s to %s", i * chunk_size, (i + 1) * chunk_size)
     for i, p in enumerate(pool):
-        logging.debug(f"DEBUG: Waiting for {i}th pool to finish.")
+        logging.debug("DEBUG: Waiting for pool %d to finish.", i)
         p.join()
 
     # Combine the data together for *.nonmatch_stat.tsv, *.per_read.tsv, *.alignments.tsv
@@ -698,14 +813,19 @@ def run_processing_parallel(
 
 def main(args):
     """Entry point."""
-    annotation = read_annotation_file(args.annotation_txt)
+    annotation = load_annotation_file(args.annotation_txt)
     if args.cpus == 1:
         per_read_tsv, full_out_bam = process_alignment_bam(
-            args.sample_id, args.sam_filename, annotation, args.output_prefix
+            args.sample_id,
+            args.vector_type,
+            args.sam_filename,
+            annotation,
+            args.output_prefix,
         )
     else:
         per_read_tsv, full_out_bam = run_processing_parallel(
             args.sample_id,
+            args.vector_type,
             args.sam_filename,
             annotation,
             args.output_prefix,
@@ -801,6 +921,12 @@ if __name__ == "__main__":
     parser.add_argument("annotation_txt", help="Annotation file")
     parser.add_argument("output_prefix", help="Output prefix")
     parser.add_argument("-i", "--sample-id", required=True, help="Sample unique ID")
+    parser.add_argument(
+        "--vector-type",
+        choices=["scaav", "ssaav", "unspecified"],
+        default="unspecified",
+        help="Vector type; one of: scaav, ssaav, unspecified",
+    )
     parser.add_argument(
         "--max-allowed-missing-flanking",
         default=100,

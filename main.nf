@@ -115,7 +115,6 @@ workflow laava {
     flipflop_assignments_tsv = make_report.out.flipflop_assignments_tsv
     flipflop_bams = make_report.out.flipflop_bams
     alignments_tsv = make_report.out.alignments_tsv
-    readsummary_tsv = make_report.out.readsummary_tsv
     sequence_error_tsv = make_report.out.sequence_error_tsv
     flipflop_tsv = make_report.out.flipflop_tsv
     rdata = make_report.out.rdata

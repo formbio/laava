@@ -30,7 +30,7 @@ valid_subtypes <- c('full', 'full-gap', 'left-partial', 'right-partial', 'wtITR-
 
 
 # =========================
-# annotation.txt -> `annot`
+# annotation.txt -> TARGET_REGION_{START,END}(_REPCAP)
 # -------------------------
 # Read the annotation file to find the vector target region
 # ----------------------------------------------------------
@@ -64,69 +64,47 @@ for (i in 1:dim(annot)[1]) {
 # alignments.tsv
 # -------------------------------------
 
-x.all.summary <- read_tsv(paste0(r_params$input_prefix, '.alignments.tsv'), show_col_types = FALSE) %>%
-   mutate(map_start = map_start0, map_end = map_end1)
+x.all.summary <- read_tsv(paste0(r_params$input_prefix, '.alignments.tsv'), show_col_types = FALSE)
 
 
 # ---------------------------------------
-# {{{ per_read.tsv -> readsummary.tsv }}}
+# per_read.tsv
 # ---------------------------------------
 
-x.all.read <- read_tsv(paste0(r_params$input_prefix, '.per_read.tsv'), show_col_types = FALSE) %>%
-  mutate(SampleID = r_params$sample_id, .before = read_id)
+x.all.read <- read_tsv(paste0(r_params$input_prefix, '.per_read.tsv'), show_col_types = FALSE)
 
 # Filter to ssAAV/scAAV vector only
 # NB: also used by sequence-error.tsv below
-x.read.vector <- filter(x.all.read, assigned_type %in% c('scAAV', 'ssAAV'))
+# XXX this df is only in Rdata, for report display
+x.read.vector <- filter(x.all.read, read_ref_label == "vector")
 
-# XXX only in Rdata, i.e. for the report -- but source is summary/alignments.tsv
+# XXX only in Rdata, i.e. for the report plots -- but source is summary/alignments.tsv
 # Filter for ss/scAAV vector only
 x.summary.vector <- filter(x.all.summary, read_id %in% x.read.vector$read_id)
 
-
-total_num_reads <- dim(x.read.vector)[1]
-x.read.vector$subtype <- x.read.vector$assigned_subtype
-# Call "other" all complex and multi-part AAV alignments
-x.read.vector[!x.read.vector$subtype %in% valid_subtypes, "subtype"] <- 'other'
-# Call "snapback" any scAAV with an ITR-containing partial alignment but no full
-# alignment
-if (r_params$vector_type == "ssaav") {
-  x.read.vector[((x.read.vector$assigned_type == "scAAV") &
-    (x.read.vector$assigned_subtype == "left-partial")
-  ), "subtype"] <- "left-snapback"
-  x.read.vector[((x.read.vector$assigned_type == "scAAV") &
-    (x.read.vector$assigned_subtype == "right-partial")
-  ), "subtype"] <- "right-snapback"
-}
+# XXX only in Rdata
+total_read_count_all <- sum(x.all.read$effective_count) # dim(x.all.read)[1]
+# "Assigned types by read alignment characteristics"
+df.read1 <- x.all.read %>%
+  group_by(read_ref_label, assigned_type) %>%
+  summarise(e_count = sum(effective_count)) %>%
+  mutate(freq = round(e_count * 100 / total_read_count_all, 2))
+df.read1 <- df.read1[order(-df.read1$freq), ]
 
 # XXX only in Rdata
-total_read_count.vector <- sum(x.read.vector$effective_count)
+total_read_count_vector <- sum(x.read.vector$effective_count)
 df.read.vector1 <- x.read.vector %>%
   group_by(assigned_type) %>%
   summarise(e_count = sum(effective_count)) %>%
-  mutate(freq = round(e_count * 100 / total_read_count.vector, 2))
+  mutate(freq = round(e_count * 100 / total_read_count_vector, 2))
 df.read.vector1 <- df.read.vector1[order(-df.read.vector1$freq), ]
 
 # XXX only in Rdata; also used in flipflop code below
 df.read.vector2 <- x.read.vector %>%
   group_by(assigned_type, assigned_subtype) %>%
   summarise(e_count = sum(effective_count)) %>%
-  mutate(freq = round(e_count * 100 / total_read_count.vector, 2))
+  mutate(freq = round(e_count * 100 / total_read_count_vector, 2))
 df.read.vector2 <- df.read.vector2[order(-df.read.vector2$freq), ]
-
-# XXX only in Rdata
-total_read_count.all <- sum(x.all.read$effective_count) #dim(x.all.read)[1]
-df.read1 <- x.all.read %>%
-  group_by(assigned_type) %>%
-  summarise(e_count = sum(effective_count)) %>%
-  mutate(freq = round(e_count * 100 / total_read_count.all, 2))
-df.read1 <- df.read1[order(-df.read1$freq), ]
-
-x.all.read[is.na(x.all.read$assigned_type), "assigned_type"] <- 'unmapped'
-x.all.read[grep("|", as.character(x.all.read$assigned_type), fixed = T), "assigned_type"] <- 'chimeric'
-x.all.read[!(x.all.read$assigned_type %in% valid_types), "assigned_type"] <- 'other'
-x.all.read[!(x.all.read$assigned_subtype %in% valid_subtypes), "assigned_subtype"] <- 'other'
-write_tsv(x.all.read, paste0(r_params$input_prefix, ".readsummary.tsv"))
 
 
 # ==================================================

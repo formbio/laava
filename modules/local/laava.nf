@@ -88,7 +88,6 @@ process make_report() {
     // intermediate data
     path("${sample_id}.metadata.tsv"), emit: metadata_tsv
     path("${sample_id}.alignments.tsv"), emit: alignments_tsv
-    path("${sample_id}.readsummary.tsv"), emit: readsummary_tsv
     path("${sample_id}.sequence-error.tsv"), emit: sequence_error_tsv
     path("${sample_id}.flipflop.tsv"), emit: flipflop_tsv, optional: true
     path("${sample_id}.Rdata"), emit: rdata, optional: true

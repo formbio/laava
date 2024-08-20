@@ -17,7 +17,7 @@ ss: $(out_dir)/ss_AAV_report.html
 
 test: $(out_dir)/sc.Rdata $(out_dir)/ss.Rdata
 	./compare_tsvs.sh build-snapshot build \
-		sc.alignments.tsv sc.readsummary.tsv ss.alignments.tsv ss.readsummary.tsv ss.flipflop.tsv \
+		sc.alignments.tsv sc.per_read.tsv ss.alignments.tsv ss.per_read.tsv ss.flipflop.tsv \
 		&& echo "OK" || echo "FAIL"
 
 $(out_dir)/sc_AAV_report.html $(out_dir)/ss_AAV_report.html: \
@@ -38,10 +38,10 @@ $(out_dir)/ss.flipflop_assignments.tsv: ../src/get_flipflop_config.py $(out_dir)
 
 
 $(out_dir)/sc.tagged.bam: ../src/summarize_AAV_alignment.py $(in_dir)/sc.subsample005.bam $(out_dir)/sc.annotation.txt
-	$^ $(out_dir)/sc -i sc.subsample005 --cpus $(NCPU)
+	$^ $(out_dir)/sc --sample-id sc.subsample005 --vector-type scaav --cpus $(NCPU)
 
 $(out_dir)/ss.tagged.bam: ../src/summarize_AAV_alignment.py $(in_dir)/ss.subsample005.bam $(out_dir)/ss.annotation.txt
-	$^ $(out_dir)/ss -i ss.subsample005 --cpus $(NCPU)
+	$^ $(out_dir)/ss --sample-id ss.subsample005 --vector-type ssaav --cpus $(NCPU)
 
 
 $(out_dir)/sc.annotation.txt: ../src/prepare_annotation.py $(in_dir)/sc.annotation.bed $(out_dir)/sc.reference_names.tsv

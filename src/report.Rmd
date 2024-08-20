@@ -82,14 +82,14 @@ The definitions of full, partial, and backbone reads are the same as in ssAAV.
 
 ```{r sopt1, message=FALSE, warning=FALSE}
 flextable(df.read1) %>%
-  set_header_labels(values = c("Assigned Type", "Count", "Frequency (%)"))
+  set_header_labels(values = c("Mapped Reference", "Assigned Type", "Count", "Frequency (%)"))
 ```
 
 ```{r barpercentreads, message=FALSE, warning=FALSE}
-countreads <- df.read1 %>% dplyr::filter(assigned_type != 'Lambda')
+countreads <- df.read1 %>% dplyr::filter(read_ref_label != "lambda")
 
 # Bar chart
-ggplot(countreads, aes(x = assigned_type, y = freq, fill = assigned_type)) +
+ggplot(countreads, aes(x = read_ref_label, y = freq, fill = read_ref_label)) +
   geom_bar(stat = 'identity') +
   xlab("Sequence") +
   scale_y_continuous("Reads (%)",
@@ -97,18 +97,18 @@ ggplot(countreads, aes(x = assigned_type, y = freq, fill = assigned_type)) +
                      expand = expansion(mult = c(0, 0.05)))
 
 # Pie chart
-ggplot(countreads, aes(x = "", y = e_count, fill = assigned_type)) +
+ggplot(countreads, aes(x = "", y = e_count, fill = read_ref_label)) +
   geom_bar(stat = "identity", width = 1) +
   coord_polar("y", start = 0) +
   theme_void()
 ```
 
 
-## Single-stranded vs self-complementary frequency
+## Vector type frequencies (was: Single-stranded vs self-complementary frequency)
 
 ```{r sopt2, message=FALSE, warning=FALSE}
 sopt2 <- df.read.vector1 %>%
-  mutate(totfreq = round(100 * e_count / total_read_count.all, 2))
+  mutate(totfreq = round(100 * e_count / total_read_count_all, 2))
 
 flextable(sopt2) %>%
   set_header_labels(values = c(
@@ -125,9 +125,9 @@ flextable(sopt2) %>%
 allowed_subtypes <- c('full', 'full-gap', 'vector+backbone')
 
 p2.atype_violin <- ggplot(
-  filter(x.read.vector, assigned_subtype %in% allowed_subtypes),
+  filter(x.read.vector, read_target_overlap %in% allowed_subtypes),
   aes(
-    x = paste(assigned_type, assigned_subtype, sep = '-'),
+    x = paste(assigned_type, read_target_overlap, sep = '-'),
     y = read_len
   )
 ) +
@@ -148,7 +148,7 @@ p2.atype_violin
 
 ```{r sopt3, message=FALSE, warning=FALSE}
 sopt3 <- df.read.vector2 %>%
-  mutate(totfreq = round(100 * e_count / total_read_count.all, 2)) %>%
+  mutate(totfreq = round(100 * e_count / total_read_count_all, 2)) %>%
   arrange(
     factor(assigned_type, levels = valid_types),
     factor(assigned_subtype, levels = valid_subtypes)
@@ -241,10 +241,14 @@ if (exists("ssff")) {
 
 # Distribution of read length by subtype
 
+<!--
+TODO XXX - conditional on params$vector_type, show (sc|ss)AAV, then other-vector
+-->
+
 ```{r lenhisto2_subtype, message=FALSE, warning=FALSE}
 # scAAV length histogram
 p1.scAAV_len_hist <- ggplot(filter(x.read.vector, assigned_type == 'scAAV'),
-                            aes(x = read_len, color = subtype)) +
+                            aes(x = read_len, color = assigned_subtype)) +
   geom_freqpoly() +
   labs(title = "Distribution of scAAV read length by subtype") +
   scale_x_continuous("Read length (bp)",
@@ -256,7 +260,7 @@ p1.scAAV_len_hist <- ggplot(filter(x.read.vector, assigned_type == 'scAAV'),
 
 # ssAAV length histogram
 p1.ssAAV_len_hist <- ggplot(filter(x.read.vector, assigned_type == 'ssAAV'),
-                            aes(x = read_len, color = subtype)) +
+                            aes(x = read_len, color = assigned_subtype)) +
   geom_freqpoly() +
   labs(title = "Distribution of ssAAV read length by subtype") +
   scale_x_continuous("Read length (bp)",
@@ -276,7 +280,7 @@ p1.ssAAV_len_hist
 ## Gene therapy construct
 
 ```{r lenhisto2_construct, message=FALSE, warning=FALSE}
-p1.map_starts <- ggplot(x.summary.vector, aes(map_start0 + 1, fill = map_subtype)) +
+p1.map_starts <- ggplot(x.summary.vector, aes(map_start0 + 1, fill = map_target_overlap)) +
   geom_histogram(aes(y = after_stat(count) / sum(after_stat(count))),
                  binwidth = 150,
                  boundary = 0,
@@ -295,7 +299,7 @@ p1.map_starts <- ggplot(x.summary.vector, aes(map_start0 + 1, fill = map_subtype
                      expand = c(0, 0)) +
   labs(title = "Distribution of mapped read starts on construct")
 
-p1.map_ends <- ggplot(x.summary.vector, aes(map_end1, fill = map_subtype)) +
+p1.map_ends <- ggplot(x.summary.vector, aes(map_end1, fill = map_target_overlap)) +
   geom_histogram(aes(y = after_stat(count) / sum(after_stat(count))),
                  binwidth = 150,
                  boundary = 0,
@@ -314,7 +318,7 @@ p1.map_ends <- ggplot(x.summary.vector, aes(map_end1, fill = map_subtype)) +
                      expand = c(0, 0)) +
   labs(title = "Distribution of mapped read ends on construct")
 
-p1.map_len <- ggplot(x.summary.vector, aes(map_len, fill = map_subtype)) +
+p1.map_len <- ggplot(x.summary.vector, aes(map_len, fill = map_target_overlap)) +
   geom_histogram(aes(y = after_stat(count) / sum(after_stat(count))),
                  binwidth = 150,
                  boundary = 0,
@@ -335,7 +339,7 @@ p1.map_len
 <!-- optional RepCap section -->
 
 ```{r lenhisto2_rc, message=FALSE, warning=FALSE, results='asis'}
-x.read.repcap <- filter(x.all.read, assigned_type == 'repcap')
+x.read.repcap <- filter(x.all.read, read_ref_label == 'repcap')
 
 # Only render this subsection if enough reads mapped to repcap
 if (dim(x.read.repcap)[1] > 10) {
