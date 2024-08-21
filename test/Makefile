@@ -37,10 +37,10 @@ $(out_dir)/ss.flipflop_assignments.tsv: ../src/get_flipflop_config.py $(out_dir)
 	$^ -o $(out_dir)/ss
 
 
-$(out_dir)/sc.tagged.bam: ../src/summarize_AAV_alignment.py $(in_dir)/sc.subsample005.bam $(out_dir)/sc.annotation.txt
+$(out_dir)/sc.tagged.bam: ../src/summarize_alignment.py $(in_dir)/sc.subsample005.bam $(out_dir)/sc.annotation.txt
 	$^ $(out_dir)/sc --sample-id sc.subsample005 --vector-type scaav --cpus $(NCPU)
 
-$(out_dir)/ss.tagged.bam: ../src/summarize_AAV_alignment.py $(in_dir)/ss.subsample005.bam $(out_dir)/ss.annotation.txt
+$(out_dir)/ss.tagged.bam: ../src/summarize_alignment.py $(in_dir)/ss.subsample005.bam $(out_dir)/ss.annotation.txt
 	$^ $(out_dir)/ss --sample-id ss.subsample005 --vector-type ssaav --cpus $(NCPU)
 
 

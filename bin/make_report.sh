@@ -21,8 +21,8 @@ else
 fi
 
 echo
-echo "Starting summarize_AAV_alignment"
-summarize_AAV_alignment.py \
+echo "Starting summarize_alignment"
+summarize_alignment.py \
     "$mapped_reads_sam" "$annotation_txt" "$sample_id" \
     --sample-id="$sample_id" \
     --vector-type="$vector_type" \
@@ -31,7 +31,7 @@ summarize_AAV_alignment.py \
     --max-allowed-missing-flanking=$max_allowed_missing_flanking \
     --cpus $(nproc)
 
-echo "Finished summarize_AAV_alignment"
+echo "Finished summarize_alignment"
 ls -Alh
 
 if [[ -n "$flipflop_name" || -n "$flipflop_fa" ]]; then

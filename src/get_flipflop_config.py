@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Get ITR flip flop configurations.
 
-Must have already run `summarize_AAV_alignment.py` to get a .tagged.BAM file!
+Must have already run `summarize_alignment.py` to get a .tagged.BAM file!
 """
 
 import csv
@@ -83,7 +83,7 @@ def identify_flip_flop(r, ff_seq):
     ):
         raise RuntimeError(
             "Input BAM records must have a `AX` tag assigned by first running "
-            "summarize_AAV_alignment.py. Abort!"
+            "summarize_alignment.py. Abort!"
         )
 
     config_left, config_right = "unclassified", "unclassified"

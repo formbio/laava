@@ -45,7 +45,7 @@ class AnnRow(NamedTuple):
     end: int
 
 
-# From summarize_AAV_alignment.py
+# From summarize_alignment.py
 ANNOT_TYPES = {"vector", "repcap", "helper", "lambda", "host"}
 
 
