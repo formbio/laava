@@ -76,21 +76,19 @@ process make_report() {
           path(flipflop_fa)
 
     output:
-    // summarize alignment
+    // summary tables
+    path("${sample_id}.metadata.tsv"), emit: metadata_tsv
+    path("${sample_id}.alignments.tsv"), emit: alignments_tsv
     path("${sample_id}.per_read.tsv"), emit: per_read_tsv
     path("${sample_id}.nonmatch_stat.tsv.gz"), emit: nonmatch_stat_tsvgz
+    path("${sample_id}.flipflop_assignments.tsv"), emit: flipflop_assignments_tsv, optional: true
+    path("${sample_id}.flipflop.tsv"), emit: flipflop_tsv, optional: true
+    // intermediate data
+    path("${sample_id}.Rdata"), emit: rdata, optional: true
     path("${sample_id}.tagged.bam"), emit: tagged_bam
     path("${sample_id}.*.tagged.sorted.bam"), emit: subtype_bams
     path("${sample_id}.*.tagged.sorted.bam.bai"), emit: subtype_bais
-    // flip-flop
-    path("${sample_id}.flipflop_assignments.tsv"), emit: flipflop_assignments_tsv, optional: true
     path("${sample_id}.*-flipflop.bam"), emit: flipflop_bams, optional: true
-    // intermediate data
-    path("${sample_id}.metadata.tsv"), emit: metadata_tsv
-    path("${sample_id}.alignments.tsv"), emit: alignments_tsv
-    path("${sample_id}.sequence-error.tsv"), emit: sequence_error_tsv
-    path("${sample_id}.flipflop.tsv"), emit: flipflop_tsv, optional: true
-    path("${sample_id}.Rdata"), emit: rdata, optional: true
     // report
     path("${sample_id}_AAV_report.html"), emit: aav_report_html
     path("${sample_id}_AAV_report.pdf"), emit: aav_report_pdf

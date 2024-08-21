@@ -114,23 +114,14 @@ df.read.vector2 <- df.read.vector2[order(-df.read.vector2$freq), ]
 x.all.err <- read_tsv(paste0(r_params$input_prefix, '.nonmatch_stat.tsv.gz'), show_col_types = FALSE) %>%
   mutate(SampleID = r_params$sample_id, .before = read_id)
 
+# Spell out nonmatch types -- from CIGAR codes to words
 x.all.err[x.all.err$type == 'D', "type"] <- 'deletion'
 x.all.err[x.all.err$type == 'I', "type"] <- 'insertion'
 x.all.err[x.all.err$type == 'X', "type"] <- 'mismatch'
 x.all.err[x.all.err$type == 'N', "type"] <- 'gaps'
 # Filter for ss/scAAV vector only
 x.err.vector <- filter(x.all.err, read_id %in% x.read.vector$read_id)
-total_err <- dim(x.err.vector)[1]
 x.err.vector$pos0_div <- (x.err.vector$pos0 %/% 10 * 10)
-
-# XXX categories not used in report anymore
-x.err.vector$type_len_cat <- "1-10"
-x.err.vector[x.err.vector$type_len > 10, "type_len_cat"] <- "11-100"
-x.err.vector[x.err.vector$type_len > 100, "type_len_cat"] <- "100-500"
-x.err.vector[x.err.vector$type_len > 500, "type_len_cat"] <- ">500"
-x.err.vector$type_len_cat <- ordered(x.err.vector$type_len_cat, levels = c('1-10', '11-100', '100-500', '>500'))
-
-write_tsv(x.err.vector, paste0(r_params$input_prefix, ".sequence-error.tsv"))
 
 # XXX only in Rdata
 df.err.vector <- x.err.vector %>%
