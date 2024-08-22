@@ -10,7 +10,6 @@ all: laava laava_dev
 clean:
 	rm -f .nextflow.log*
 	rm -fr .nextflow/*
-	rm -fr test/build/*
 	rm -fr workflow-outputs/*
 
 
