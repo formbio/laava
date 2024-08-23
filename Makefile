@@ -4,6 +4,12 @@
 wf_out_dir := workflow-outputs/output
 snapshot_dir := test/build-snapshot
 
+# Form Bio workflow deployment
+formbio_org := form-bio-solutions
+formbio_project := aav-qc-workshop
+# Avoid uploading the local test dir; it's > the upload size limit
+tmp_stash_dir := /tmp/laava-deploy-test
+
 all: laava laava_dev
 
 .PHONY: clean laava laava_dev sc ss diffcheck-sc diffcheck-ss
@@ -36,3 +42,11 @@ diffcheck-sc: $(wf_out_dir)/sc.subsample005.per_read.tsv
 diffcheck-ss: $(wf_out_dir)/ss.subsample005.per_read.tsv $(wf_out_dir)/ss.subsample005.flipflop.tsv
 	#diff $(snapshot_dir)/ss.per_read.tsv $< && echo "OK"
 	diff $(snapshot_dir)/ss.flipflop.tsv $(lastword $^) && echo "OK"
+
+formbio: clean
+	mv test/ "$(tmp_stash_dir)"
+	formbio workflow upload \
+		--org "$(formbio_org)" --project "$(formbio_project)" \
+		--env prod --visibility PROJECT \
+		--version dev --repo . --workflow laava
+	mv "$(tmp_stash_dir)" test
