@@ -274,7 +274,7 @@ def process_alignment_bam(
         "map_end1",
         "map_len",
         "map_iden",
-        "map_ref_label",
+        "map_label",
         "map_target_overlap",
     ]
     PER_READ_FIELDS = [
@@ -467,7 +467,7 @@ def process_alignment_records_for_a_read(
             "map_end1": "NA",
             "map_len": "NA",
             "map_iden": "NA",
-            "map_ref_label": "NA",
+            "map_label": "NA",
             "map_target_overlap": "NA",
         }
         if r.is_unmapped:
@@ -490,7 +490,7 @@ def process_alignment_records_for_a_read(
             info["map_iden"] = format(1.0 - total_err / total_len, ".10f")
 
             a_ref_label, a_target_overlap = assign_alignment_type(r, annotation)
-            info["map_ref_label"] = a_ref_label
+            info["map_label"] = a_ref_label
             info["map_target_overlap"] = a_target_overlap
             logging.debug("%s %s %s", r.qname, a_ref_label, a_target_overlap)
             # pdb.set_trace()
@@ -522,7 +522,7 @@ def process_alignment_records_for_a_read(
     bam_writer.write(
         pysam.AlignedSegment.from_dict(
             add_assigned_types_to_record(
-                prim["rec"], prim["map_ref_label"], prim["map_target_overlap"]
+                prim["rec"], prim["map_label"], prim["map_target_overlap"]
             ),
             prim["rec"].header,
         )
@@ -533,7 +533,7 @@ def process_alignment_records_for_a_read(
         bam_writer.write(
             pysam.AlignedSegment.from_dict(
                 add_assigned_types_to_record(
-                    supp["rec"], supp["map_ref_label"], supp["map_target_overlap"]
+                    supp["rec"], supp["map_label"], supp["map_target_overlap"]
                 ),
                 supp["rec"].header,
             )
@@ -549,23 +549,23 @@ def process_alignment_records_for_a_read(
         "assigned_type": "NA",
         "assigned_subtype": "NA",
         "effective_count": 1,
-        "read_ref_label": "NA" if prim["is_mapped"] == "Y" else "unmapped",
+        "read_ref_label": prim["map_name"] if prim["is_mapped"] == "Y" else "(unmapped)", # XXX
         "read_target_overlap": "NA",
     }
     if read_info["has_primary"] == "Y":
         # Set read_ref_label to a known label, chimeric-(non)vector, or leave as "NA" or "unmapped"
         OLD_CHIMERIC_LOGIC = True
         if OLD_CHIMERIC_LOGIC:
-            read_ref_labels = [prim["map_ref_label"]]
-            if supp is not None and supp["map_ref_label"] != prim["map_ref_label"]:
-                read_ref_labels.append(supp["map_ref_label"])
+            read_ref_labels = [prim["map_label"]]
+            if supp is not None and supp["map_label"] != prim["map_label"]:
+                read_ref_labels.append(supp["map_label"])
         else:
             read_ref_labels = [
-                prim["map_ref_label"],
+                prim["map_label"],
                 *{
-                    s["map_ref_label"]
+                    s["map_label"]
                     for s in supps
-                    if s["map_ref_label"] != prim["map_ref_label"]
+                    if s["map_label"] != prim["map_label"]
                 },
             ]
         if len(read_ref_labels) == 1:
@@ -683,7 +683,7 @@ def process_alignment_records_for_a_read(
 
     if (  # read_info["assigned_type"] == "ssAAV" # -- equivalent
         read_info["has_primary"] == "Y"
-        and prim["map_ref_label"] == "vector"
+        and prim["map_label"] == "vector"
         and len(supps) == 0
         and read_info["read_id"].endswith("/ccs")
     ):

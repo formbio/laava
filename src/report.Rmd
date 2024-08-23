@@ -89,8 +89,8 @@ flextable(df.read1) %>%
 countreads <- df.read1 %>% dplyr::filter(read_ref_label != "lambda")
 
 # Bar chart
-ggplot(countreads, aes(x = read_ref_label, y = freq, fill = read_ref_label)) +
-  geom_bar(stat = 'identity') +
+ggplot(countreads, aes(x = read_ref_label, y = freq, fill = assigned_type)) +
+  geom_bar(stat = "identity") +
   xlab("Sequence") +
   scale_y_continuous("Reads (%)",
                      limits = c(0, NA),
@@ -144,7 +144,7 @@ p2.atype_violin
 
 # Assigned AAV read types detailed analysis
 
-## Assigned AAV types (top 20)
+## Assigned AAV types
 
 ```{r sopt3, message=FALSE, warning=FALSE}
 sopt3 <- df.read.vector2 %>%
@@ -154,7 +154,7 @@ sopt3 <- df.read.vector2 %>%
     factor(assigned_subtype, levels = valid_subtypes)
   )
 
-flextable(sopt3[1:min(nrow(sopt3), 20), ]) %>%
+flextable(sopt3) %>%
   set_header_labels(
     values = c(
       "Assigned Type",
@@ -241,37 +241,19 @@ if (exists("ssff")) {
 
 # Distribution of read length by subtype
 
-<!--
-TODO XXX - conditional on params$vector_type, show (sc|ss)AAV, then other-vector
--->
-
 ```{r lenhisto2_subtype, message=FALSE, warning=FALSE}
-# scAAV length histogram
-p1.scAAV_len_hist <- ggplot(filter(x.read.vector, assigned_type == 'scAAV'),
-                            aes(x = read_len, color = assigned_subtype)) +
+# Single plot
+p1_subtypes_len_hist <- ggplot(filter(x.read.vector),
+                               aes(x = read_len, color = assigned_subtype)) +
   geom_freqpoly() +
-  labs(title = "Distribution of scAAV read length by subtype") +
+  labs(title = "Distribution of read length by subtype") +
   scale_x_continuous("Read length (bp)",
                      limits = c(0, NA),
                      expand = expansion(mult = c(0, 0.05))) +
   scale_y_continuous("Count",
                      limits = c(0, NA),
                      expand = expansion(mult = c(0, 0.05)))
-
-# ssAAV length histogram
-p1.ssAAV_len_hist <- ggplot(filter(x.read.vector, assigned_type == 'ssAAV'),
-                            aes(x = read_len, color = assigned_subtype)) +
-  geom_freqpoly() +
-  labs(title = "Distribution of ssAAV read length by subtype") +
-  scale_x_continuous("Read length (bp)",
-                     limits = c(0, NA),
-                     expand = expansion(mult = c(0, 0.05))) +
-  scale_y_continuous("Count",
-                     limits = c(0, NA),
-                     expand = expansion(mult = c(0, 0.05)))
-
-p1.scAAV_len_hist
-p1.ssAAV_len_hist
+p1_subtypes_len_hist
 ```
 
 

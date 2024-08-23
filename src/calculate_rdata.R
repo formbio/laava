@@ -89,7 +89,7 @@ df.read1 <- x.all.read %>%
   group_by(read_ref_label, assigned_type) %>%
   summarise(e_count = sum(effective_count)) %>%
   mutate(freq = round(e_count * 100 / total_read_count_all, 2))
-df.read1 <- df.read1[order(-df.read1$freq), ]
+df.read1 <- df.read1[order(df.read1$read_ref_label, df.read1$freq, decreasing=TRUE), ]
 
 # XXX only in Rdata
 total_read_count_vector <- sum(x.read.vector$effective_count)
