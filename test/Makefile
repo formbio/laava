@@ -27,7 +27,7 @@ $(out_dir)/sc_AAV_report.html $(out_dir)/ss_AAV_report.html: \
 
 
 $(out_dir)/sc.Rdata: ../src/calculate_rdata.R ../src/report.Rmd $(out_dir)/sc.annotation.txt $(out_dir)/sc.tagged.bam
-	$< $(out_dir)/sc $(out_dir)/sc.annotation.txt sc.subsample005 sc.subsample005 "scaav"
+	$< $(out_dir)/sc $(out_dir)/sc.annotation.txt sc.subsample005 "scaav"
 
 $(out_dir)/ss.Rdata: ../src/calculate_rdata.R ../src/report.Rmd $(out_dir)/ss.annotation.txt $(out_dir)/ss.flipflop_assignments.tsv $(out_dir)/ss.tagged.bam
 	$< $(out_dir)/ss $(out_dir)/ss.annotation.txt ss.subsample005 "ssaav" $(out_dir)/ss.flipflop_assignments.tsv
