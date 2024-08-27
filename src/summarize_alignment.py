@@ -681,9 +681,7 @@ def process_alignment_records_for_a_read(
     # cannot be detected because the dumbell info is not included in the PacBio CCS or
     # subread BAMs. But they are only a small fraction of the reads.
 
-    if (  # read_info["assigned_type"] == "ssAAV" # -- equivalent
-        read_info["has_primary"] == "Y"
-        and prim["map_label"] == "vector"
+    if (read_info["has_primary"] == "Y"
         and len(supps) == 0
         and read_info["read_id"].endswith("/ccs")
     ):
