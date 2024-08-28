@@ -285,7 +285,7 @@ def process_alignment_bam(
         "assigned_type",
         "assigned_subtype",
         "effective_count",
-        "read_ref_label",
+        "reference_label",
         "read_target_overlap",
     ]
     NONMATCH_FIELDS = ["read_id", "pos0", "type", "type_len"]
@@ -549,11 +549,13 @@ def process_alignment_records_for_a_read(
         "assigned_type": "NA",
         "assigned_subtype": "NA",
         "effective_count": 1,
-        "read_ref_label": prim["map_name"] if prim["is_mapped"] == "Y" else "(unmapped)", # XXX
+        "reference_label": prim["map_name"]
+        if prim["is_mapped"] == "Y"
+        else "(unmapped)",
         "read_target_overlap": "NA",
     }
     if read_info["has_primary"] == "Y":
-        # Set read_ref_label to a known label, chimeric-(non)vector, or leave as "NA" or "unmapped"
+        # Set reference_label to a known label, chimeric-(non)vector, or leave as "NA" or "unmapped"
         OLD_CHIMERIC_LOGIC = True
         if OLD_CHIMERIC_LOGIC:
             read_ref_labels = [prim["map_label"]]
@@ -562,18 +564,14 @@ def process_alignment_records_for_a_read(
         else:
             read_ref_labels = [
                 prim["map_label"],
-                *{
-                    s["map_label"]
-                    for s in supps
-                    if s["map_label"] != prim["map_label"]
-                },
+                *{s["map_label"] for s in supps if s["map_label"] != prim["map_label"]},
             ]
         if len(read_ref_labels) == 1:
-            read_info["read_ref_label"] = read_ref_labels[0]
+            read_info["reference_label"] = read_ref_labels[0]
         elif "vector" in read_ref_labels:
-            read_info["read_ref_label"] = "chimeric-vector"
+            read_info["reference_label"] = "chimeric-vector"
         else:
-            read_info["read_ref_label"] = "chimeric-nonvector"
+            read_info["reference_label"] = "chimeric-nonvector"
 
         # Set read_target_overlap from primary and supplementary target_overlap (if any)
         if supp is None:
@@ -586,7 +584,7 @@ def process_alignment_records_for_a_read(
         # For vector reads, assigned type and subtype depending on context
         # based on orientation, assigned_type, vector_type...
         read_type, read_subtype = "NA", "NA"
-        if read_info["read_ref_label"] == "vector":
+        if read_info["reference_label"] == "vector":
             # Special cases, regardless of ss/scAAV
             if read_target_overlap == "backbone":
                 read_type, read_subtype = "backbone", "backbone"
@@ -681,7 +679,8 @@ def process_alignment_records_for_a_read(
     # cannot be detected because the dumbell info is not included in the PacBio CCS or
     # subread BAMs. But they are only a small fraction of the reads.
 
-    if (read_info["has_primary"] == "Y"
+    if (
+        read_info["has_primary"] == "Y"
         and len(supps) == 0
         and read_info["read_id"].endswith("/ccs")
     ):

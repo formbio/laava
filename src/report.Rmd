@@ -86,10 +86,10 @@ flextable(df.read1) %>%
 ```
 
 ```{r barpercentreads, message=FALSE, warning=FALSE}
-countreads <- df.read1 %>% dplyr::filter(read_ref_label != "lambda")
+countreads <- df.read1 %>% dplyr::filter(reference_label != "lambda")
 
 # Bar chart
-ggplot(countreads, aes(x = read_ref_label, y = freq, fill = assigned_type)) +
+ggplot(countreads, aes(x = reference_label, y = freq, fill = assigned_type)) +
   geom_bar(stat = "identity") +
   xlab("Sequence") +
   scale_y_continuous("Reads (%)",
@@ -97,7 +97,7 @@ ggplot(countreads, aes(x = read_ref_label, y = freq, fill = assigned_type)) +
                      expand = expansion(mult = c(0, 0.05)))
 
 # Pie chart
-ggplot(countreads, aes(x = "", y = e_count, fill = read_ref_label)) +
+ggplot(countreads, aes(x = "", y = e_count, fill = reference_label)) +
   geom_bar(stat = "identity", width = 1) +
   coord_polar("y", start = 0) +
   theme_void()
@@ -321,7 +321,7 @@ p1.map_len
 <!-- optional RepCap section -->
 
 ```{r lenhisto2_rc, message=FALSE, warning=FALSE, results='asis'}
-x.read.repcap <- filter(x.all.read, read_ref_label == 'repcap')
+x.read.repcap <- filter(x.all.read, reference_label == 'repcap')
 
 # Only render this subsection if enough reads mapped to repcap
 if (dim(x.read.repcap)[1] > 10) {

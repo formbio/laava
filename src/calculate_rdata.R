@@ -76,7 +76,7 @@ x.all.read <- read_tsv(paste0(r_params$input_prefix, '.per_read.tsv'), show_col_
 # Filter to ssAAV/scAAV vector only
 # NB: also used by sequence-error.tsv below
 # XXX this df is only in Rdata, for report display
-x.read.vector <- filter(x.all.read, read_ref_label == "vector")
+x.read.vector <- filter(x.all.read, reference_label == "vector")
 
 # XXX only in Rdata, i.e. for the report plots -- but source is summary/alignments.tsv
 # Filter for ss/scAAV vector only
@@ -86,10 +86,10 @@ x.summary.vector <- filter(x.all.summary, read_id %in% x.read.vector$read_id)
 total_read_count_all <- sum(x.all.read$effective_count) # dim(x.all.read)[1]
 # "Assigned types by read alignment characteristics"
 df.read1 <- x.all.read %>%
-  group_by(read_ref_label, assigned_type) %>%
+  group_by(reference_label, assigned_type) %>%
   summarise(e_count = sum(effective_count)) %>%
   mutate(freq = round(e_count * 100 / total_read_count_all, 2))
-df.read1 <- df.read1[order(df.read1$read_ref_label, df.read1$freq, decreasing=TRUE), ]
+df.read1 <- df.read1[order(df.read1$reference_label, df.read1$freq, decreasing=TRUE), ]
 
 # XXX only in Rdata
 total_read_count_vector <- sum(x.read.vector$effective_count)
