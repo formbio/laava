@@ -36,13 +36,19 @@ fi
 threads=$(nproc)
 minimap2 --eqx -a --secondary=no -t $threads all_refs.fa "$reads_fn" > tmp.mapped.sam
 # Sort the mapped reads by name
-samtools sort -@ $threads -n -O SAM -o "$sample_name.sort_by_name.sam" tmp.mapped.sam
+name_sam="$sample_name.sort_by_name.sam"
+samtools sort -@ $threads -n -O SAM -o "$name_sam" tmp.mapped.sam
 
 # Make a position-sorted BAM output file for other downstream consumers
-out_bam="$sample_name.sort_by_pos.bam"
+pos_bam="$sample_name.sort_by_pos.bam"
 # Drop unmapped reads
-samtools view -@ $threads --fast -F 4 -o tmp.sorted.bam tmp.mapped.sam
-samtools sort -@ $threads -o "$out_bam" tmp.sorted.bam
-samtools index "$out_bam"
+samtools view -@ $threads --fast -o tmp.sorted.bam tmp.mapped.sam
+samtools sort -@ $threads -o "$pos_bam" tmp.sorted.bam
+samtools index "$pos_bam"
 
+# Logging
 ls -Alh
+echo
+samtools flagstat "$name_sam"
+echo
+samtools idxstats "$pos_bam"

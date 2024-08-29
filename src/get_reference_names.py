@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Map reference sequence IDs to "source type name" categories for reporting.
+"""Map reference sequence IDs to "reference label" categories for reporting.
 
 Output is a 2-column TSV with no header:
 1. FASTA sequence ID
-2. Source type name, one of: "vector", "repcap", "helper", "host", "lambda"
+2. Reference label, one of: "vector", "repcap", "helper", "host", "lambda", or the original
+   sequence ID if it's not one of those.
 """
 
 import argparse
@@ -35,8 +36,8 @@ def _main(args):
     # Packaging sequences -- multi-FASTA; apply renaming
     if args.packaging:
         packaging_name_map = {
-            seq_id: source_type
-            for seq_id, source_type in [
+            seq_id: reference_label
+            for seq_id, reference_label in [
                 (args.repcap_name, "repcap"),
                 (args.helper_name, "helper"),
                 (args.lambda_name, "lambda"),

@@ -30,7 +30,7 @@ CIGAR_DICT = {
     9: "B",
 }
 
-annot_rex = re.compile(r"NAME=(\S+);TYPE=([a-zA-Z]+);(REGION=\d+\-\d+){0,1}")
+annot_rex = re.compile(r"NAME=([^;\s]+);TYPE=([^;\s]+);(REGION=\d+\-\d+){0,1}")
 ccs_rex = re.compile(r"\S+\/\d+\/ccs(\/fwd|\/rev)?")
 ANNOT_TYPE_PRIORITIES = {"vector": 1, "repcap": 2, "helper": 3, "lambda": 4, "host": 5}
 
@@ -49,7 +49,7 @@ def subset_sam_by_readname_list(
     exclude_subtype=False,
     exclude_type=False,
 ):
-    qname_list = {}  # qname --> (a_type, a_subtype)
+    qname_lookup = {}  # qname --> (a_type, a_subtype)
     for r in DictReader(open(per_read_tsv), delimiter="\t"):
         # pdb.set_trace()
         if (
@@ -61,14 +61,14 @@ def subset_sam_by_readname_list(
             or (not exclude_subtype and (r["assigned_subtype"] in wanted_subtypes))
             or (exclude_subtype and (r["assigned_subtype"] not in wanted_subtypes))
         ):
-            qname_list[r["read_id"]] = (r["assigned_type"], r["assigned_subtype"])
+            qname_lookup[r["read_id"]] = (r["assigned_type"], r["assigned_subtype"])
 
     cur_count = 0
     reader = pysam.AlignmentFile(in_bam, "rb", check_sq=False)
     writer = pysam.AlignmentFile(out_bam, "wb", header=reader.header)
     for r in reader:
-        if r.qname in qname_list:
-            d = add_assigned_types_to_record(r, *qname_list[r.qname])
+        if r.qname in qname_lookup:
+            d = add_assigned_types_to_record(r, *qname_lookup[r.qname])
             writer.write(pysam.AlignedSegment.from_dict(d, reader.header))
             cur_count += 1
             if max_count is not None and cur_count >= max_count:
@@ -147,7 +147,7 @@ def load_annotation_file(annot_filename):
         if m is None:
             raise RuntimeError(
                 f"{stuff} is not a valid annotation line! Should follow format "
-                "`NAME=xxxx;TYPE=xxxx;REGION=xxxx;`. Abort!"
+                "`NAME=xxxx;TYPE=xxxx;REGION=xxxx;` or `NAME=xxxx;TYPE=xxxx;`. Abort!"
             )
 
         seq_name = m.group(1)
@@ -162,8 +162,10 @@ def load_annotation_file(annot_filename):
                 f"Annotation file has multiple {ref_label} types. Abort!"
             )
         if ref_label not in ANNOT_TYPE_PRIORITIES:
-            raise RuntimeError(
-                f"{ref_label} is not a valid type (host, repcap, vector, helper). Abort!"
+            logging.info(
+                "Nonstandard reference label %s; the known labels are: %s",
+                ref_label,
+                ", ".join(ANNOT_TYPE_PRIORITIES.keys()),
             )
         result[seq_name] = {"label": ref_label, "region": coord_region}
     return result
@@ -486,6 +488,7 @@ def process_alignment_records_for_a_read(
             info["map_start0"] = r.reference_start
             info["map_end1"] = r.reference_end
             info["map_len"] = r.reference_end - r.reference_start
+            # ENH: skip these 2 lines if map_label != "vector"
             total_err, total_len = iter_cigar_w_aligned_pair(r, out_nonmatch)
             info["map_iden"] = format(1.0 - total_err / total_len, ".10f")
 
@@ -549,7 +552,7 @@ def process_alignment_records_for_a_read(
         "assigned_type": "NA",
         "assigned_subtype": "NA",
         "effective_count": 1,
-        "reference_label": prim["map_name"]
+        "reference_label": prim["map_label"]
         if prim["is_mapped"] == "Y"
         else "(unmapped)",
         "read_target_overlap": "NA",
@@ -558,17 +561,17 @@ def process_alignment_records_for_a_read(
         # Set reference_label to a known label, chimeric-(non)vector, or leave as "NA" or "unmapped"
         OLD_CHIMERIC_LOGIC = True
         if OLD_CHIMERIC_LOGIC:
-            read_ref_labels = [prim["map_label"]]
+            reference_labels = [prim["map_label"]]
             if supp is not None and supp["map_label"] != prim["map_label"]:
-                read_ref_labels.append(supp["map_label"])
+                reference_labels.append(supp["map_label"])
         else:
-            read_ref_labels = [
+            reference_labels = [
                 prim["map_label"],
                 *{s["map_label"] for s in supps if s["map_label"] != prim["map_label"]},
             ]
-        if len(read_ref_labels) == 1:
-            read_info["reference_label"] = read_ref_labels[0]
-        elif "vector" in read_ref_labels:
+        if len(reference_labels) == 1:
+            read_info["reference_label"] = reference_labels[0]
+        elif "vector" in reference_labels:
             read_info["reference_label"] = "chimeric-vector"
         else:
             read_info["reference_label"] = "chimeric-nonvector"
@@ -697,9 +700,11 @@ def run_processing_parallel(
     reader = pysam.AlignmentFile(open(sorted_sam_filename), check_sq=False)
     # Get all distinct read names, keeping input order
     readname_list = [next(reader).qname]
-    for r in reader:
+    n_alignments = -1
+    for i, r in enumerate(reader):
         if r.qname != readname_list[-1]:
             readname_list.append(r.qname)
+    logging.info("Scanned %d alignments in %s", n_alignments + 1, sorted_sam_filename)
 
     total_num_reads = len(readname_list)
     chunk_size = (total_num_reads // num_chunks) + 1
