@@ -281,7 +281,6 @@ def process_alignment_bam(
     ]
     PER_READ_FIELDS = [
         "read_id",
-        "read_len",  # XXX redundant but used in the report
         "has_primary",
         "has_supp",
         "assigned_type",
@@ -546,7 +545,6 @@ def process_alignment_records_for_a_read(
 
     read_info = {
         "read_id": prim["read_id"],
-        "read_len": prim["read_len"],  # XXX redundant but convenient
         "has_primary": prim["is_mapped"],
         "has_supp": "Y" if supp is not None else "N",
         "assigned_type": "NA",
@@ -701,7 +699,7 @@ def run_processing_parallel(
     # Get all distinct read names, keeping input order
     readname_list = [next(reader).qname]
     n_alignments = -1
-    for i, r in enumerate(reader):
+    for n_alignments, r in enumerate(reader):
         if r.qname != readname_list[-1]:
             readname_list.append(r.qname)
     logging.info("Scanned %d alignments in %s", n_alignments + 1, sorted_sam_filename)

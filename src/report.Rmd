@@ -122,12 +122,12 @@ flextable(sopt2) %>%
 # Distribution of read lengths by assigned AAV types
 
 ```{r atypeviolin, message=FALSE, warning=FALSE}
-allowed_subtypes <- c('full', 'full-gap', 'vector+backbone')
+allowed_subtypes <- c('full', 'full-gap', 'read-through', 'unresolved-dimer')
 
 p2.atype_violin <- ggplot(
-  filter(x.read.vector, read_target_overlap %in% allowed_subtypes),
+  filter(x.joined.vector, assigned_subtype %in% allowed_subtypes),
   aes(
-    x = paste(assigned_type, read_target_overlap, sep = '-'),
+    x = paste(assigned_type, assigned_subtype, sep = ' '),
     y = read_len
   )
 ) +
@@ -243,7 +243,7 @@ if (exists("ssff")) {
 
 ```{r lenhisto2_subtype, message=FALSE, warning=FALSE}
 # Single plot
-p1_subtypes_len_hist <- ggplot(filter(x.read.vector),
+p1_subtypes_len_hist <- ggplot(filter(x.joined.vector),
                                aes(x = read_len, color = assigned_subtype)) +
   geom_freqpoly() +
   labs(title = "Distribution of read length by subtype") +
@@ -262,16 +262,16 @@ p1_subtypes_len_hist
 ## Gene therapy construct
 
 ```{r lenhisto2_construct, message=FALSE, warning=FALSE}
-p1.map_starts <- ggplot(x.summary.vector, aes(map_start0 + 1, fill = map_target_overlap)) +
+p1.map_starts <- ggplot(x.joined.vector, aes(map_start0 + 1, fill = assigned_subtype)) +
   geom_histogram(aes(y = after_stat(count) / sum(after_stat(count))),
                  binwidth = 150,
                  boundary = 0,
                  closed = "left") +
   geom_vline(xintercept = TARGET_REGION_START,
-             color = 'red',
+             color = "black",
              lty = 2) +
   geom_vline(xintercept = TARGET_REGION_END,
-             color = 'red',
+             color = "black",
              lty = 2) +
   scale_x_continuous("Mapped reference start position",
                      limits = c(0, NA),
@@ -281,34 +281,34 @@ p1.map_starts <- ggplot(x.summary.vector, aes(map_start0 + 1, fill = map_target_
                      expand = c(0, 0)) +
   labs(title = "Distribution of mapped read starts on construct")
 
-p1.map_ends <- ggplot(x.summary.vector, aes(map_end1, fill = map_target_overlap)) +
+p1.map_ends <- ggplot(x.joined.vector, aes(map_end1, fill = assigned_subtype)) +
   geom_histogram(aes(y = after_stat(count) / sum(after_stat(count))),
                  binwidth = 150,
                  boundary = 0,
                  closed = "left") +
   geom_vline(xintercept = TARGET_REGION_START,
-             color = 'red',
+             color = "black",
              lty = 2) +
   geom_vline(xintercept = TARGET_REGION_END,
-             color = 'red',
+             color = "black",
              lty = 2) +
-  scale_x_continuous("mapped reference end position",
+  scale_x_continuous("Mapped reference end position",
                      limits = c(0, NA),
                      expand = expansion(mult = c(0, 0.05))) +
-  scale_y_continuous("fraction of reads",
+  scale_y_continuous("Fraction of reads",
                      limits = c(0, 1),
                      expand = c(0, 0)) +
   labs(title = "Distribution of mapped read ends on construct")
 
-p1.map_len <- ggplot(x.summary.vector, aes(map_len, fill = map_target_overlap)) +
+p1.map_len <- ggplot(x.joined.vector, aes(map_len, fill = assigned_subtype)) +
   geom_histogram(aes(y = after_stat(count) / sum(after_stat(count))),
                  binwidth = 150,
                  boundary = 0,
                  closed = "left") +
-  scale_x_continuous("mapped reference length",
+  scale_x_continuous("Mapped reference length",
                      limits = c(0, NA),
                      expand = expansion(mult = c(0, 0.05))) +
-  scale_y_continuous("fraction of reads",
+  scale_y_continuous("Fraction of reads",
                      limits = c(0, 1),
                      expand = c(0, 0)) +
   labs(title = "Distribution of mapped spanning region sizes on construct")

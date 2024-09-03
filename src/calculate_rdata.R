@@ -73,15 +73,6 @@ x.all.summary <- read_tsv(paste0(r_params$input_prefix, '.alignments.tsv'), show
 
 x.all.read <- read_tsv(paste0(r_params$input_prefix, '.per_read.tsv'), show_col_types = FALSE)
 
-# Filter to ssAAV/scAAV vector only
-# NB: also used by sequence-error.tsv below
-# XXX this df is only in Rdata, for report display
-x.read.vector <- filter(x.all.read, reference_label == "vector")
-
-# XXX only in Rdata, i.e. for the report plots -- but source is summary/alignments.tsv
-# Filter for ss/scAAV vector only
-x.summary.vector <- filter(x.all.summary, read_id %in% x.read.vector$read_id)
-
 # XXX only in Rdata
 total_read_count_all <- sum(x.all.read$effective_count) # dim(x.all.read)[1]
 # "Assigned types by read alignment characteristics"
@@ -90,6 +81,11 @@ df.read1 <- x.all.read %>%
   summarise(e_count = sum(effective_count)) %>%
   mutate(freq = round(e_count * 100 / total_read_count_all, 2))
 df.read1 <- df.read1[order(df.read1$reference_label, df.read1$freq, decreasing=TRUE), ]
+
+# Filter to ssAAV/scAAV vector only
+# NB: also used by sequence-error.tsv below
+# XXX this df is only in Rdata, for report display
+x.read.vector <- filter(x.all.read, reference_label == "vector")
 
 # XXX only in Rdata
 total_read_count_vector <- sum(x.read.vector$effective_count)
@@ -106,21 +102,27 @@ df.read.vector2 <- x.read.vector %>%
   mutate(freq = round(e_count * 100 / total_read_count_vector, 2))
 df.read.vector2 <- df.read.vector2[order(-df.read.vector2$freq), ]
 
+# XXX only in Rdata, for the report plots -- but source is alignments.tsv
+x.summary.primary = filter(x.all.summary, is_mapped == "Y", is_supp == "N")
+x.joined.vector = left_join(x.read.vector, x.summary.primary, by = "read_id", multiple = "first")
+
 
 # ==================================================
-# {{{ nonmatch_stat.tsv.gz -> sequence-error.tsv }}}
+# nonmatch_stat.tsv.gz
 # --------------------------------------------------
 
-x.all.err <- read_tsv(paste0(r_params$input_prefix, '.nonmatch_stat.tsv.gz'), show_col_types = FALSE) %>%
-  mutate(SampleID = r_params$sample_id, .before = read_id)
+x.all.err <- read_tsv(paste0(r_params$input_prefix, '.nonmatch_stat.tsv.gz'), show_col_types = FALSE)
 
-# Spell out nonmatch types -- from CIGAR codes to words
-x.all.err[x.all.err$type == 'D', "type"] <- 'deletion'
-x.all.err[x.all.err$type == 'I', "type"] <- 'insertion'
-x.all.err[x.all.err$type == 'X', "type"] <- 'mismatch'
-x.all.err[x.all.err$type == 'N', "type"] <- 'gaps'
 # Filter for ss/scAAV vector only
 x.err.vector <- filter(x.all.err, read_id %in% x.read.vector$read_id)
+
+# Spell out nonmatch types -- from CIGAR codes to words
+x.err.vector[x.err.vector$type == 'D', "type"] <- 'deletion'
+x.err.vector[x.err.vector$type == 'I', "type"] <- 'insertion'
+x.err.vector[x.err.vector$type == 'X', "type"] <- 'mismatch'
+x.err.vector[x.err.vector$type == 'N', "type"] <- 'gaps'
+
+# Round positions down to 10s for plotting
 x.err.vector$pos0_div <- (x.err.vector$pos0 %/% 10 * 10)
 
 # XXX only in Rdata
