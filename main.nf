@@ -107,17 +107,17 @@ workflow laava {
     emit:
     mapped_sam = map_reads.out.mapped_sam
     mapped_bam = map_reads.out.mapped_bam
+    metadata_out_tsv = make_report.out.metadata_tsv
+    alignments_tsv = make_report.out.alignments_tsv
     per_read_tsv = make_report.out.per_read_tsv
-    nonmatch_stat_tsvgz = make_report.out.nonmatch_stat_tsvgz
+    nonmatch_tsv = make_report.out.nonmatch_tsv
     tagged_bam = make_report.out.tagged_bam
     subtype_bams = make_report.out.subtype_bams
     subtype_bais = make_report.out.subtype_bais
     flipflop_assignments_tsv = make_report.out.flipflop_assignments_tsv
     flipflop_bams = make_report.out.flipflop_bams
-    alignments_tsv = make_report.out.alignments_tsv
     flipflop_tsv = make_report.out.flipflop_tsv
     rdata = make_report.out.rdata
-    metadata_out_tsv = make_report.out.metadata_tsv
 }
 
 

@@ -5,6 +5,7 @@ Must have already run `summarize_alignment.py` to get a .tagged.BAM file!
 """
 
 import csv
+import gzip
 from typing import NamedTuple
 
 import parasail
@@ -127,12 +128,12 @@ def identify_flip_flop(r, ff_seq):
 
 def load_per_read_info(fname):
     """Load per-read info, keyed by read IDs, from a CSV file."""
-    with open(fname) as in_csv:
-        read_info = {r["read_id"]: r for r in csv.DictReader(in_csv, delimiter="\t")}
+    with gzip.open(fname, "rt") as in_tsv:
+        read_info = {r["read_id"]: r for r in csv.DictReader(in_tsv, delimiter="\t")}
     return read_info
 
 
-def main(per_read_csv, tagged_bam, output_prefix, flipflop_fasta):
+def main(per_read_tsv, tagged_bam, output_prefix, flipflop_fasta):
     """Entry point."""
     OUT_FIELDS = ["name", "type", "subtype", "start", "end", "leftITR", "rightITR"]
 
@@ -141,7 +142,7 @@ def main(per_read_csv, tagged_bam, output_prefix, flipflop_fasta):
     else:
         flipflop_seqs = FlipFlopSeqSet.from_fasta(flipflop_fasta)
 
-    read_info = load_per_read_info(per_read_csv)
+    read_info = load_per_read_info(per_read_tsv)
 
     with open(output_prefix + ".flipflop_assignments.tsv", "w") as fout:
         out_tsv = csv.writer(fout, delimiter="\t")
@@ -210,7 +211,7 @@ if __name__ == "__main__":
 
     parser = ArgumentParser()
     parser.add_argument("sorted_tagged_bam", help="Sorted tagged BAM file")
-    parser.add_argument("per_read_csv", help="Per read CSV file")
+    parser.add_argument("per_read_tsv", help="Per read TSV file")
     parser.add_argument("-o", "--output-prefix", help="Output prefix", required=True)
     parser.add_argument(
         "--flipflop-fasta",
@@ -221,7 +222,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     main(
-        args.per_read_csv,
+        args.per_read_tsv,
         args.sorted_tagged_bam,
         args.output_prefix,
         args.flipflop_fasta,

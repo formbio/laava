@@ -8,7 +8,6 @@ import itertools
 import logging
 import os
 import re
-import shutil
 import subprocess
 import sys
 from csv import DictReader, DictWriter
@@ -50,25 +49,33 @@ def subset_sam_by_readname_list(
     exclude_type=False,
 ):
     qname_lookup = {}  # qname --> (a_type, a_subtype)
-    for r in DictReader(open(per_read_tsv), delimiter="\t"):
-        # pdb.set_trace()
-        if (
-            wanted_types is None
-            or (not exclude_type and r["assigned_type"] in wanted_types)
-            or (exclude_type and r["assigned_type"] not in wanted_types)
-        ) and (
-            wanted_subtypes is None
-            or (not exclude_subtype and (r["assigned_subtype"] in wanted_subtypes))
-            or (exclude_subtype and (r["assigned_subtype"] not in wanted_subtypes))
-        ):
-            qname_lookup[r["read_id"]] = (r["assigned_type"], r["assigned_subtype"])
+    with gzip.open(per_read_tsv, "rt") as per_read_f:
+        for row in DictReader(per_read_f, delimiter="\t"):
+            # pdb.set_trace()
+            if (
+                wanted_types is None
+                or (not exclude_type and row["assigned_type"] in wanted_types)
+                or (exclude_type and row["assigned_type"] not in wanted_types)
+            ) and (
+                wanted_subtypes is None
+                or (
+                    not exclude_subtype and (row["assigned_subtype"] in wanted_subtypes)
+                )
+                or (
+                    exclude_subtype and (row["assigned_subtype"] not in wanted_subtypes)
+                )
+            ):
+                qname_lookup[row["read_id"]] = (
+                    row["assigned_type"],
+                    row["assigned_subtype"],
+                )
 
     cur_count = 0
     reader = pysam.AlignmentFile(in_bam, "rb", check_sq=False)
     writer = pysam.AlignmentFile(out_bam, "wb", header=reader.header)
-    for r in reader:
-        if r.qname in qname_lookup:
-            d = add_assigned_types_to_record(r, *qname_lookup[r.qname])
+    for rec in reader:
+        if rec.qname in qname_lookup:
+            d = add_assigned_types_to_record(rec, *qname_lookup[rec.qname])
             writer.write(pysam.AlignedSegment.from_dict(d, reader.header))
             cur_count += 1
             if max_count is not None and cur_count >= max_count:
@@ -293,7 +300,7 @@ def process_alignment_bam(
     NONMATCH_FIELDS = ["read_id", "pos0", "type", "type_len"]
 
     f_alignments = open(output_prefix + ".alignments.tsv", "w")
-    f_nonmatch = open(output_prefix + ".nonmatch_stat.tsv", "w")
+    f_nonmatch = open(output_prefix + ".nonmatch.tsv", "w")
     f_per_read = open(output_prefix + ".per_read.tsv", "w")
 
     out_alignments = DictWriter(f_alignments, ALIGNMENT_FIELDS, delimiter="\t")
@@ -742,36 +749,26 @@ def run_processing_parallel(
         logging.debug("DEBUG: Waiting for pool %d to finish.", i)
         p.join()
 
-    # Combine the data together for *.nonmatch_stat.tsv, *.per_read.tsv, *.alignments.tsv
+    # Combine the data together for *.nonmatch.tsv, *.per_read.tsv, *.alignments.tsv
 
     # Closes over: output_prefix, num_chunks
-    def gather_text_chunks(suffix, compress=False):
+    def gather_text_chunks(suffix):
         logging.info("Combining chunk data... (*%s)", suffix)
         # Copy the first chunk over
-        if compress:
-            out_path = output_prefix + suffix + ".gz"
-            f_out = gzip.open(out_path, "wb")
-        else:
-            out_path = output_prefix + suffix
-            f_out = open(out_path, "w")
+        out_path = output_prefix + suffix + ".gz"
+        f_out = gzip.open(out_path, "wt")
         first_chunk = f"{output_prefix}.1{suffix}"
         chunk_paths = [first_chunk]
         with open(first_chunk) as f_in:
-            if compress:
-                for line in f_in:
-                    f_out.write(line.encode())
-            else:
-                shutil.copyfileobj(f_in, f_out)
+            for line in f_in:
+                f_out.write(line)
         # Copy the remaining chunks
         for i in range(1, num_chunks):
             chunk_path = f"{output_prefix}.{i+1}{suffix}"
             with open(chunk_path) as f_in:
                 f_in.readline()  # Skip the header
-                if compress:
-                    for line in f_in:
-                        f_out.write(line.encode())
-                else:
-                    shutil.copyfileobj(f_in, f_out)
+                for line in f_in:
+                    f_out.write(line)
             chunk_paths.append(chunk_path)
         f_out.close()
         # Delete the chunk data
@@ -780,9 +777,7 @@ def run_processing_parallel(
             os.remove(chunk_path)
         return out_path
 
-    _outpath_nonmatch = gather_text_chunks(
-        ".nonmatch_stat.tsv", compress=True
-    )  # -> .nonmatch_stat.tsv.gz
+    _outpath_nonmatch = gather_text_chunks(".nonmatch.tsv")
     outpath_per_read = gather_text_chunks(".per_read.tsv")
     _outpath_alignments = gather_text_chunks(".alignments.tsv")
 
@@ -836,55 +831,70 @@ def main(args):
 
     # subset BAM files into major categories for ease of loading into IGV for viewing
     # subset_sam_by_readname_list(in_bam, out_bam, per_read_tsv, wanted_types, wanted_subtypes)
+    subset_bam_prefixes = []
     if args.vector_type == "scaav":
+        out_pfx = args.output_prefix + ".scAAV-full"
+        subset_bam_prefixes.append(out_pfx)
         subset_sam_by_readname_list(
             full_out_bam,
-            args.output_prefix + ".scAAV-full.tagged.bam",
+            out_pfx + ".tagged.bam",
             per_read_tsv,
             ["scAAV"],
             ["full"],
         )
+        out_pfx = args.output_prefix + ".scAAV-partials"
+        subset_bam_prefixes.append(out_pfx)
         subset_sam_by_readname_list(
             full_out_bam,
-            args.output_prefix + ".scAAV-partials.tagged.bam",
+            out_pfx + ".tagged.bam",
             per_read_tsv,
             ["scAAV"],
             ["partial", "left-partial", "right-partial"],
         )
+        out_pfx = args.output_prefix + ".scAAV-other"
+        subset_bam_prefixes.append(out_pfx)
         subset_sam_by_readname_list(
             full_out_bam,
-            args.output_prefix + ".scAAV-other.tagged.bam",
+            out_pfx + ".tagged.bam",
             per_read_tsv,
             ["scAAV"],
             ["partial", "left-partial", "right-partial", "full"],
             exclude_subtype=True,
         )
     elif args.vector_type == "ssaav":
+        out_pfx = args.output_prefix + ".ssAAV-full"
+        subset_bam_prefixes.append(out_pfx)
         subset_sam_by_readname_list(
             full_out_bam,
-            args.output_prefix + ".ssAAV-full.tagged.bam",
+            out_pfx + ".tagged.bam",
             per_read_tsv,
             ["ssAAV"],
             ["full"],
         )
+        out_pfx = args.output_prefix + ".ssAAV-partials"
+        subset_bam_prefixes.append(out_pfx)
         subset_sam_by_readname_list(
             full_out_bam,
-            args.output_prefix + ".ssAAV-partials.tagged.bam",
+            out_pfx + ".tagged.bam",
             per_read_tsv,
             ["ssAAV"],
             ["partial", "left-partial", "right-partial"],
         )
+        out_pfx = args.output_prefix + ".ssAAV-other"
+        subset_bam_prefixes.append(out_pfx)
         subset_sam_by_readname_list(
             full_out_bam,
-            args.output_prefix + ".ssAAV-other.tagged.bam",
+            out_pfx + ".tagged.bam",
             per_read_tsv,
             ["ssAAV"],
             ["partial", "left-partial", "right-partial", "full"],
             exclude_subtype=True,
         )
+    out_pfx = args.output_prefix + ".others"
+    subset_bam_prefixes.append(out_pfx)
     subset_sam_by_readname_list(
         full_out_bam,
-        args.output_prefix + ".others.tagged.bam",
+        out_pfx + ".tagged.bam",
         per_read_tsv,
         ["ssAAV", "scAAV"],
         None,
@@ -900,17 +910,7 @@ def main(args):
         )
         sys.exit(-1)
 
-    parts = [
-        ".scAAV-full",
-        ".scAAV-partials",
-        ".scAAV-other",
-        ".ssAAV-full",
-        ".ssAAV-partials",
-        ".ssAAV-other",
-        ".others",
-    ]
-    for part in parts:
-        p = args.output_prefix + part
+    for p in subset_bam_prefixes:
         subprocess.check_call(
             f"samtools sort {p}.tagged.bam > {p}.tagged.sorted.bam", shell=True
         )

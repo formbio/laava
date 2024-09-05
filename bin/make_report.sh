@@ -49,7 +49,7 @@ if [[ -n "$flipflop_name" || -n "$flipflop_fa" ]]; then
     echo
     echo "Starting get_flipflop_config"
     get_flipflop_config.py \
-        "${sample_id}.tagged.bam" "${sample_id}.per_read.tsv" \
+        "${sample_id}.tagged.bam" "${sample_id}.per_read.tsv.gz" \
         $ff_opt \
         -o "$sample_id"
     echo "Finished get_flipflop_config"

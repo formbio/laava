@@ -78,9 +78,9 @@ process make_report() {
     output:
     // summary tables
     path("${sample_id}.metadata.tsv"), emit: metadata_tsv
-    path("${sample_id}.alignments.tsv"), emit: alignments_tsv
-    path("${sample_id}.per_read.tsv"), emit: per_read_tsv
-    path("${sample_id}.nonmatch_stat.tsv.gz"), emit: nonmatch_stat_tsvgz
+    path("${sample_id}.alignments.tsv.gz"), emit: alignments_tsv
+    path("${sample_id}.per_read.tsv.gz"), emit: per_read_tsv
+    path("${sample_id}.nonmatch.tsv.gz"), emit: nonmatch_tsv
     path("${sample_id}.flipflop_assignments.tsv"), emit: flipflop_assignments_tsv, optional: true
     path("${sample_id}.flipflop.tsv"), emit: flipflop_tsv, optional: true
     // intermediate data

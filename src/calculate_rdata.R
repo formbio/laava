@@ -61,17 +61,17 @@ for (i in 1:dim(annot)[1]) {
 
 
 # =====================================
-# alignments.tsv
+# alignments.tsv.gz
 # -------------------------------------
 
-x.all.summary <- read_tsv(paste0(r_params$input_prefix, '.alignments.tsv'), show_col_types = FALSE)
+x.all.summary <- read_tsv(paste0(r_params$input_prefix, '.alignments.tsv.gz'), show_col_types = FALSE)
 
 
 # ---------------------------------------
-# per_read.tsv
+# per_read.tsv.gz
 # ---------------------------------------
 
-x.all.read <- read_tsv(paste0(r_params$input_prefix, '.per_read.tsv'), show_col_types = FALSE)
+x.all.read <- read_tsv(paste0(r_params$input_prefix, '.per_read.tsv.gz'), show_col_types = FALSE)
 
 # XXX only in Rdata
 total_read_count_all <- sum(x.all.read$effective_count) # dim(x.all.read)[1]
@@ -83,7 +83,7 @@ df.read1 <- x.all.read %>%
 df.read1 <- df.read1[order(df.read1$reference_label, df.read1$freq, decreasing=TRUE), ]
 
 # Filter to ssAAV/scAAV vector only
-# NB: also used by sequence-error.tsv below
+# NB: also used by nonmatch.tsv.gz below
 # XXX this df is only in Rdata, for report display
 x.read.vector <- filter(x.all.read, reference_label == "vector")
 
@@ -108,10 +108,10 @@ x.joined.vector = left_join(x.read.vector, x.summary.primary, by = "read_id", mu
 
 
 # ==================================================
-# nonmatch_stat.tsv.gz
+# nonmatch.tsv.gz
 # --------------------------------------------------
 
-x.all.err <- read_tsv(paste0(r_params$input_prefix, '.nonmatch_stat.tsv.gz'), show_col_types = FALSE)
+x.all.err <- read_tsv(paste0(r_params$input_prefix, '.nonmatch.tsv.gz'), show_col_types = FALSE)
 
 # Filter for ss/scAAV vector only
 x.err.vector <- filter(x.all.err, read_id %in% x.read.vector$read_id)

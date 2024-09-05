@@ -33,7 +33,7 @@ $(out_dir)/ss.Rdata: ../src/calculate_rdata.R ../src/report.Rmd $(out_dir)/ss.an
 	$< $(out_dir)/ss $(out_dir)/ss.annotation.txt ss.subsample005 "ssaav" $(out_dir)/ss.flipflop_assignments.tsv
 
 
-$(out_dir)/ss.flipflop_assignments.tsv: ../src/get_flipflop_config.py $(out_dir)/ss.tagged.bam $(out_dir)/ss.per_read.tsv
+$(out_dir)/ss.flipflop_assignments.tsv: ../src/get_flipflop_config.py $(out_dir)/ss.tagged.bam $(out_dir)/ss.per_read.tsv.gz
 	$^ -o $(out_dir)/ss
 
 
