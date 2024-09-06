@@ -632,16 +632,20 @@ def process_alignment_records_for_a_read(
                         supp_orientation == "+/-"
                     ), f"Unrecognized {supp_orientation=}"
                     if read_target_overlap == "left-partial":
-                        read_subtype = "left-snapback"
+                        read_type, read_subtype = "ssAAV", "left-snapback"
                     elif read_target_overlap == "right-partial":
-                        read_subtype = "right-snapback"
+                        read_type, read_subtype = "ssAAV", "right-snapback"
+                    elif read_target_overlap == "partial":
+                        read_subtype = "snapback"
                     elif read_target_overlap in ("full", "full-gap"):
                         read_subtype = "unresolved-dimer"
                     elif "|" in read_target_overlap:
                         read_subtype = "complex"
                     else:
-                        # XXX partial, vector+backbone, ...
-                        read_subtype = "complex"
+                        # E.g. vector+backbone
+                        logging.warning("Unexpected read-target overlap '%s':",
+                                        read_target_overlap)
+                        read_subtype = "unclassified"
 
             # scAAV classification
             elif vector_type == "scaav":
@@ -667,9 +671,9 @@ def process_alignment_records_for_a_read(
                         )
 
                 else:
+                    # Additional not-really-scAAV subtypes
                     read_type = "other-vector"
                     assert supp_orientation is None, f"Unrecognized {supp_orientation=}"
-                    # TODO - not-really-scAAV subtypes
                     if read_target_overlap == "left-partial":
                         read_subtype = "itr-partial"
                     else:
