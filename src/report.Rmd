@@ -44,21 +44,31 @@ date: 'Date: `r format(Sys.Date())`'
 
 `\newpage`{=latex}
 
-# Read type classification
+# Read-based AAV vector type classification
 
 ## Definitions
 
-Assigned Type|Definition
-------------:|----------------------------------------------------
-scAAV        |Self-complementary AAV where one half of the payload region is a reverse complement of the other, resulting in an intra-molecular double-stranded DNA template. A sequencing read is inferred as scAAV if it has both a primary and supplementary alignment to the vector genome.
-ssAAV        |AAV where the resulting DNA template is expected to be single-stranded, as opposed to self-complementary. A sequencing read is inferred as ssAAV if it has a single alignment to the AAV genome and no complementary secondary alignment.
-other        |Read consists of a fragment mapping to the vector but with unexpected polarities (e.g. +,-,- or +,+,+) and cannot be well-defined at the moment. This means that the algorithm was not able to distinguish the read either as ssAAV or scAAV by the definitions above, usually due to multiple supplementary alignments on the vector region or other unusual alignment features.
-host         |Read originates from the host genome that is given (e.g. hg38, CHM13).
-repcap       |Read originates from the repcap plasmid. The Rep gene encodes four proteins (Rep78, Rep68, Rep52, and Rep40), which are required for viral genome replication and packaging, while Cap expression gives rise to the viral capsid proteins (VP; VP1/VP2/VP3), which form the outer capsid shell that protects the viral genome, as well as being actively involved in cell binding and internalization.
-helper       |Read originates from the helper plasmid. In addition to Rep and Cap, AAV requires a helper plasmid containing genes from adenovirus. These genes (E4, E2a and VA) mediate AAV replication.
-chimeric     |Read consists of fragments that map to one or more "genomes" (e.g. vector and host; helper and repcap).
+Table: Reference label definitions.
 
-*Note:* Even though ssAAV distinguishes one ITR as the wildtype (wtITR) and the other as the mutated ITR (mITR), we will still refer to them as "left ITR" and "right ITR". For example, "left-partial" would be equivalent to "mITR-partial" in the case where the mITR is the left ITR based on the given genomic coordinates.
+Reference Label    |Definition
+:-----------------:|----------------------------------------------------
+vector             |Read originates from the vector plasmid.
+repcap             |Read originates from the RepCap plasmid. The Rep gene encodes four proteins (Rep78, Rep68, Rep52, and Rep40), which are required for viral genome replication and packaging, while Cap expression gives rise to the viral capsid proteins (VP; VP1/VP2/VP3), which form the outer capsid shell that protects the viral genome, as well as being actively involved in cell binding and internalization.
+helper             |Read originates from the helper plasmid. In addition to Rep and Cap, AAV requires a helper plasmid containing genes from adenovirus. These genes (E4, E2a and VA) mediate AAV replication.
+host               |Read originates from the host genome that is given (e.g. hg38, CHM13).
+chimeric-vector    |One part of the read aligns to the vector plasmid, while another part of the same read aligns to a different reference sequence.
+chimeric-nonvector |The read consists of fragments that align to two or more different reference sequences, neither of which is the vector plasmid.
+
+
+Table: Assigned type definitions.
+
+Assigned Type|Definition
+:-----------:|----------------------------------------------------
+ssAAV        |Single-stranded AAV vector genome where the resulting DNA template is expected to be single-stranded, as opposed to self-complementary. A sequencing read is inferred as ssAAV if it has a single alignment to the vector plasmid’s ITR-to-ITR payload region and no complementary supplemental alignment.
+scAAV        |Self-complementary AAV vector genome where one half of the payload region is a reverse complement of the other, resulting in an intramolecular double-stranded DNA template. A sequencing read is inferred as scAAV if it aligns to the payload region in both forward (+) and reverse (-) read directions.
+backbone     |Read aligns to the vector plasmid sequence but fully outside of the annotated ITR-to-ITR region, indicating that the sequence fragment originated solely from the plasmid backbone.
+other-vector |Read consists of a fragment mapping to the vector but with characteristics other than those listed above.
+
 
 `<br />`{=html}
 
@@ -104,7 +114,7 @@ ggplot(countreads, aes(x = "", y = e_count, fill = reference_label)) +
 ```
 
 
-## Vector type frequencies (was: Single-stranded vs self-complementary frequency)
+## Frequency of vector assigned types
 
 ```{r sopt2, message=FALSE, warning=FALSE}
 sopt2 <- df.read.vector1 %>%
@@ -119,40 +129,70 @@ flextable(sopt2) %>%
   ))
 ```
 
-# Distribution of read lengths by assigned AAV types
+# Distribution of vector read lengths by assigned types
 
 ```{r atypeviolin, message=FALSE, warning=FALSE}
-allowed_subtypes <- c('full', 'full-gap', 'read-through', 'unresolved-dimer')
-
 p2.atype_violin <- ggplot(
-  filter(x.joined.vector, assigned_subtype %in% allowed_subtypes),
-  aes(
-    x = paste(assigned_type, assigned_subtype, sep = ' '),
-    y = read_len
-  )
+  x.joined.vector %>%
+    mutate(assigned_type = factor(assigned_type, levels = valid_types)),
+  aes(x = assigned_type, y = read_len)
 ) +
   geom_violin() +
-  labs(title = "Distribution of read lengths by assigned AAV type",
-       x = "Assigned AAV type") +
+  labs(title = "Distribution of vector read lengths by assigned type",
+       x = "Assigned type") +
   scale_y_continuous("Read length",
                      limits = c(0, NA),
-                     expand = expansion(mult = c(0, 0.05))) +
-  theme(axis.text.x = element_text(angle = -45, hjust = 0))
+                     expand = expansion(mult = c(0, 0.05)))
 
 p2.atype_violin
 ```
 
-# Assigned AAV read types detailed analysis
 
-## Assigned AAV types
+# Assigned subtypes detailed analysis
+
+## Definitions
+
+```{asis, echo = r_params$vector_type == "ssaav"}
+Table: Assigned subtype definitions for single-stranded input vector.
+
+Assigned Type|Assigned Subtype|Definition
+:-----------:|:--------------:|------------------------------------------------
+ssAAV        |full            |Read aligns to a fragment of the vector originating from the left (upstream) ITR and ending at the right (downstream) ITR of the vector.
+ssAAV        |full-gap        |Read aligns to the vector ITR-to-ITR region, as with “full”, but with a significant number of gaps in the alignment between the ITRs.
+ssAAV        |read-through    |Read aligns to a fragment including the vector as well as plasmid backbone sequence. May imply read-through beyond the right ITR, or reverse packaging if the alignment is to only the left ITR and backbone.
+ssAAV        |partial         |Read aligns to a fragment of the vector originating from within the ITR sequences.
+ssAAV        |left-partial    |Read aligns to a fragment of the vector originating from the left (upstream) ITR of the vector while not covering the right ITR.
+ssAAV        |right-partial   |Read aligns to a fragment of the vector originating from the right (downstream) ITR of the vector while not covering the left ITR.
+ssAAV        |left-snapback   |Read consists of a double-stranded, sub-genomic fragment including only the left ITR and aligned symmetrically to the (+) and (-) strands.
+ssAAV        |right-snapback  |Read consists of a double-stranded, sub-genomic fragment including only the right ITR and aligned symmetrically to the (+) and (-) strands.
+other-vector |snapback        |Read aligns to a double-stranded fragment in both (+) and (-) strands, but does not include either ITR.
+other-vector |unresolved-dimer|Read aligns to a double-stranded fragment covering the full ITR-to-ITR region in both (+) and (-) strands. A dimer in ssAAV context, twice the size of a ssAAVV-full vector genome.
+other-vector |tandem          |Read has two or more overlapping alignments on the same strand, but none on the reverse strand, indicating tandem duplication of the same region.
+other-vector |complex         |Read aligns to a double-stranded fragment with asymmetrical and/or multiple alignments on the (+) and (-) strands.
+other-vector |unclassified    |Read alignment does not match any of the above orientations.
+```
+
+```{asis, echo = r_params$vector_type == "scaav"}
+Table: Assigned subtype definitions for self-complementary input vector.
+
+Assigned Type|Assigned Subtype|Definition
+:-----------:|:--------------:|------------------------------------------------
+scAAV        |full            |Read aligns to a fragment of the vector originating from the left (upstream) ITR and ending at the right (downstream) ITR of the vector.
+scAAV        |full-gap        |Read aligns to the vector ITR-to-ITR region, as with “full”, but with a significant number of gaps in the alignment between the ITRs.
+scAAV        |read-through    |Read aligns to a fragment including the vector as well as plasmid backbone sequence. May imply read-through beyond the right ITR, or reverse packaging if the alignment is to only the left ITR and backbone.
+scAAV        |partial         |Read aligns to a fragment of the vector originating from within the ITR sequences.
+scAAV        |itr-partial     |Read aligns only to a single-stranded fragment of the vector originating from the left ITR while not covering the right ITR.
+scAAV        |snapback        |Read consists of a double-stranded, sub-genomic fragment including only the left ITR and read alignments in both (+) and (-) strands.
+other-vector |tandem          |Read has two or more overlapping alignments on the same strand, but none on the reverse strand, indicating tandem duplication of the same region.
+other-vector |complex         |Read aligns to a double-stranded fragment with asymmetrical and/or multiple alignments on the (+) and (-) strands.
+other-vector |unclassified    |Read alignment does not match any of the above orientations.
+```
+
+## Assigned types and subtypes
 
 ```{r sopt3, message=FALSE, warning=FALSE}
 sopt3 <- df.read.vector2 %>%
-  mutate(totfreq = round(100 * e_count / total_read_count_all, 2)) %>%
-  arrange(
-    factor(assigned_type, levels = valid_types),
-    factor(assigned_subtype, levels = valid_subtypes)
-  )
+  mutate(totfreq = round(100 * e_count / total_read_count_all, 2))
 
 flextable(sopt3) %>%
   set_header_labels(
@@ -166,80 +206,8 @@ flextable(sopt3) %>%
   )
 ```
 
-## Definitions
 
-Assigned Subtype|Definition
----------------:|----------------------------------------------------------------
-full            |Read alignment includes the entire ITR-to-ITR target vector sequence.
-left-partial    |Read aligns to a fragment of the vector originating from the left (upstream) ITR of the vector while not covering the right ITR.
-right-partial   |Read aligns to a fragment of the vector originating from the right (downstream) ITR of the vector while not covering the left ITR.
-partial         |Read aligns to a fragment of the vector originating from within the ITR sequences.
-vector+backbone |Read aligns to a fragment including the vector as well as plasmid backbone sequence. May imply read-through beyond the right ITR, or reverse packaging if the alignment is to only the left ITR and backbone.
-backbone        |Read aligns to a fragment originating solely from the plasmid backbone sequence.
-snapback        |Read consists of a double-stranded, sub-genomic fragment including only one ITR and read alignments in both (+) and (-) polarities. (ssAAV only)
-
-
-# Flip/flop considerations
-
-Term|Definition
----:|----------------
-Flip/Flop|One ITR is formed by two palindromic arms, called B–B' and C–C', embedded in a larger one, A–A'. The order of these palindromic sequences defines the flip or flop orientation of the ITR. ([Read more](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5655423/))
-
-
-```{r flipflopplot, message=FALSE, warning=FALSE, results='asis'}
-if (exists("df.flipflop")) {
-  # Generate flip/flop summary plot
-  ffplot <- df.flipflop %>%
-    mutate(
-      class = if_else(
-        leftITR == 'unclassified' |
-          rightITR == 'unclassified' |
-          leftITR == 'unknown' | rightITR == 'unknown',
-        "unclassifed",
-        paste(leftITR, rightITR, sep = '-')
-      )
-    ) %>%
-    group_by(type, subtype, class) %>%
-    summarize(classct = sum(count)) %>%
-    filter(subtype == 'vector-full')
-  ggplot(ffplot, aes(x = type, y = classct, fill = class)) +
-    geom_bar(stat = 'identity') +
-    labs(x = 'Assigned type') +
-    scale_y_continuous("Number of reads",
-                       limits = c(0, NA),
-                       expand = expansion(mult = c(0, 0.05)))
-
-} else {
-  cat("No flip/flop analysis results available to display.")
-}
-```
-
-```{r flipflopsc, message=FALSE, warning=FALSE, results='asis'}
-if (exists("scff")) {
-  cat("## Flip/flop configurations, scAAV only\n\n")
-  if (nrow(scff) > 1) {
-    flextable(scff) %>%
-      set_header_labels(values = c("type", "subtype", "leftITR", "rightITR", "count"))
-  } else {
-    cat("\nNo scAAV flip/flop analysis results available to display.")
-  }
-}
-```
-
-```{r flipflopss, message=FALSE, warning=FALSE, results='asis'}
-if (exists("ssff")) {
-  cat("## Flip/flop configurations, ssAAV only\n\n")
-  if (nrow(ssff) > 1) {
-    flextable(ssff) %>%
-      set_header_labels(values = c("type", "subtype", "leftITR", "rightITR", "count"))
-  } else {
-    cat("No ssAAV flip/flop analysis results available to display.")
-  }
-}
-```
-
-
-# Distribution of read length by subtype
+## Distribution of read length by subtype
 
 ```{r lenhisto2_subtype, message=FALSE, warning=FALSE}
 # Single plot
@@ -433,6 +401,49 @@ p1.err_del
 p1.err_ins
 ```
 
+
+# Flip/flop configurations
+
+Term|Definition
+:--:|----------------
+Flip/Flop|One ITR is formed by two palindromic arms, called B–B' and C–C', embedded in a larger one, A–A'. The order of these palindromic sequences defines the flip or flop orientation of the ITR. ([Read more](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5655423/))
+
+
+```{r flipflopplot, message=FALSE, warning=FALSE, results='asis'}
+if (exists("df.flipflop")) {
+  # Generate flip/flop summary plot
+  ffplot <- df.flipflop %>%
+    mutate(
+      class = if_else(
+        leftITR == 'unclassified' | rightITR == 'unclassified',
+        "unclassified",
+        paste(leftITR, rightITR, sep = '-')
+      )
+    ) %>%
+    group_by(type, subtype, class) %>%
+    summarize(classct = sum(count)) %>%
+    filter(subtype == 'vector-full')
+  ggplot(ffplot, aes(x = class, y = classct, fill = class)) +
+    geom_bar(stat = 'identity') +
+    labs(x = 'Assigned type') +
+    scale_y_continuous("Number of reads",
+                       limits = c(0, NA),
+                       expand = expansion(mult = c(0, 0.05)))
+
+} else {
+  cat("No flip/flop analysis results available to display.")
+}
+```
+
+```{r flipfloptable, message=FALSE, warning=FALSE, results='asis'}
+if (exists("fftbl") && (nrow(fftbl) > 1)) {
+  flextable(fftbl) %>%
+    set_header_labels(values = c("type", "subtype", "leftITR", "rightITR", "count"))
+}
+```
+
+
+`\break`{=latex}
 
 # Methods
 

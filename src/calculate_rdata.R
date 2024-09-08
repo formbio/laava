@@ -23,10 +23,24 @@ message("Parameters:")
 print(r_params)
 
 
-# Sort order
-valid_types <- c('ssAAV', 'scAAV', 'host', 'repcap', 'helper', 'lambda', 'unmapped', 'chimeric')
-valid_subtypes <- c('full', 'full-gap', 'left-partial', 'right-partial', 'wtITR-partial', 'mITR-partial', 'partial', 'backbone', 'vector+backbone')
-
+# Display order
+valid_types <- c('ssAAV', 'scAAV', 'other-vector', 'backbone')
+valid_subtypes <- c(
+  'full',
+  'full-gap',
+  'read-through',
+  'partial',
+  'left-partial',
+  'right-partial',
+  'itr-partial',
+  'left-snapback',
+  'right-snapback',
+  'snapback',
+  'unresolved-dimer',
+  'tandem',
+  'complex',
+  'unclassified',
+  'backbone')
 
 
 # =========================
@@ -67,7 +81,7 @@ for (i in 1:dim(annot)[1]) {
 x.all.summary <- read_tsv(paste0(r_params$input_prefix, '.alignments.tsv.gz'), show_col_types = FALSE)
 
 
-# ---------------------------------------
+# =======================================
 # per_read.tsv.gz
 # ---------------------------------------
 
@@ -79,32 +93,36 @@ total_read_count_all <- sum(x.all.read$effective_count) # dim(x.all.read)[1]
 df.read1 <- x.all.read %>%
   group_by(reference_label, assigned_type) %>%
   summarise(e_count = sum(effective_count)) %>%
-  mutate(freq = round(e_count * 100 / total_read_count_all, 2))
-df.read1 <- df.read1[order(df.read1$reference_label, df.read1$freq, decreasing=TRUE), ]
+  mutate(freq = round(e_count * 100 / total_read_count_all, 2)) %>%
+  arrange(desc(reference_label), desc(freq))
 
 # Filter to ssAAV/scAAV vector only
 # NB: also used by nonmatch.tsv.gz below
 # XXX this df is only in Rdata, for report display
-x.read.vector <- filter(x.all.read, reference_label == "vector")
+x.read.vector <- x.all.read %>%
+  filter(reference_label == "vector") %>%
+  mutate(
+    assigned_type = factor(assigned_type, levels = valid_types),
+    assigned_subtype = factor(assigned_subtype, levels = valid_subtypes))
 
 # XXX only in Rdata
 total_read_count_vector <- sum(x.read.vector$effective_count)
 df.read.vector1 <- x.read.vector %>%
   group_by(assigned_type) %>%
   summarise(e_count = sum(effective_count)) %>%
-  mutate(freq = round(e_count * 100 / total_read_count_vector, 2))
-df.read.vector1 <- df.read.vector1[order(-df.read.vector1$freq), ]
+  mutate(freq = round(e_count * 100 / total_read_count_vector, 2)) %>%
+  arrange(assigned_type, desc(freq))
 
-# XXX only in Rdata; also used in flipflop code below
+# XXX only in Rdata
 df.read.vector2 <- x.read.vector %>%
   group_by(assigned_type, assigned_subtype) %>%
   summarise(e_count = sum(effective_count)) %>%
-  mutate(freq = round(e_count * 100 / total_read_count_vector, 2))
-df.read.vector2 <- df.read.vector2[order(-df.read.vector2$freq), ]
+  mutate(freq = round(e_count * 100 / total_read_count_vector, 2)) %>%
+  arrange(assigned_type, desc(freq))
 
 # XXX only in Rdata, for the report plots -- but source is alignments.tsv
-x.summary.primary = filter(x.all.summary, is_mapped == "Y", is_supp == "N")
-x.joined.vector = left_join(x.read.vector, x.summary.primary, by = "read_id", multiple = "first")
+x.summary.primary <- filter(x.all.summary, is_mapped == "Y", is_supp == "N")
+x.joined.vector <- left_join(x.read.vector, x.summary.primary, by = "read_id", multiple = "first")
 
 
 # ==================================================
@@ -131,43 +149,19 @@ df.err.vector <- x.err.vector %>%
   summarise(count = n())
 
 
-# ----------------------------------------------------------
-# Stats and plot for flip/flop analysis (if available)
-# ----------------------------------------------------------
+# ==================================================
+# flipflop.tsv.gz (if available)
+# --------------------------------------------------
 
 if (file.exists(r_params$flipflop_summary)) {
-  df.read.ssaav <- dplyr::filter(df.read.vector2, assigned_type == 'ssAAV') %>%
-    filter(
-      assigned_subtype == 'full' |
-        assigned_subtype == 'right-partial' |
-        assigned_subtype == 'left-partial'
-    ) %>%
-    select(e_count) %>%
-    as.data.frame()
-  total_ssaav <- sum(df.read.ssaav$e_count)
-
-  data.flipflop <- read.table(r_params$flipflop_summary,
-    sep = '\t',
-    header = T
-  )
+  data.flipflop <- read_tsv(r_params$flipflop_summary, show_col_types = FALSE)
   df.flipflop <- data.flipflop %>%
     group_by(type, subtype, leftITR, rightITR) %>%
     summarise(count = n())
-  scff <- filter(df.flipflop, type == 'scAAV')
-  ssff <- filter(df.flipflop, type == 'ssAAV')
-
-  # Double single-stranded counts if appropriate
-  numssff <- sum(ssff$count)
-  if (is.numeric(numssff) & is.numeric(total_ssaav)) {
-    if (total_ssaav > 0 & numssff > 0 & numssff * 2 == total_ssaav) {
-      ssff <- ssff %>% mutate(count = count * 2)
-    } else {
-      ssff <- ssff %>% mutate(count = count)
-    }
-  }
+  fftbl <- filter(df.flipflop, type %in% c("scAAV", "ssAAV"))
   # Write TSV of flip flop configurations
-  fftbl <- bind_rows(scff, ssff)
   write_tsv(fftbl, paste0(r_params$input_prefix, ".flipflop.tsv"))
+
 }
 
 
