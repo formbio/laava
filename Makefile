@@ -10,9 +10,9 @@ formbio_project := aav-qc-workshop
 # Avoid uploading the local test dir; it's > the upload size limit
 tmp_stash_dir := /tmp/laava-deploy-test
 
-all: laava laava_dev
+all: laava laava_dev sc ss min folder
 
-.PHONY: clean laava laava_dev sc ss diffcheck-sc diffcheck-ss
+.PHONY: clean laava laava_dev sc ss min folder diffcheck-sc diffcheck-ss formbio
 clean:
 	rm -f .nextflow.log*
 	rm -fr .nextflow/*
@@ -42,6 +42,7 @@ diffcheck-sc: $(wf_out_dir)/sc.subsample005.per_read.tsv
 diffcheck-ss: $(wf_out_dir)/ss.subsample005.per_read.tsv $(wf_out_dir)/ss.subsample005.flipflop.tsv
 	#diff $(snapshot_dir)/ss.per_read.tsv $< && echo "OK"
 	diff $(snapshot_dir)/ss.flipflop.tsv $(lastword $^) && echo "OK"
+
 
 formbio: clean
 	mv test/ "$(tmp_stash_dir)"
