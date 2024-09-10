@@ -114,11 +114,11 @@
       "enum": [
         {
           "name": "Single-stranded AAV (ssAAV)",
-          "id": "ssaav"
+          "id": "ss"
         },
         {
           "name": "Self-complementary AAV (scAAV)",
-          "id": "scaav"
+          "id": "sc"
         },
         {
           "name": "Unknown / Unspecified",

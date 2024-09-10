@@ -23,10 +23,10 @@ laava laava_dev: %: %.dockerfile laava.conda_env.yml
 	docker build -t ghcr.io/formbio/$@:latest -f $< .
 
 
-sc: params-local-sc-no-ff.json
+sc: params-local-sc.json
 	nextflow run -profile local main.nf -params-file $<
 
-ss: params-local-ss-with-ff.json
+ss: params-local-ss.json
 	nextflow run -profile local main.nf -params-file $<
 
 min: params-local-no-file-sc.json

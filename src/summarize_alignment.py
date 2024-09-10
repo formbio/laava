@@ -606,7 +606,7 @@ def process_alignment_records_for_a_read(
                 read_type, read_subtype = "other-vector", "tandem"
 
             # ssAAV classification
-            elif vector_type == "ssaav":
+            elif vector_type == "ss":
                 if supp is None:
                     read_type = "ssAAV"
                     # Proper ssAAV subtypes
@@ -648,7 +648,7 @@ def process_alignment_records_for_a_read(
                         read_subtype = "unclassified"
 
             # scAAV classification
-            elif vector_type == "scaav":
+            elif vector_type == "sc":
                 if supp_orientation == "+/-":
                     read_type = "scAAV"
                     # Proper scAAV subtypes
@@ -836,7 +836,7 @@ def main(args):
     # subset BAM files into major categories for ease of loading into IGV for viewing
     # subset_sam_by_readname_list(in_bam, out_bam, per_read_tsv, wanted_types, wanted_subtypes)
     subset_bam_prefixes = []
-    if args.vector_type == "scaav":
+    if args.vector_type == "sc":
         out_pfx = args.output_prefix + ".scAAV-full"
         subset_bam_prefixes.append(out_pfx)
         subset_sam_by_readname_list(
@@ -865,7 +865,7 @@ def main(args):
             ["partial", "left-partial", "right-partial", "full"],
             exclude_subtype=True,
         )
-    elif args.vector_type == "ssaav":
+    elif args.vector_type == "ss":
         out_pfx = args.output_prefix + ".ssAAV-full"
         subset_bam_prefixes.append(out_pfx)
         subset_sam_by_readname_list(
@@ -931,9 +931,9 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--sample-id", required=True, help="Sample unique ID")
     parser.add_argument(
         "--vector-type",
-        choices=["scaav", "ssaav", "unspecified"],
+        choices=["sc", "ss", "unspecified"],
         default="unspecified",
-        help="Vector type; one of: scaav, ssaav, unspecified",
+        help="Vector type; one of: sc, ss, unspecified",
     )
     parser.add_argument(
         "--max-allowed-missing-flanking",

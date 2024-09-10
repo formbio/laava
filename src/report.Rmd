@@ -152,7 +152,7 @@ p2.atype_violin
 
 ## Definitions
 
-```{asis, echo = r_params$vector_type == "ssaav"}
+```{asis, echo = r_params$vector_type == "ss"}
 Table: Assigned subtype definitions for single-stranded input vector.
 
 Assigned Type|Assigned Subtype|Definition
@@ -172,7 +172,7 @@ other-vector |complex         |Read aligns to a double-stranded fragment with as
 other-vector |unclassified    |Read alignment does not match any of the above orientations.
 ```
 
-```{asis, echo = r_params$vector_type == "scaav"}
+```{asis, echo = r_params$vector_type == "sc"}
 Table: Assigned subtype definitions for self-complementary input vector.
 
 Assigned Type|Assigned Subtype|Definition
