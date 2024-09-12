@@ -10,24 +10,26 @@ all: sc ss
 clean:
 	rm -frv build/*
 
-sc: $(out_dir)/sc_AAV_report.html
+sc: $(out_dir)/sc.metadata.tsv $(out_dir)/sc_AAV_report.html
 
-ss: $(out_dir)/ss_AAV_report.html
+ss: $(out_dir)/ss.metadata.tsv $(out_dir)/ss_AAV_report.html
 
 
-test: $(out_dir)/sc.Rdata $(out_dir)/ss.Rdata
-	./compare_tsvs.sh build-snapshot build \
-		sc.alignments.tsv sc.per_read.tsv ss.alignments.tsv ss.per_read.tsv ss.flipflop.tsv \
-		&& echo "OK" || echo "FAIL"
+test: $(out_dir)/sc.Rdata $(out_dir)/ss.Rdata $(out_dir)/sc.metadata.tsv $(out_dir)/ss.metadata.tsv
+	pytest test_outputs.py
 
-test2: $(out_dir)/sc.Rdata $(out_dir)/ss.Rdata
-	./compare_tsvs.py build-snapshot build sc && echo "OK" || echo "FAIL"
-	./compare_tsvs.py build-snapshot build ss && echo "OK" || echo "FAIL"
 
 $(out_dir)/sc_AAV_report.html $(out_dir)/ss_AAV_report.html: \
 	%_AAV_report.html: \
 	../src/create_report.R %.Rdata
 	$^
+
+
+$(out_dir)/sc.metadata.tsv: ../src/write_sample_metadata.py $(in_dir)/sc.subsample005.bam
+	$< sc.subsample005 sc $(word 2,$^) -o $@
+
+$(out_dir)/ss.metadata.tsv: ../src/write_sample_metadata.py $(in_dir)/ss.subsample005.bam
+	$< ss.subsample005 ss $(word 2,$^) -o $@
 
 
 $(out_dir)/sc.Rdata: ../src/calculate_rdata.R ../src/report.Rmd $(out_dir)/sc.annotation.txt $(out_dir)/sc.tagged.bam

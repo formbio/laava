@@ -18,3 +18,4 @@ dependencies:
     - r-rmarkdown
     - r-tidyverse
     - ruff
+    - shellcheck
