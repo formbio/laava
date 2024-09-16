@@ -145,7 +145,10 @@ def read_annotation_bed(fname: str, itr_labels: list[str]):
 def read_reference_names(fname: str):
     """Read a 2-column TSV of reference sequence names and labels."""
     with Path(fname).open() as infile:
-        for line in infile:
+        # Skip header
+        lines = iter(infile)
+        next(infile)
+        for line in lines:
             seq_name, ref_label = line.split()
             if ref_label not in KNOWN_ANNOT_LABELS:
                 logging.info(

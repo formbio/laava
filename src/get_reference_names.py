@@ -27,7 +27,7 @@ AP.add_argument("-o", "--output", required=True, help="Output filename.")
 
 
 def _main(args):
-    out_rows = []
+    out_rows = [("Name", "Label")]
 
     # Vector sequence -- should be just 1 in the FASTA; label it "vector"
     vector_rec = SeqIO.read(args.vector, "fasta")
