@@ -11,6 +11,8 @@ Approach:
   otherwise ssAAV.
 """
 
+from __future__ import annotations
+
 import argparse
 import collections
 import sys

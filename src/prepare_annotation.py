@@ -30,6 +30,8 @@ Specifically:
     In AAV, this is the payload region including the ITRs.
 """
 
+from __future__ import annotations
+
 import argparse
 import logging
 import sys

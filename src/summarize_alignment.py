@@ -643,8 +643,10 @@ def process_alignment_records_for_a_read(
                         read_subtype = "complex"
                     else:
                         # E.g. vector+backbone
-                        logging.warning("Unclassified non-ssAAV read-target overlap '%s':",
-                                        read_target_overlap)
+                        logging.warning(
+                            "Unclassified non-ssAAV read-target overlap '%s':",
+                            read_target_overlap,
+                        )
                         read_subtype = "unclassified"
 
             # scAAV classification

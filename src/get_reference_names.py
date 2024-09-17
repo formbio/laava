@@ -7,6 +7,8 @@ Output is a 2-column TSV with no header:
    sequence ID if it's not one of those.
 """
 
+from __future__ import annotations
+
 import argparse
 import logging
 from pathlib import Path
