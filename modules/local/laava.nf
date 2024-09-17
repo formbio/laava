@@ -81,14 +81,13 @@ process make_report() {
     path("${sample_id}.alignments.tsv.gz"), emit: alignments_tsv
     path("${sample_id}.per_read.tsv.gz"), emit: per_read_tsv
     path("${sample_id}.nonmatch.tsv.gz"), emit: nonmatch_tsv
-    path("${sample_id}.flipflop_assignments.tsv"), emit: flipflop_assignments_tsv, optional: true
-    path("${sample_id}.flipflop.tsv"), emit: flipflop_tsv, optional: true
+    path("${sample_id}.flipflop.tsv.gz"), emit: flipflop_tsv, optional: true
     // intermediate data
     path("${sample_id}.Rdata"), emit: rdata, optional: true
     path("${sample_id}.tagged.bam"), emit: tagged_bam
     path("${sample_id}.*.tagged.sorted.bam"), emit: subtype_bams
     path("${sample_id}.*.tagged.sorted.bam.bai"), emit: subtype_bais
-    path("${sample_id}.*-flipflop.bam"), emit: flipflop_bams, optional: true
+    path("${sample_id}.flipflop-*.bam"), emit: flipflop_bams, optional: true
     // report
     path("${sample_id}_AAV_report.html"), emit: aav_report_html
     path("${sample_id}_AAV_report.pdf"), emit: aav_report_pdf

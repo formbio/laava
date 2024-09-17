@@ -23,7 +23,7 @@ EXPECTED_ROW_COUNTS = {
     "ss": {
         "alignments": 5489,
         "per_read": 3517,
-        "flipflop": 15,
+        "flipflop": 2596,
         "metadata": 1,
         "reference_names": 8,
         "nonmatch": 78330,
@@ -98,6 +98,6 @@ class TestCompareTSVs:
         self.check_row_count(path, expected_count)
 
     def test_ss_flipflop(self, build_dir):
-        path = build_dir / "ss.flipflop.tsv"
+        path = build_dir / "ss.flipflop.tsv.gz"
         expected_count = EXPECTED_ROW_COUNTS["ss"]["flipflop"]
         self.check_row_count(path, expected_count)

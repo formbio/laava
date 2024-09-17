@@ -54,15 +54,15 @@ if [[ -n "$flipflop_name" || -n "$flipflop_fa" ]]; then
         -o "$sample_id"
     echo "Finished get_flipflop_config"
     ls -Alh
-    flipflop_assignments="${sample_id}.flipflop_assignments.tsv"
+    flipflop_tsv="${sample_id}.flipflop.tsv.gz"
 else
     echo "Skipping flip/flop analysis"
-    flipflop_assignments=""
+    flipflop_tsv=""
 fi
 
 echo
 echo "Starting calculate_rdata"
-calculate_rdata.R "./${sample_id}" "$annotation_txt" "$sample_id" "$vector_type" "$flipflop_assignments"
+calculate_rdata.R "./${sample_id}" "$annotation_txt" "$sample_id" "$vector_type" "$flipflop_tsv"
 echo "Finished calculate_rdata"
 ls -Alh
 

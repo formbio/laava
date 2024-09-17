@@ -35,11 +35,11 @@ $(out_dir)/ss.metadata.tsv: ../src/write_sample_metadata.py $(in_dir)/ss.subsamp
 $(out_dir)/sc.Rdata: ../src/calculate_rdata.R ../src/report.Rmd $(out_dir)/sc.annotation.txt $(out_dir)/sc.tagged.bam
 	$< $(out_dir)/sc $(out_dir)/sc.annotation.txt sc.subsample005 sc
 
-$(out_dir)/ss.Rdata: ../src/calculate_rdata.R ../src/report.Rmd $(out_dir)/ss.annotation.txt $(out_dir)/ss.flipflop_assignments.tsv $(out_dir)/ss.tagged.bam
-	$< $(out_dir)/ss $(out_dir)/ss.annotation.txt ss.subsample005 ss $(out_dir)/ss.flipflop_assignments.tsv
+$(out_dir)/ss.Rdata: ../src/calculate_rdata.R ../src/report.Rmd $(out_dir)/ss.annotation.txt $(out_dir)/ss.flipflop.tsv.gz $(out_dir)/ss.tagged.bam
+	$< $(out_dir)/ss $(out_dir)/ss.annotation.txt ss.subsample005 ss $(out_dir)/ss.flipflop.tsv.gz
 
 
-$(out_dir)/ss.flipflop_assignments.tsv: ../src/get_flipflop_config.py $(out_dir)/ss.tagged.bam $(out_dir)/ss.per_read.tsv.gz
+$(out_dir)/ss.flipflop.tsv.gz: ../src/get_flipflop_config.py $(out_dir)/ss.tagged.bam $(out_dir)/ss.per_read.tsv.gz
 	$^ -o $(out_dir)/ss
 
 

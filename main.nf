@@ -114,7 +114,6 @@ workflow laava {
     tagged_bam = make_report.out.tagged_bam
     subtype_bams = make_report.out.subtype_bams
     subtype_bais = make_report.out.subtype_bais
-    flipflop_assignments_tsv = make_report.out.flipflop_assignments_tsv
     flipflop_bams = make_report.out.flipflop_bams
     flipflop_tsv = make_report.out.flipflop_tsv
     rdata = make_report.out.rdata

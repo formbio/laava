@@ -158,10 +158,6 @@ if (file.exists(r_params$flipflop_summary)) {
   df.flipflop <- data.flipflop %>%
     group_by(type, subtype, leftITR, rightITR) %>%
     summarise(count = n())
-  fftbl <- filter(df.flipflop, type %in% c("scAAV", "ssAAV"))
-  # Write TSV of flip flop configurations
-  write_tsv(fftbl, paste0(r_params$input_prefix, ".flipflop.tsv"))
-
 }
 
 

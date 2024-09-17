@@ -4,6 +4,8 @@
 Must have already run `summarize_alignment.py` to get a .tagged.BAM file!
 """
 
+from __future__ import annotations
+
 import csv
 import gzip
 from typing import NamedTuple
@@ -11,7 +13,6 @@ from typing import NamedTuple
 import parasail
 import pysam
 from Bio import SeqIO
-
 
 SW_SCORE_MATRIX = parasail.matrix_create("ACGT", 2, -5)
 
@@ -144,22 +145,22 @@ def main(per_read_tsv, tagged_bam, output_prefix, flipflop_fasta):
 
     read_info = load_per_read_info(per_read_tsv)
 
-    with open(output_prefix + ".flipflop_assignments.tsv", "w") as fout:
+    with gzip.open(output_prefix + ".flipflop.tsv.gz", "wt") as fout:
         out_tsv = csv.writer(fout, delimiter="\t")
         out_tsv.writerow(OUT_FIELDS)
         reader = pysam.AlignmentFile(open(tagged_bam), "rb", check_sq=False)
         out_bam_full = pysam.AlignmentFile(
-            open(output_prefix + ".vector-full-flipflop.bam", "w"),
+            open(output_prefix + ".flipflop-full.bam", "w"),
             "wb",
             header=reader.header,
         )
         out_bam_leftp = pysam.AlignmentFile(
-            open(output_prefix + ".vector-leftpartial-flipflop.bam", "w"),
+            open(output_prefix + ".flipflop-left-partial.bam", "w"),
             "wb",
             header=reader.header,
         )
         out_bam_rightp = pysam.AlignmentFile(
-            open(output_prefix + ".vector-rightpartial-flipflop.bam", "w"),
+            open(output_prefix + ".flipflop-right-partial.bam", "w"),
             "wb",
             header=reader.header,
         )
@@ -188,7 +189,7 @@ def main(per_read_tsv, tagged_bam, output_prefix, flipflop_fasta):
                     [
                         r.qname,
                         a_type,
-                        t["AX"],
+                        t["AX"][len("vector-") :],
                         str(r.reference_start),
                         str(r.reference_end),
                         c_l,
