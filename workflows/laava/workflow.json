@@ -273,7 +273,7 @@
     "max_allowed_outside_vector": {
       "title": "Max allowed outside vector",
       "description": "",
-      "help": "Maximum allowed, in bp, outside the annotated vector region for a read that fully covers the vector region to be still considered 'full' rather than 'vector+backbone'.",
+      "help_text": "Maximum allowed, in bp, outside the annotated vector region for a read that fully covers the vector region to be still considered 'full' rather than 'vector+backbone'.",
       "type": "integer",
       "hidden": false,
       "required": true,
@@ -284,7 +284,7 @@
     "max_allowed_missing_flanking": {
       "title": "Max allowed missing from ITR flank",
       "description": "",
-      "help": "Maximum allowed, in bp, missing from the left and right flanks of the annotated vector region to be still considered 'full' rather than 'partial'.",
+      "help_text": "Maximum allowed, in bp, missing from the left and right flanks of the annotated vector region to be still considered 'full' rather than 'partial'.",
       "type": "integer",
       "hidden": false,
       "required": true,

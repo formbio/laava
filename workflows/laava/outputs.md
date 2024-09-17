@@ -11,13 +11,11 @@
 - Alignment files
   - Mapped reads: SampleID.sort_by_name.sam
   - Tagged reads: SampleID.tagged.bam
-  - Refence names: reference_names.tsv
+  - Reference names: SampleID.reference_names.tsv
 
-- Read count and classification tables
-  - SampleID.alignments.tsv
-  - SampleID.per_read.tsv
-  - SampleID.nonmatch_stat.tsv.gz
-  - SampleID.sequence-error.tsv
-  - SampleID.flipflop_assignments.txt (optional)
-  - SampleID.flipflop.tsv (optional)
-  - SampleID.Rdata
+- Summary tables
+  - SampleID.metadata.tsv
+  - SampleID.alignments.tsv.gz
+  - SampleID.per_read.tsv.gz
+  - SampleID.nonmatch.tsv.gz
+  - SampleID.flipflop.tsv.gz (optional)
