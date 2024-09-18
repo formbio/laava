@@ -33,6 +33,7 @@ Specifically:
 import argparse
 import sys
 from collections import namedtuple
+from pathlib import Path
 
 AnnRow = namedtuple("AnnRow", "seq_name source_type start1 end")
 
@@ -53,9 +54,9 @@ def read_annotation_bed(fname):
         "repcap": None,
         "vector": None,
     }
-    ann_row = None
-    rc_row = None
-    with open(fname) as infile:
+
+    fpath = Path(fname)
+    with fpath.open() as infile:
         for line in infile:
             # Require BED4 or more
             seq_name, start0, end, label = line.rstrip().split("\t")[:4]
@@ -75,7 +76,8 @@ def read_annotation_bed(fname):
 
 def read_reference_names(fname):
     """Read a 2-column TSV of reference sequence names and source types."""
-    with open(fname) as infile:
+    path = Path(fname)
+    with path.open() as infile:
         for line in infile:
             seq_name, source_type = line.split()
             if source_type not in ANNOT_TYPES:
@@ -96,7 +98,9 @@ def write_annotation_txt(out_fname, bed_rows, other_rows):
     """
     vector_row = bed_rows["vector"]
     repcap_row = bed_rows["repcap"]
-    with open(out_fname, "w+") as outf:
+
+    out_path = Path(out_fname)
+    with out_path.open("w+") as outf:
         outf.write("NAME={};TYPE={};REGION={}-{};\n".format(*vector_row))
         seen_seq_names_and_sources = {vector_row.seq_name: vector_row.source_type}
         if repcap_row:

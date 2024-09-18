@@ -11,6 +11,7 @@ import subprocess
 import sys
 from csv import DictReader, DictWriter
 from multiprocessing import Process
+from pathlib import Path
 # import pdb
 
 import pysam
@@ -48,18 +49,20 @@ def subset_sam_by_readname_list(
     exclude_type=False,
 ):
     qname_list = {}  # qname --> (a_type, a_subtype)
-    for r in DictReader(open(per_read_tsv), delimiter="\t"):
-        # pdb.set_trace()
-        if (
-            wanted_types is None
-            or (not exclude_type and r["assigned_type"] in wanted_types)
-            or (exclude_type and r["assigned_type"] not in wanted_types)
-        ) and (
-            wanted_subtypes is None
-            or (not exclude_subtype and (r["assigned_subtype"] in wanted_subtypes))
-            or (exclude_subtype and (r["assigned_subtype"] not in wanted_subtypes))
-        ):
-            qname_list[r["read_id"]] = (r["assigned_type"], r["assigned_subtype"])
+
+    with Path(per_read_tsv).open() as per_read_f:
+        for r in DictReader(per_read_f, delimiter="\t"):
+            # pdb.set_trace()
+            if (
+                wanted_types is None
+                or (not exclude_type and r["assigned_type"] in wanted_types)
+                or (exclude_type and r["assigned_type"] not in wanted_types)
+            ) and (
+                wanted_subtypes is None
+                or (not exclude_subtype and (r["assigned_subtype"] in wanted_subtypes))
+                or (exclude_subtype and (r["assigned_subtype"] not in wanted_subtypes))
+            ):
+                qname_list[r["read_id"]] = (r["assigned_type"], r["assigned_subtype"])
 
     cur_count = 0
     reader = pysam.AlignmentFile(in_bam, "rb", check_sq=False)
@@ -138,7 +141,8 @@ def read_annotation_file(annot_filename):
     :return:
     """
     result = {}
-    for line in open(annot_filename):
+    annot_path = Path(annot_filename)
+    for line in annot_path.open():
         stuff = line.strip()
         m = annot_rex.match(stuff)
         if m is None:
@@ -281,9 +285,10 @@ def process_alignment_bam(
     ]
     NONMATCH_FIELDS = ["read_id", "pos0", "type", "type_len"]
 
-    f_summary = open(output_prefix + ".summary.tsv", "w")
-    f_nonmatch = open(output_prefix + ".nonmatch_stat.tsv", "w")
-    f_per_read = open(output_prefix + ".per_read.tsv", "w")
+    output_path = Path(output_prefix)
+    f_summary = output_path.with_suffix(output_path.suffix + ".summary.tsv").open("w")
+    f_nonmatch = output_path.with_suffix(output_path.suffix + ".nonmatch_stat.tsv").open("w")
+    f_per_read = output_path.with_suffix(output_path.suffix + ".per_read.tsv").open("w")
 
     out_summary = DictWriter(f_summary, SUMMARY_FIELDS, delimiter="\t")
     out_nonmatch = DictWriter(f_nonmatch, NONMATCH_FIELDS, delimiter="\t")
@@ -573,7 +578,8 @@ def process_alignment_records_for_a_read(
 def run_processing_parallel(
     sorted_sam_filename, annotation, output_prefix, num_chunks=1
 ):
-    reader = pysam.AlignmentFile(open(sorted_sam_filename), check_sq=False)
+    with Path(sorted_sam_filename).open() as sorted_sam_file:
+        reader = pysam.AlignmentFile(sorted_sam_file, check_sq=False)
     readname_list = [next(reader).qname]
     for r in reader:
         if r.qname != readname_list[-1]:
@@ -612,16 +618,20 @@ def run_processing_parallel(
     # Closes over: output_prefix, num_chunks
     def gather_text_chunks(suffix, compress=False):
         logging.info("Combining chunk data... (*%s)", suffix)
+
+        output_path = Path(output_prefix)
+
         # Copy the first chunk over
         if compress:
-            out_path = output_prefix + suffix + ".gz"
+            out_path = output_path.with_suffix(suffix + ".gz")
             f_out = gzip.open(out_path, "wb")
         else:
-            out_path = output_prefix + suffix
-            f_out = open(out_path, "w")
-        first_chunk = f"{output_prefix}.1{suffix}"
+            out_path = output_path.with_suffix(suffix)
+            f_out = out_path.open("w")
+
+        first_chunk = output_path.with_suffix(".1" + suffix)
         chunk_paths = [first_chunk]
-        with open(first_chunk) as f_in:
+        with first_chunk.open() as f_in:
             if compress:
                 for line in f_in:
                     f_out.write(line.encode())
@@ -629,8 +639,9 @@ def run_processing_parallel(
                 shutil.copyfileobj(f_in, f_out)
         # Copy the remaining chunks
         for i in range(1, num_chunks):
-            chunk_path = f"{output_prefix}.{i+1}{suffix}"
-            with open(chunk_path) as f_in:
+
+            chunk_path = output_path.with_suffix(f".{i+1}{suffix}")
+            with chunk_path.open() as f_in:
                 f_in.readline()  # Skip the header
                 if compress:
                     for line in f_in:
@@ -639,10 +650,12 @@ def run_processing_parallel(
                     shutil.copyfileobj(f_in, f_out)
             chunk_paths.append(chunk_path)
         f_out.close()
+        
         # Delete the chunk data
         logging.info("Data combining complete. Deleting chunk data (*%s).", suffix)
         for chunk_path in chunk_paths:
-            os.remove(chunk_path)
+            chunk_path.unlink()
+        
         return out_path
 
     outpath_nonmatch = gather_text_chunks(

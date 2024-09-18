@@ -11,7 +11,7 @@ from typing import NamedTuple
 import parasail
 import pysam
 from Bio import SeqIO
-
+from pathlib import Path
 
 SW_SCORE_MATRIX = parasail.matrix_create("ACGT", 2, -5)
 
@@ -128,7 +128,8 @@ def identify_flip_flop(r, ff_seq):
 
 def load_per_read_info(fname):
     """Load per-read info, keyed by read IDs, from a CSV file."""
-    with open(fname) as in_csv:
+    path = Path(fname)
+    with path.open() as in_csv:
         read_info = {r["read_id"]: r for r in csv.DictReader(in_csv, delimiter="\t")}
     return read_info
 
@@ -144,22 +145,24 @@ def main(per_read_csv, tagged_bam, output_prefix, flipflop_fasta):
 
     read_info = load_per_read_info(per_read_csv)
 
-    with open(output_prefix + ".flipflop_assignments.tsv", "w") as fout:
+    output_prefix_path = Path(output_prefix)
+
+    with output_prefix_path.with_suffix(".flipflop_assignments.tsv").open("w") as fout:
         out_tsv = csv.writer(fout, delimiter="\t")
         out_tsv.writerow(OUT_FIELDS)
-        reader = pysam.AlignmentFile(open(tagged_bam), "rb", check_sq=False)
+        reader = pysam.AlignmentFile(Path(tagged_bam).open(), "rb", check_sq=False)
         out_bam_full = pysam.AlignmentFile(
-            open(output_prefix + ".vector-full-flipflop.bam", "w"),
+            output_prefix_path.with_suffix(".vector-full-flipflop.bam").open("w"),
             "wb",
             header=reader.header,
         )
         out_bam_leftp = pysam.AlignmentFile(
-            open(output_prefix + ".vector-leftpartial-flipflop.bam", "w"),
+            output_prefix_path.with_suffix(".vector-leftpartial-flipflop.bam").open("w"),
             "wb",
             header=reader.header,
         )
         out_bam_rightp = pysam.AlignmentFile(
-            open(output_prefix + ".vector-rightpartial-flipflop.bam", "w"),
+            output_prefix_path.with_suffix(".vector-rightpartial-flipflop.bam").open("w"),
             "wb",
             header=reader.header,
         )
