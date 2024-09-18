@@ -83,7 +83,6 @@ process make_report() {
     path("${sample_id}.nonmatch.tsv.gz"), emit: nonmatch_tsv
     path("${sample_id}.flipflop.tsv.gz"), emit: flipflop_tsv, optional: true
     // intermediate data
-    path("${sample_id}.Rdata"), emit: rdata, optional: true
     path("${sample_id}.tagged.bam"), emit: tagged_bam
     path("${sample_id}.*.tagged.sorted.bam"), emit: subtype_bams
     path("${sample_id}.*.tagged.sorted.bam.bai"), emit: subtype_bais

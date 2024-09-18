@@ -6,23 +6,25 @@ message(paste("Working directory:", working_dir))
 
 args = commandArgs(trailingOnly = TRUE)
 
-rdata_path = args[1]
+input_params = list(
+  path_prefix = args[1],
+  sample_id = args[2],
+  vector_type = args[3],
+  annotation_txt = args[4]
+)
+message("Parameters:")
+print(input_params)
 
+# Find the report template relative to this script's filesystem location
 rmd_dir = dirname(sub("--file=", "", commandArgs(trailingOnly = FALSE)[4]))
 rmd_path = paste0(rmd_dir, "/report.Rmd")
 message(paste("Report template location:", rmd_path, sep = " "))
 
-input_prefix = fs::path_ext_remove(rdata_path)
-out_path = paste0(input_prefix, "_AAV_report") # Adds .html and .pdf automatically
+#path_prefix = fs::path_ext_remove(input_params$path_prefix)
+out_path = paste0(input_params$path_prefix, "_AAV_report") # Adds .html and .pdf automatically
 out_dir = dirname(out_path)
 out_filename = basename(out_path)
 message(paste("Output location:", out_path, sep = " "))
-
-input_params = list(
-  rdata_path = rdata_path
-)
-message("Parameters:")
-print(input_params)
 
 rmarkdown::render(
   rmd_path,

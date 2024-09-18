@@ -61,13 +61,7 @@ else
 fi
 
 echo
-echo "Starting calculate_rdata"
-calculate_rdata.R "./${sample_id}" "$annotation_txt" "$sample_id" "$vector_type" "$flipflop_tsv"
-echo "Finished calculate_rdata"
-ls -Alh
-
-echo
 echo "Starting create_report"
-create_report.R "./${sample_id}.Rdata"
+create_report.R "./${sample_id}" "$sample_id" "$vector_type" "$annotation_txt" "$flipflop_tsv"
 echo "Finished create_report"
 ls -Alh
