@@ -566,7 +566,7 @@ def process_alignment_records_for_a_read(
     }
     if read_info["has_primary"] == "Y":
         # Set reference_label to a known label, chimeric-(non)vector, or leave as "NA" or "unmapped"
-        OLD_CHIMERIC_LOGIC = True
+        OLD_CHIMERIC_LOGIC = False
         if OLD_CHIMERIC_LOGIC:
             reference_labels = [prim["map_label"]]
             if supp is not None and supp["map_label"] != prim["map_label"]:

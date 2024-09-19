@@ -23,7 +23,7 @@ EXPECTED_ROW_COUNTS = {
     "ss": {
         "alignments": 5489,
         "per_read": 3517,
-        "flipflop": 2596,
+        "flipflop": 2576,
         "metadata": 1,
         "reference_names": 8,
         "nonmatch": 78330,
