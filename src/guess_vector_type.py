@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Infer single stranded (ssAAV) vs. self-complementary (scAAV) vector type.
 
 Approach:
@@ -22,11 +23,11 @@ import pysam
 SC_MAX_THRESHOLD = 0.1
 
 
-def count_alignments(bam_fname, vector_name):
+def count_alignments(sam_fname, vector_name):
     """Collect each read's length and aligned suffix counts."""
 
     def filter_records():
-        reader = pysam.AlignmentFile(bam_fname, "rb", check_sq=False)
+        reader = pysam.AlignmentFile(sam_fname, "r", check_sq=False)
         for rec in reader:
             if not rec.is_mapped:
                 continue
@@ -47,7 +48,7 @@ def count_alignments(bam_fname, vector_name):
 
 if __name__ == "__main__":
     AP = argparse.ArgumentParser(description=__doc__)
-    AP.add_argument("bam_file", help="Read alignment in BAM format.")
+    AP.add_argument("sam_file", help="Read alignment in SAM format.")
     AP.add_argument("-v", "--vector-name", help="Vector reference sequence name.")
     AP.add_argument(
         "-t",
@@ -58,8 +59,8 @@ if __name__ == "__main__":
         as self-complementary AAV. [Default: %(default)f]""",
     )
     args = AP.parse_args()
-    frac = count_alignments(args.bam_file, args.vector_name)
+    frac = count_alignments(args.sam_file, args.vector_name)
     if frac <= args.sc_max_threshold:
-        print("scaav")
+        print("sc")
     else:
-        print("ssaav")
+        print("ss")

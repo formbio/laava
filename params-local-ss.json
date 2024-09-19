@@ -1,0 +1,19 @@
+{
+  "seq_reads_file": "test/samples/ss.subsample005.bam",
+  "vector_type": "ss",
+  "vector_bed": "test/samples/ss.annotation.bed",
+  "vector_fa": "test/samples/ss.construct.fasta",
+  "packaging_fa": "test/fasta/packaging.fa",
+  "host_fa": "test/fasta/hg38.chr19trunc-chrM.fa",
+  "itr_label_1": "ITR",
+  "itr_label_2": "ITR",
+  "repcap_name": "pRep2Cap9",
+  "helper_name": "pHelper",
+  "lambda_name": "Lambda",
+  "flipflop_name": "AAV2",
+  "flipflop_fa": "test/fasta/AAV2.flipflop.fasta",
+  "target_gap_threshold": 200,
+  "max_allowed_outside_vector": 100,
+  "max_allowed_missing_flanking": 100,
+  "container_version": ":latest"
+}

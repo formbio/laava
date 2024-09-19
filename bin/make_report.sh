@@ -20,6 +20,13 @@ else
     echo "Reads $mapped_reads_sam appear to be in SAM format"
 fi
 
+if [ "$vector_type" == "unspecified" ]; then
+    #vector_name=$(samtools view -H ss.tagged.bam | head -n 2 | tail -n1 | cut -f2 | cut -d: -f2)
+    vector_name=$(head -n1 "$annotation_txt" | cut -d';' -f 1 | cut -d'=' -f2)
+    vector_type=$(guess_vector_type.py "$mapped_reads_sam" -v "$vector_name")
+    echo "Inferred vector_type: $vector_type"
+fi
+
 echo
 echo "Starting summarize_alignment"
 summarize_alignment.py \
