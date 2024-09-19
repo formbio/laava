@@ -82,16 +82,16 @@ other-vector |Read consists of a fragment mapping to the vector but with charact
 `<br />`{=html}
 
 ![Single-stranded AAV types (ssAAV).
-ssAAV reads must fully map within the vector genome (which can contain the backbone, beyond the ITR region) consisting of a single (primary) alignment.
-"ssAAV-full" reads must cover from left ITR to right ITR.
-"ssAAV-left-partial" contain the left ITR but are missing the right ITR.
-"scAAV-vector+backbone" map partially within the ITR and partially to the backbone.
+ssAAV reads are expected to have a single (forward) alignment to the vector genome.
+"ssAAV full" reads cover the target region from left ITR to right ITR.
+"ssAAV left-partial" contain the left ITR but are missing the right ITR.
+"scAAV vector+backbone" reads overlap both the ITR-to-ITR region and the plasmid backbone, beyond the ITR.
 ](class_def_ssAAV.png)
 
 `<br />`{=html}
 
 ![Self-complementary AAV types (scAAV).
-scAAV reads must fully map within the vector genome (which can contain the backbone, beyond the ITR region) consisting of both primary and supplementary alignments.
+scAAV reads are expected to have both forward and reverse-complementary alignments to the vector genome.
 The definitions of full, partial, and backbone reads are the same as in ssAAV.
 ](class_def_scAAV.png)
 
@@ -142,9 +142,7 @@ x.all.summary <- read_tsv(paste0(params$path_prefix, '.alignments.tsv.gz'), show
 
 x.all.read <- read_tsv(paste0(params$path_prefix, '.per_read.tsv.gz'), show_col_types = FALSE)
 
-total_read_count_all <- sum(x.all.read$effective_count) # dim(x.all.read)[1]
-
-# Display order
+# Set the display order for categoricals
 valid_types <- c('ssAAV', 'scAAV', 'other-vector', 'backbone')
 valid_subtypes <- c(
   'full',
@@ -163,12 +161,23 @@ valid_subtypes <- c(
   'unclassified',
   'backbone')
 
-# Filter to vector-only and sort types/subtypes
-x.read.vector <- x.all.read %>%
-  filter(reference_label == "vector") %>%
+ref_counts <- x.all.read %>%
+  filter(reference_label != "(unmapped)") %>%
+  group_by(reference_label) %>%
+  summarise(e_count = sum(effective_count)) %>%
+  arrange(desc(e_count))
+ref_levels = c(ref_counts$reference_label, "(unmapped)")
+
+x.all.read <- x.all.read %>%
   mutate(
+    reference_label = factor(reference_label, levels = ref_levels),
     assigned_type = factor(assigned_type, levels = valid_types),
     assigned_subtype = factor(assigned_subtype, levels = valid_subtypes))
+
+total_read_count_all <- sum(x.all.read$effective_count)
+
+# Filter to vector-only and sort types/subtypes
+x.read.vector <- x.all.read %>% filter(reference_label == "vector")
 
 total_read_count_vector <- sum(x.read.vector$effective_count)
 
@@ -183,7 +192,7 @@ df.read1 <- x.all.read %>%
   group_by(reference_label, assigned_type) %>%
   summarise(e_count = sum(effective_count)) %>%
   mutate(freq = round(e_count * 100 / total_read_count_all, 2)) %>%
-  arrange(desc(reference_label), desc(freq))
+  arrange(reference_label, desc(freq))
 
 flextable(df.read1) %>%
   set_header_labels(values = c("Mapped Reference", "Assigned Type", "Count", "Frequency (%)"))
@@ -195,10 +204,10 @@ countreads <- df.read1 %>% dplyr::filter(reference_label != "lambda")
 # Bar chart
 ggplot(countreads, aes(x = reference_label, y = freq, fill = assigned_type)) +
   geom_bar(stat = "identity") +
-  xlab("Sequence") +
+  scale_x_discrete("Sequence", guide = guide_axis(angle = 30)) +
   scale_y_continuous("Reads (%)",
-                     limits = c(0, NA),
-                     expand = expansion(mult = c(0, 0.05)))
+                     limits = c(0, 100),
+                     expand = c(0, 0))
 
 # Pie chart
 ggplot(countreads, aes(x = "", y = e_count, fill = reference_label)) +
@@ -210,17 +219,17 @@ ggplot(countreads, aes(x = "", y = e_count, fill = reference_label)) +
 
 ## Frequency of vector assigned types
 
-```{r sopt2, message=FALSE, warning=FALSE}
+```{r vectypes, message=FALSE, warning=FALSE}
 df.read.vector1 <- x.read.vector %>%
   group_by(assigned_type) %>%
   summarise(e_count = sum(effective_count)) %>%
   mutate(freq = round(e_count * 100 / total_read_count_vector, 2)) %>%
   arrange(assigned_type, desc(freq))
 
-sopt2 <- df.read.vector1 %>%
+vectypes <- df.read.vector1 %>%
   mutate(totfreq = round(100 * e_count / total_read_count_all, 2))
 
-flextable(sopt2) %>%
+flextable(vectypes) %>%
   set_header_labels(values = c(
     "Assigned Type",
     "Count",
@@ -563,10 +572,13 @@ if (exists("df.flipflop")) {
         paste(leftITR, rightITR, sep = '-')
       )
     ) %>%
-    group_by(type, subtype, class) %>%
+    mutate(
+      unclass = if_else( class == "unclassified", "unclassified", "classified")
+    ) %>%
+    group_by(type, subtype, class, unclass) %>%
     summarize(classct = sum(count)) %>%
     filter(subtype == 'full')
-  ggplot(ffplot, aes(x = class, y = classct, fill = class)) +
+  ggplot(ffplot, aes(x = class, y = classct, fill = unclass)) +
     geom_bar(stat = 'identity', show.legend = FALSE) +
     labs(x = 'Assigned type') +
     scale_y_continuous("Number of reads",
