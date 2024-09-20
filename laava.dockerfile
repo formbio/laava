@@ -27,7 +27,7 @@ RUN conda env update -v -n base -f conda_env.yml
 RUN mkdir -p /opt/laava
 RUN chmod 777 /opt/laava/
 COPY src/* /opt/laava/
-RUN chmod +x /opt/laava/*.py /opt/laava/*.R
+RUN chmod +x /opt/laava/*.py /opt/laava/*.R /opt/laava/*.sh
 ENV PATH "/opt/laava:$PATH"
 
 WORKDIR /data/
