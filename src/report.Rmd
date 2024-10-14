@@ -6,14 +6,12 @@ output:
   pdf_document:
     toc: true
 params:
-   path_prefix:
-     value: ""
-   sample_id: 
-     value: ""
-   vector_type:
-     value: ""
-   annotation_txt:
-     value: ""
+  path_prefix:
+    value: ""
+  vector_type:
+    value: ""
+  annotation_txt:
+    value: ""
 ---
 
 ```{r setup, include=FALSE}
@@ -39,19 +37,27 @@ set_flextable_defaults(
   table.layout = "autofit",
   theme_fun = "theme_vanilla"
 )
-
-# Load precomputed dataframes etc.
-#load(params$rdata_path)
+# Load sample metadata
+meta <- read_tsv(paste0(params$path_prefix, '.metadata.tsv'), show_col_types = FALSE)
 ```
 
 ---
 title: "AAV Sequence Analysis"
-subtitle: 'Sample: `r params$sample_id`'
+subtitle: 'Sample name: `r meta$sample_display_name`'
 date: 'Date: `r format(Sys.Date())`'
 ---
 
+# Analysis context
+
+|                       | Value                      |
+|:---------------------:|----------------------------|
+| Sample unique ID      | `r meta$sample_unique_id`  |
+| Sequencing run ID     | `r meta$sequencing_run_id` |
+| Construct vector type | `r params$vector_type`AAV  |
+
 
 `\newpage`{=latex}
+
 
 # Read-based AAV vector type classification
 
@@ -97,7 +103,7 @@ The definitions of full, partial, and backbone reads are the same as in ssAAV.
 
 `\break`{=latex}
 
-```{r calculate, message=FALSE, warning=FALSE}
+```{r loadanno, message=FALSE, warning=FALSE}
 # -------------------------
 # annotation.txt -> TARGET_REGION_{START,END}(_REPCAP)
 # -------------------------
@@ -127,8 +133,9 @@ for (i in 1:dim(annot)[1]) {
     TARGET_REGION_END_REPCAP <- s_e[2];
   }
 }
+```
 
-
+```{r calculate, message=FALSE, warning=FALSE}
 # -------------------------------------
 # alignments.tsv.gz
 # -------------------------------------

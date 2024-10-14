@@ -8,9 +8,8 @@ args = commandArgs(trailingOnly = TRUE)
 
 input_params = list(
   path_prefix = args[1],
-  sample_id = args[2],
-  vector_type = args[3],
-  annotation_txt = args[4]
+  vector_type = args[2],
+  annotation_txt = args[3]
 )
 message("Parameters:")
 print(input_params)

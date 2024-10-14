@@ -10,28 +10,28 @@ all: sc ss
 clean:
 	rm -frv build/*
 
-sc: $(out_dir)/sc.metadata.tsv $(out_dir)/sc_AAV_report.html
+sc: $(out_dir)/sc_AAV_report.html
 
-ss: $(out_dir)/ss.metadata.tsv $(out_dir)/ss_AAV_report.html
+ss: $(out_dir)/ss_AAV_report.html
 
 test: sc ss
 	pytest test_outputs.py
 
 
-$(out_dir)/sc_AAV_report.html: ../src/create_report.R ../src/report.Rmd $(out_dir)/sc.annotation.txt $(out_dir)/sc.tagged.bam
-	$< $(out_dir)/sc sc.subsample005 sc $(word 3,$^)
+$(out_dir)/sc_AAV_report.html: ../src/create_report.R ../src/report.Rmd $(out_dir)/sc.annotation.txt $(out_dir)/sc.metadata.tsv $(out_dir)/sc.tagged.bam
+	$< $(out_dir)/sc sc $(word 3,$^)
 
-$(out_dir)/ss_AAV_report.html: ../src/create_report.R ../src/report.Rmd $(out_dir)/ss.annotation.txt $(out_dir)/ss.flipflop.tsv.gz
-	$< $(out_dir)/ss ss.subsample005 ss $(word 3,$^)
+$(out_dir)/ss_AAV_report.html: ../src/create_report.R ../src/report.Rmd $(out_dir)/ss.annotation.txt $(out_dir)/ss.metadata.tsv $(out_dir)/ss.flipflop.tsv.gz
+	$< $(out_dir)/ss ss $(word 3,$^)
 
 
 $(out_dir)/sc.metadata.tsv: ../src/write_sample_metadata.py $(in_dir)/sc.subsample005.bam
 	mkdir -p $(out_dir)
-	$< sc.subsample005 sc $(word 2,$^) -o $@
+	$< sc.subsample005 "Self-comp Example" $(word 2,$^) -o $@
 
 $(out_dir)/ss.metadata.tsv: ../src/write_sample_metadata.py $(in_dir)/ss.subsample005.bam
 	mkdir -p $(out_dir)
-	$< ss.subsample005 ss $(word 2,$^) -o $@
+	$< ss.subsample005 "Single-stranded Example" $(word 2,$^) -o $@
 
 
 $(out_dir)/ss.flipflop.tsv.gz: ../src/get_flipflop_config.py $(out_dir)/ss.tagged.bam $(out_dir)/ss.per_read.tsv.gz

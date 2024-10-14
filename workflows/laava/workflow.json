@@ -104,7 +104,7 @@
       }
     },
     "vector_type": {
-      "title": "Vector type",
+      "title": "Construct vector type",
       "description": "Single-stranded or self-complementary",
       "help_text": "Whether the vector construct is designed to be single-stranded AAV (ssAAV), self-complementary AAV (scAAV), or unknown/unspecified.",
       "format": "radio",

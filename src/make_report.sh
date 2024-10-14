@@ -59,14 +59,12 @@ if [[ -n "$flipflop_name" || -n "$flipflop_fa" ]]; then
         -o "$sample_id"
     echo "Finished get_flipflop_config"
     ls -Alh
-    flipflop_tsv="${sample_id}.flipflop.tsv.gz"
 else
     echo "Skipping flip/flop analysis"
-    flipflop_tsv=""
 fi
 
 echo
 echo "Starting create_report"
-create_report.R "./${sample_id}" "$sample_id" "$vector_type" "$annotation_txt" "$flipflop_tsv"
+create_report.R "./${sample_id}" "$vector_type" "$annotation_txt"
 echo "Finished create_report"
 ls -Alh
