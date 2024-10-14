@@ -21,9 +21,7 @@ else
 fi
 
 if [ "$vector_type" == "unspecified" ]; then
-    #vector_name=$(samtools view -H ss.tagged.bam | head -n 2 | tail -n1 | cut -f2 | cut -d: -f2)
-    vector_name=$(head -n1 "$annotation_txt" | cut -d';' -f 1 | cut -d'=' -f2)
-    vector_type=$(guess_vector_type.py "$mapped_reads_sam" -v "$vector_name")
+    vector_type=$(guess_vector_type_length.py "$annotation_txt")
     echo "Inferred vector_type: $vector_type"
 fi
 

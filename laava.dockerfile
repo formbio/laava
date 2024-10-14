@@ -29,6 +29,7 @@ RUN chmod 777 /opt/laava/
 COPY src/* /opt/laava/
 RUN chmod +x /opt/laava/*.py /opt/laava/*.R /opt/laava/*.sh
 ENV PATH "/opt/laava:$PATH"
+ENV PYTHONPATH "/opt/laava:$PYTHONPATH"
 
 WORKDIR /data/
 
