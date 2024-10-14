@@ -64,8 +64,8 @@ There are several ways to satisfy the script dependencies locally.
 ### Option 1: Development docker image (`laava_dev` container image)
 
 The `laava_dev.dockerfile` in this repo installs the scripts' dependencies, but not the
-scripts themselves, into a Docker container image that you can then use to run the
-local copies of the scripts.
+scripts themselves, into a Docker container image that you can then use to run the local
+copies of the scripts.
 
 To build the container image with the name `laava_dev` (you can use another name if you prefer):
 
@@ -136,17 +136,39 @@ R packages:
 
 ## Testing
 
+### Automated local tests
+
 The `test/` subdirectory in this repo contains small example input files and a Makefile
 to run the scripts to reanalyze them and produce example HTML and PDF reports.
 
-Once you've completed installation (above), activate your conda environment or Docker container and change to the test directory:
+Once you've completed installation (above), activate your conda environment or Docker
+container and change to the test directory:
 
 ```
 cd test
 ```
 
-To generate the HTML and PDF reports from the test dataset included in the repo (this takes about 1-2 minutes):
+To generate the HTML and PDF reports from the test dataset included in the repo, use any
+of these commands:
 
-```
-make
-```
+* `make sc` -- run the example self-complementary AAV (scAAV) sample. This takes about 1-2 minutes.
+* `make ss` -- run the example single-stranded AAV (ssAAV) sample. This takes about 2-3 minutes, including an additional flip/flop analysis step.
+* `make all` -- run both example AAV samples.
+* `make test` -- run both samples and check the results quantitatively.
+
+
+### Example Nextflow jobs
+
+The top level of this repo includes several JSON files with Nextflow parameter
+configurations (`params-*.json`). They use the same inputs as the automated test suite
+(above), plus the `laava` Docker image and a local installation of `nextflow` (which you
+can install any way you like, e.g. conda or brew).
+
+You can run them directly with Nextflow as usual, or use the Makefile at the top level
+of the repo to launch them:
+
+* `make sc` or `make ss` -- run the example self-complementary AAV (scAAV) or
+  single-stranded AAV (ssAAV) sample, as above.
+* `make min` -- run the scAAV sample with the minimum number of required parameters,
+  exercising the default behavior including guessing the construct vector type (sc/ss).
+* `make folder` -- run both samples via folder input.
