@@ -1,17 +1,15 @@
-name: CI
+name: Tests
+
 on:
   push:
     branches:
       - main
     paths-ignore:
-      - 'docs/**'
       - '*.md'
-      - '*.rst'
   pull_request:
     paths-ignore:
-      - 'docs/**'
       - '*.md'
-      - '*.rst'
+
 jobs:
   tests:
     name: Test with Python ${{ matrix.python }}
