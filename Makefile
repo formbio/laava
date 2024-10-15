@@ -2,31 +2,43 @@
 
 # Nextflow workflow output directory
 wf_out_dir := workflow-outputs/output
+snapshot_dir := test/build-snapshot
 
-all: laava laava_dev
+# Form Bio workflow deployment
+formbio_org := form-bio-solutions
+formbio_project := aav-qc-workshop
+# Avoid uploading the local test dir; it's > the upload size limit
+tmp_stash_dir := /tmp/laava-deploy-test
 
-.PHONY: clean laava laava_dev sc ss diffcheck-sc diffcheck-ss
+all: laava laava_dev sc ss min folder
+
+.PHONY: clean laava laava_dev sc ss min folder diffcheck-sc diffcheck-ss formbio
 clean:
-	rm -fv .nextflow.log*
-	rm -fv test/build/*
-	rm -rf workflow-outputs/*
+	rm -f .nextflow.log*
+	rm -fr .nextflow/*
+	rm -fr workflow-outputs/*
+
 
 laava laava_dev: %: %.dockerfile laava.conda_env.yml
 	docker build -t ghcr.io/formbio/$@:latest -f $< .
 
 
-sc: params-local-sc-no-ff.json
+sc ss min folder: %: params-local-%.json
 	nextflow run -profile local main.nf -params-file $<
 
-ss: params-local-ss-with-ff.json
-	nextflow run -profile local main.nf -params-file $<
 
-min: params-local-no-file-sc.json
-	nextflow run -profile local main.nf -params-file $<
+diffcheck-sc: $(wf_out_dir)/sc.subsample005.per_read.tsv
+	diff $(snapshot_dir)/sc.per_read.tsv $< && echo "OK"
 
-diffcheck-sc: $(wf_out_dir)/sc.subsample005.bam.per_read.tsv
-	diff test/build-snapshot/sc.per_read.tsv $< && echo "OK"
+diffcheck-ss: $(wf_out_dir)/ss.subsample005.per_read.tsv $(wf_out_dir)/ss.subsample005.flipflop.tsv
+	#diff $(snapshot_dir)/ss.per_read.tsv $< && echo "OK"
+	diff $(snapshot_dir)/ss.flipflop.tsv $(lastword $^) && echo "OK"
 
-diffcheck-ss:  $(wf_out_dir)/ss.subsample005.bam.per_read.tsv $(wf_out_dir)/ss.subsample005.bam.flipflop.tsv
-	diff test/build-snapshot/ss.per_read.tsv $< && echo "OK"
-	diff test/build-snapshot/ss.flipflop.tsv $(lastword $^) && echo "OK"
+
+formbio: clean
+	mv test/ "$(tmp_stash_dir)"
+	formbio workflow upload \
+		--org "$(formbio_org)" --project "$(formbio_project)" \
+		--env prod --visibility PROJECT \
+		--version dev --repo . --workflow laava
+	mv "$(tmp_stash_dir)" test

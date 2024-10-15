@@ -1,8 +1,8 @@
-name: Tests
+name: CI
 on:
   push:
     branches:
-      - master
+      - main
     paths-ignore:
       - 'docs/**'
       - '*.md'
@@ -14,7 +14,7 @@ on:
       - '*.rst'
 jobs:
   tests:
-    name: Lint with R and Python ${{ matrix.python }}
+    name: Test with Python ${{ matrix.python }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -30,6 +30,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
+      - name: Install apt packages
+        run: |
+          sudo apt-get update \
+          && sudo apt-get install -y samtools texlive-latex-extra texlive-latex-recommended \
+          && sudo apt-get remove -y fonts-urw-base35 libgs9 libgs9-common libjbig2dec0 poppler-data
       - name: Cache conda
         uses: actions/cache@v4
         env:
@@ -59,3 +64,6 @@ jobs:
       - name: Lint R script
         run: |
           Rscript -e 'library(lintr); options(lintr.error_on_lint=TRUE); lint_dir(".", linters=linters_with_tags("correctness"))'
+      - name: Test script outputs
+        run: |
+          cd test && make test

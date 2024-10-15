@@ -1,67 +1,54 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-include { map_reads; make_report } from './modules/local/laava'
+include { match_metadata_to_files; map_reads; make_report } from './modules/local/laava'
 
 NO_FILE = file("$projectDir/bin/NO_FILE")
 NO_FILE2 = file("$projectDir/bin/NO_FILE2")
 
 // Unpack the input sample(s) and metadata
-def prepareInput(
+def prepare_input(
         seq_reads_file, seq_reads_folder, sample_unique_id, sample_display_name,
         sample_in_metadata
 ) {
-    // Known file extensions
     def SAMPLE_FILE_GLOB = "*.{bam,fastq,fastq.gz,fq,fq.gz}"
     def EXTENSION_REGEX = /\.(bam|fastq|fastq\.gz|fq|fq\.gz)$/
 
     if (seq_reads_folder) {
         // Multi-sample mode
-        def sampleFiles = file("${params.seq_reads_folder}/${SAMPLE_FILE_GLOB}")
-
-        if (params.sample_in_metadata) {
-            // Metadata provided - use it to match files
-            def csvData = channel
-                .fromPath(params.sample_in_metadata)
-                .splitCsv(header: true, sep='\t', strip=true)
-                .map { row -> [row.sample_unique_id, row.sample_display_name] }
-                .toList()
-                .val
-            def matchedSamples = csvData.collect { sampleId, sampleName ->
-                def matchingFiles = sampleFiles.findAll { it.name.contains(sampleId) }
-                if (matchingFiles.size() != 1) {
-                    error "Error: sample_unique_id '${sampleId}' matches ${matchingFiles.size()} files. Values must be unique."
-                }
-                [sampleId, sampleName, matchingFiles[0]]
-            }
-            // Check if all files were matched
-            def unmatchedFiles = sampleFiles - matchedSamples.collect { it[2] }
-            if (unmatchedFiles) {
-                error "Error: The following files were not matched to any sample_unique_id: ${unmatchedFiles.join(', ')}"
-            }
-            return channel.fromList(matchedSamples)
+        if (sample_in_metadata) {
+            // TSV provided - load it in a separate process
+            return match_metadata_to_files(file(sample_in_metadata), file(seq_reads_folder))
+                .splitCsv(sep: '\t')
+                .map { row -> [row[0], row[1], file("${seq_reads_folder}/" + row[2])] }
 
         } else {
-            // No metadata provided - generate sampleId and sampleName from filenames
-            return channel.fromList(sampleFiles.collect { sampleFile ->
-                def stem = sampleFile.baseName.replaceFirst(EXTENSION_REGEX, '')
-                [stem, stem, sampleFile]
+            // No TSV provided - generate sample_id and sample_name from filenames
+            //def found_files = file("${sample_folder}/*.{bam,fastq,fastq.gz,fq,fq.gz}")
+            def found_files = file("${seq_reads_folder}/${SAMPLE_FILE_GLOB}")
+            return channel.fromList(found_files.collect { seqfile ->
+                def stem = seqfile.baseName.replaceFirst(EXTENSION_REGEX, '')
+                [stem, stem, seqfile]
             })
+
         }
-    } else if (params.seq_reads_file) {
+    } else if (seq_reads_file) {
         // Single-sample mode
-        def sampleFile = file(params.seq_reads_file)
-        if (!sampleFile.name.matches(/.*${EXTENSION_REGEX}/)) {
-            error "Error: The provided sample file '${sampleFile.name}' does not have a supported extension (${SAMPLE_FILE_GLOB})"
+        def seq_file = file(seq_reads_file)
+        if (!seq_file.exists()) {
+            error "Error: The provided sample file '${seq_reads_file}' does not exist."
+        }
+        if (!seq_file.name.matches(/.*${EXTENSION_REGEX}/)) {
+            error "Error: The provided sample file '${seq_file.name}' does not have a supported extension (bam, fastq, fastq.gz, fq, fq.gz)"
         }
 
-        def stem = sampleFile.baseName.replaceFirst(EXTENSION_REGEX, '')
-        def sampleId = params.sample_unique_id ?: stem
-        def sampleName = params.sample_display_name ?: params.sample_unique_id ?: stem
-        return channel.of([sampleId, sampleName, sampleFile])
+        def stem = seq_file.baseName.replaceFirst(EXTENSION_REGEX, '')
+        def sample_id = sample_unique_id ?: stem
+        def sample_name = sample_display_name ?: sample_unique_id ?: stem
+        return channel.of([sample_id, sample_name, seq_file])
 
     } else {
-        error "Invalid input parameters. Provide either a sample folder path or a single sample file."
+        error "Invalid input parameters. Provide either a sample folder, a TSV file with sample folder, or a single sample file."
     }
 }
 
@@ -91,7 +78,7 @@ workflow laava {
 
     main:
     // Get a tuple of (ID, name, file) each given sample file and metadata
-    sample_channel = prepareInput(
+    sample_channel = prepare_input(
         seq_reads_file, seq_reads_folder, sample_unique_id, sample_display_name,
         sample_in_metadata
     )
@@ -120,20 +107,15 @@ workflow laava {
     emit:
     mapped_sam = map_reads.out.mapped_sam
     mapped_bam = map_reads.out.mapped_bam
+    metadata_out_tsv = make_report.out.metadata_tsv
+    alignments_tsv = make_report.out.alignments_tsv
     per_read_tsv = make_report.out.per_read_tsv
-    summary_tsv = make_report.out.summary_tsv
-    nonmatch_stat_tsvgz = make_report.out.nonmatch_stat_tsvgz
+    nonmatch_tsv = make_report.out.nonmatch_tsv
     tagged_bam = make_report.out.tagged_bam
     subtype_bams = make_report.out.subtype_bams
     subtype_bais = make_report.out.subtype_bais
-    flipflop_assignments_tsv = make_report.out.flipflop_assignments_tsv
     flipflop_bams = make_report.out.flipflop_bams
-    alignments_tsv = make_report.out.alignments_tsv
-    readsummary_tsv = make_report.out.readsummary_tsv
-    sequence_error_tsv = make_report.out.sequence_error_tsv
     flipflop_tsv = make_report.out.flipflop_tsv
-    rdata = make_report.out.rdata
-    metadata_out_tsv = make_report.out.metadata_tsv
 }
 
 

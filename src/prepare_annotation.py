@@ -23,12 +23,14 @@ Specifically:
 
   - NAME is a sequence name/ID used in the reference sequence files that reads will be
     mapped to.
-  - TYPE is the source type of the reference sequence -- one of 'vector', 'helper',
-    'repcap', 'host', or 'lambda' (not used here).
+  - TYPE is the source "type" or label of the reference sequence -- one of 'vector', 'helper',
+    'repcap', 'host', or 'lambda'.
   - There must be exactly one line where TYPE is 'vector'.
   - The 'vector' line also has a REGION field with the 1-based start and end positions.
     In AAV, this is the payload region including the ITRs.
 """
+
+from __future__ import annotations
 
 import argparse
 import logging
@@ -40,13 +42,13 @@ from typing import NamedTuple
 
 class AnnRow(NamedTuple):
     seq_name: str
-    source_type: str
+    ref_label: str
     start1: int
     end: int
 
 
-# From summarize_AAV_alignment.py
-ANNOT_TYPES = {"vector", "repcap", "helper", "lambda", "host"}
+# From summarize_alignment.py
+KNOWN_ANNOT_LABELS = {"vector", "repcap", "helper", "lambda", "host"}
 
 
 def read_annotation_bed(fname: str, itr_labels: list[str]):
@@ -143,56 +145,58 @@ def read_annotation_bed(fname: str, itr_labels: list[str]):
 
 
 def read_reference_names(fname: str):
-    """Read a 2-column TSV of reference sequence names and source types."""
+    """Read a 2-column TSV of reference sequence names and labels."""
     with Path(fname).open() as infile:
-        for line in infile:
-            seq_name, source_type = line.split()
-            if source_type in ANNOT_TYPES:
-                yield AnnRow(seq_name, source_type, None, None)
-            else:
+        # Skip header
+        lines = iter(infile)
+        next(infile)
+        for line in lines:
+            seq_name, ref_label = line.split()
+            if ref_label not in KNOWN_ANNOT_LABELS:
                 logging.info(
-                    "Nonstandard reference source type %s; "
-                    "the standards are: vector, repcap, helper, host",
-                    source_type,
+                    "Nonstandard reference label %s; "
+                    "the known labels are: vector, repcap, helper, host",
+                    ref_label,
                 )
+            yield AnnRow(seq_name, ref_label, None, None)
 
 
 def write_annotation_txt(out_fname: str, bed_rows: dict, other_rows: Iterable):
     """Write PacBio-style annotations to `out_fname`.
 
-    Take the vector annotations and non-'vector' sequence names and source types, format
+    Take the vector annotations and non-'vector' sequence names and labels, format
     it for annotation.txt, and append it to the same output file.
 
     Skip any duplicate 'vector' sequence label appearing in the other references, and
-    catch if a sequence name is reused across multiple source types.
+    catch if a sequence name is reused across multiple labels.
     """
     vector_row = bed_rows["vector"]
     repcap_row = bed_rows["repcap"]
     with Path(out_fname).open("w+") as outf:
         outf.write("NAME={};TYPE={};REGION={}-{};\n".format(*vector_row))
-        seen_seq_names_and_sources = {vector_row.seq_name: vector_row.source_type}
+        seen_seq_names_and_labels = {vector_row.seq_name: vector_row.ref_label}
         if repcap_row:
             outf.write("NAME={};TYPE={};REGION={}-{};\n".format(*repcap_row))
-            seen_seq_names_and_sources[repcap_row.seq_name] = repcap_row.source_type
+            seen_seq_names_and_labels[repcap_row.seq_name] = repcap_row.ref_label
         for orow in other_rows:
-            if orow.source_type == "vector":
+            if orow.ref_label == "vector":
                 if orow.seq_name != vector_row.seq_name:
                     raise RuntimeError(
-                        "Source type 'vector' listed in additional "
+                        "Reference label 'vector' listed for additional "
                         f"reference names, but sequence name {orow.seq_name} does not "
                         f"match the previously given {vector_row.seq_name}"
                     )
                 continue
-            if orow.seq_name in seen_seq_names_and_sources:
-                prev_type = seen_seq_names_and_sources[orow.seq_name]
-                if orow.source_type != prev_type:
+            if orow.seq_name in seen_seq_names_and_labels:
+                prev_type = seen_seq_names_and_labels[orow.seq_name]
+                if orow.ref_label != prev_type:
                     raise RuntimeError(
                         f"Sequence name {orow.seq_name} listed with "
-                        f"different source types: first {prev_type}, then "
-                        f"{orow.source_type}"
+                        f"different labels: first {prev_type}, then "
+                        f"{orow.ref_label}"
                     )
                 continue
-            outf.write("NAME={seq_name};TYPE={source_type};\n".format(**orow._asdict()))
+            outf.write("NAME={seq_name};TYPE={ref_label};\n".format(**orow._asdict()))
 
 
 if __name__ == "__main__":
@@ -203,7 +207,7 @@ if __name__ == "__main__":
     )
     AP.add_argument(
         "reference_names",
-        help="Reference sequence names and their sources, in 2 columns.",
+        help="Reference sequence names and their labels, in 2 columns.",
     )
     AP.add_argument("itr_labels", nargs="*", help="ITR label(s) in annotation BED")
     AP.add_argument("-o", "--output", help="Output filename (*.txt).")

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Write sample ID, name, and sequencing run ID as a 2-line TSV."""
 
+from __future__ import annotations
+
 import argparse
 import csv
 from pathlib import Path
@@ -23,7 +25,7 @@ if __name__ == "__main__":
     AP.add_argument("-o", "--output", required=True, help="*.tsv")
     args = AP.parse_args()
 
-    with Path.open(args.output, "w") as out_handle:
+    with Path(args.output).open("w") as out_handle:
         cw = csv.writer(out_handle, delimiter="\t")
         cw.writerow(["sample_unique_id", "sample_display_name", "sequencing_run_id"])
         cw.writerow(

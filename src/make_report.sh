@@ -1,5 +1,5 @@
 #!/bin/bash -ex
-sample_name=$1
+sample_id=$1
 vector_type=$2
 target_gap_threshold=$3
 max_allowed_outside_vector=$4
@@ -20,16 +20,23 @@ else
     echo "Reads $mapped_reads_sam appear to be in SAM format"
 fi
 
+if [ "$vector_type" == "unspecified" ]; then
+    vector_type=$(guess_vector_type_length.py "$annotation_txt")
+    echo "Inferred vector_type: $vector_type"
+fi
+
 echo
-echo "Starting summarize_AAV_alignment"
-summarize_AAV_alignment.py \
-    "$mapped_reads_sam" "$annotation_txt" "$sample_name" \
+echo "Starting summarize_alignment"
+summarize_alignment.py \
+    "$mapped_reads_sam" "$annotation_txt" "$sample_id" \
+    --sample-id="$sample_id" \
+    --vector-type="$vector_type" \
     --target-gap-threshold=$target_gap_threshold \
     --max-allowed-outside-vector=$max_allowed_outside_vector \
     --max-allowed-missing-flanking=$max_allowed_missing_flanking \
     --cpus $(nproc)
 
-echo "Finished summarize_AAV_alignment"
+echo "Finished summarize_alignment"
 ls -Alh
 
 if [[ -n "$flipflop_name" || -n "$flipflop_fa" ]]; then
@@ -47,25 +54,17 @@ if [[ -n "$flipflop_name" || -n "$flipflop_fa" ]]; then
     echo
     echo "Starting get_flipflop_config"
     get_flipflop_config.py \
-        "${sample_name}.tagged.bam" "${sample_name}.per_read.tsv" \
+        "${sample_id}.tagged.bam" "${sample_id}.per_read.tsv.gz" \
         $ff_opt \
-        -o "$sample_name"
+        -o "$sample_id"
     echo "Finished get_flipflop_config"
     ls -Alh
-    flipflop_assignments="${sample_name}.flipflop_assignments.tsv"
 else
     echo "Skipping flip/flop analysis"
-    flipflop_assignments=""
 fi
 
 echo
-echo "Starting calculate_rdata"
-calculate_rdata.R "./${sample_name}" "$annotation_txt" "$sample_name" "$vector_type" "$flipflop_assignments"
-echo "Finished calculate_rdata"
-ls -Alh
-
-echo
 echo "Starting create_report"
-create_report.R "./${sample_name}.Rdata"
+create_report.R "./${sample_id}" "$vector_type" "$annotation_txt"
 echo "Finished create_report"
 ls -Alh

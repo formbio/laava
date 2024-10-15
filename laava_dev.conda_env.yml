@@ -9,6 +9,7 @@ dependencies:
     - biopython
     - graphviz
     - nextflow
+    - pandas
     - parasail-python>=1.3.4
     - pysam
     - pytest
@@ -17,3 +18,4 @@ dependencies:
     - r-rmarkdown
     - r-tidyverse
     - ruff
+    - shellcheck

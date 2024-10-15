@@ -10,10 +10,12 @@ analysis results and supporting tabular data.
 ``` mermaid
 graph TD
 
-bam(Aligned BAM) --> counts(Read counts)
-anno(Annotation BED) --> counts
-counts --> sumtables(Summary tables)
-counts --> sumreport(PDF/HTML Report)
+seqreads(Sequencing reads) --> bam(Read alignment)
+refseqs(Reference sequences) --> bam
+bam --> sumtables(Summary data tables)
+anno(Annotation) --> sumtables
+meta(Sample metadata) --> sumtables
+sumtables --> report(Report)
 ```
 
 ## Methods
@@ -24,16 +26,18 @@ PacBio sequencer (Sequel II, Sequel IIe or Revio) run with on-instrument AAV
 mode enabled, or equivalent circular consensus sequencing (CCS) reads (Travers
 et al., 2010)
 
-In this analysis, HiFi/CCS sequencing reads are aligned to the construct,
-packaging, and host reference sequences using Minimap2 (Li, 2018).
-Aligned reads are filtered for quality to include primary alignments and reads
-with mapping quality scores greater than 10.
-The alignment coordinates and orientation of reads passing these filters are
-then compared to the annotated vector region in the reference sequence, which
-comprises the left and right ITRs and the genomic region between them, to
-assign each read to a type and (for AAV reads) subtype classification according
-to the definitions detailed in the report.
+In this analysis, reads are aligned to the given AAV, packaging, and host reference
+sequences using Minimap2 (Li, 2018).
+The reference sequences for each primary alignment and its orientation are counted and
+summarized to assign read type classifications, including vector, non-vector, and
+chimeric reads.
+For reads assigned to the AAV vector, the primary alignment coordinates are compared to
+the annotated vector region in the reference sequence, which comprises the left and
+right ITRs and the genomic region between them, to assign each read to a subtype
+classification.
+Sequence variants relative to the vector reference sequence are determined directly from
+each read's alignment, specifically the CIGAR string indicating insertions, deletions,
+mismatches, and gaps.
 
 Finally, a report is generated with relevant quality metrics and analysis
 results in both HTML and PDF formats.
-

@@ -10,9 +10,6 @@
     "Gene Therapy",
     "PacBio"
   ],
-  "config": {
-      "executionEngine": "nextflow-single-node"
-  },
   "inputs": {
     "ui_source_type": {
       "title": "Sequence input source (file or folder)",
@@ -26,7 +23,7 @@
           "id": "file_source"
         },
         {
-          "name": "Folder (FASTQs)",
+          "name": "Folder (containing BAM or FASTQ files)",
           "id": "folder_source"
         }
       ]
@@ -54,7 +51,7 @@
     "sample_unique_id": {
       "title": "Sample unique ID",
       "description": "Sample's barcode number or other unique ID",
-      "help_text": "A unique identifier to distinguish the sample from others in the same sequencing run. This may be the barcode number used in the sample sheet, or a generated UUID.",
+      "help_text": "A unique identifier to distinguish the sample from others in the same sequencing run. This may be the barcode number used in the sample sheet, or a generated UUID. This string must also be present in the input sequencing reads BAM/FASTQ filename, i.e. that input filename starts with this ID or contains it as a substring.",
       "format": "text",
       "hidden": false,
       "required": false,
@@ -74,21 +71,32 @@
     "sample_in_metadata": {
       "title": "Sample metadata",
       "description": "Unique ID and display name for each sample (TSV)",
-      "help_text": "Two-column, tab-separated file with headers 'sample_unique_id' (e.g. barcode number, unique within a sequencing run) and 'sample_display' name (to display in the report, not required to be unique).",
+      "help_text": "Two-column, tab-separated file with headers 'sample_unique_id' (e.g. barcode number, unique within a sequencing run) and 'sample_display' name (to display in the report, not required to be unique). Each sample unique ID (column 1) must be present in exactly one sequencing reads filename (BAM/FASTQ), as a prefix or substring, so that each of these metadata rows can be mapped 1:1 to an input sequencing reads file.",
       "format": "spreadsheet",
+      "filetype": ".tsv",
       "hidden": true,
       "required": false,
       "type": "string",
       "columnConfig": {
-        ".tsv|.txt": {
+        ".tsv": {
           "staticColumns": false,
           "columns": [
             {
               "name": "sample_unique_id",
+              "generateFromData": true,
+              "generateConfig": {
+                  "delimiterPattern": "(\\.bam|\\.hifireads|\\.fastq|\\.fq)",
+                  "dataName": "seq_reads_folder"
+              },
               "required": true
             },
             {
               "name": "sample_display_name",
+              "generateFromData": true,
+              "generateConfig": {
+                  "delimiterPattern": "(\\.bam|\\.hifireads|\\.fastq|\\.fq)",
+                  "dataName": "seq_reads_folder"
+              },
               "required": true
             }
           ]
@@ -96,7 +104,7 @@
       }
     },
     "vector_type": {
-      "title": "Vector type",
+      "title": "Construct vector type",
       "description": "Single-stranded or self-complementary",
       "help_text": "Whether the vector construct is designed to be single-stranded AAV (ssAAV), self-complementary AAV (scAAV), or unknown/unspecified.",
       "format": "radio",
@@ -106,11 +114,11 @@
       "enum": [
         {
           "name": "Single-stranded AAV (ssAAV)",
-          "id": "ssaav"
+          "id": "ss"
         },
         {
           "name": "Self-complementary AAV (scAAV)",
-          "id": "scaav"
+          "id": "sc"
         },
         {
           "name": "Unknown / Unspecified",
@@ -265,7 +273,7 @@
     "max_allowed_outside_vector": {
       "title": "Max allowed outside vector",
       "description": "",
-      "help": "Maximum allowed, in bp, outside the annotated vector region for a read that fully covers the vector region to be still considered 'full' rather than 'vector+backbone'.",
+      "help_text": "Maximum allowed, in bp, outside the annotated vector region for a read that fully covers the vector region to be still considered 'full' rather than 'vector+backbone'.",
       "type": "integer",
       "hidden": false,
       "required": true,
@@ -276,7 +284,7 @@
     "max_allowed_missing_flanking": {
       "title": "Max allowed missing from ITR flank",
       "description": "",
-      "help": "Maximum allowed, in bp, missing from the left and right flanks of the annotated vector region to be still considered 'full' rather than 'partial'.",
+      "help_text": "Maximum allowed, in bp, missing from the left and right flanks of the annotated vector region to be still considered 'full' rather than 'partial'.",
       "type": "integer",
       "hidden": false,
       "required": true,

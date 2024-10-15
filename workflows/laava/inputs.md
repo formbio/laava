@@ -76,8 +76,6 @@ These string inputs are used to guide the handling of the file inputs above.
 - Vector type
   - Whether the vector construct is designed to be single-stranded AAV (ssAAV),
     self-complementary AAV (scAAV), or unknown/unspecified.
-- ITR AAV Serotype
-  - Serotype name for ITR flip/flop analysis, e.g. "AAV2", or leave blank to skip.
 - Thresholds for "full" read classification
     - Target gap threshold
     - Max allowed outside vector
