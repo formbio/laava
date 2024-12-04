@@ -189,7 +189,9 @@ x.read.vector <- x.all.read %>% filter(reference_label == "vector")
 total_read_count_vector <- sum(x.read.vector$effective_count)
 
 x.summary.primary <- filter(x.all.summary, is_mapped == "Y", is_supp == "N")
-x.joined.vector <- left_join(x.read.vector, x.summary.primary, by = "read_id", multiple = "first")
+x.joined.vector <- left_join(x.read.vector, x.summary.primary,
+                             by = "read_id", multiple = "first") %>%
+                    uncount(effective_count)
 ```
 
 # Assigned types by read alignment characteristics
@@ -335,12 +337,12 @@ flextable(sopt3) %>%
 # Single plot
 p1_subtypes_len_hist <- ggplot(filter(x.joined.vector),
                                aes(x = read_len, color = assigned_subtype)) +
-  geom_freqpoly() +
+  geom_freqpoly(binwidth = 50) +
   labs(title = "Distribution of read length by subtype") +
   scale_x_continuous("Read length (bp)",
                      limits = c(0, NA),
                      expand = expansion(mult = c(0, 0.05))) +
-  scale_y_continuous("Count",
+  scale_y_continuous("Count (binned)",
                      limits = c(0, NA),
                      expand = expansion(mult = c(0, 0.05)))
 p1_subtypes_len_hist
@@ -354,7 +356,7 @@ p1_subtypes_len_hist
 ```{r lenhisto2_construct, message=FALSE, warning=FALSE}
 p1.map_starts <- ggplot(x.joined.vector, aes(map_start0 + 1, fill = assigned_subtype)) +
   geom_histogram(aes(y = after_stat(count) / sum(after_stat(count))),
-                 binwidth = 150,
+                 binwidth = 125,
                  boundary = 0,
                  closed = "left") +
   geom_vline(xintercept = TARGET_REGION_START,
@@ -373,7 +375,7 @@ p1.map_starts <- ggplot(x.joined.vector, aes(map_start0 + 1, fill = assigned_sub
 
 p1.map_ends <- ggplot(x.joined.vector, aes(map_end1, fill = assigned_subtype)) +
   geom_histogram(aes(y = after_stat(count) / sum(after_stat(count))),
-                 binwidth = 150,
+                 binwidth = 125,
                  boundary = 0,
                  closed = "left") +
   geom_vline(xintercept = TARGET_REGION_START,
@@ -392,7 +394,7 @@ p1.map_ends <- ggplot(x.joined.vector, aes(map_end1, fill = assigned_subtype)) +
 
 p1.map_len <- ggplot(x.joined.vector, aes(map_len, fill = assigned_subtype)) +
   geom_histogram(aes(y = after_stat(count) / sum(after_stat(count))),
-                 binwidth = 150,
+                 binwidth = 125,
                  boundary = 0,
                  closed = "left") +
   scale_x_continuous("Mapped reference length",
@@ -422,7 +424,7 @@ if (dim(x.read.repcap)[1] > 10) {
 
   p1.map_starts.repcap <- ggplot(x.summary.repcap, aes(map_start0 + 1)) +
     geom_histogram(aes(y = after_stat(count) / sum(after_stat(count))),
-                   binwidth = 150,
+                   binwidth = 125,
                    boundary = 0,
                    closed = "left") +
     geom_vline(xintercept = TARGET_REGION_START_REPCAP,
@@ -444,7 +446,7 @@ if (dim(x.read.repcap)[1] > 10) {
 if (exists("x.summary.repcap")) {
   p1.map_ends.repcap <- ggplot(x.summary.repcap, aes(map_end1)) +
     geom_histogram(aes(y = after_stat(count) / sum(after_stat(count))),
-                   binwidth = 150,
+                   binwidth = 125,
                    boundary = 0,
                    closed = "left") +
     geom_vline(xintercept = TARGET_REGION_END_REPCAP,
@@ -466,7 +468,7 @@ if (exists("x.summary.repcap")) {
 if (exists("x.summary.repcap")) {
   p1.map_len.repcap <- ggplot(x.summary.repcap, aes(map_len)) +
     geom_histogram(aes(y = after_stat(count) / sum(after_stat(count))),
-                   binwidth = 150,
+                   binwidth = 125,
                    boundary = 0,
                    closed = "left") +
     labs(title = "Distribution of mapped spanning region sizes on RepCap") +
@@ -604,6 +606,9 @@ if (exists("df.flipflop") && (nrow(df.flipflop) > 1)) {
 }
 ```
 
+```{r saverdata, message=FALSE, warning=FALSE}
+save.image(file=paste0(params$path_prefix, '.Rdata'))
+```
 
 `\break`{=latex}
 
