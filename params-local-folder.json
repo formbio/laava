@@ -14,5 +14,5 @@
   "target_gap_threshold": 200,
   "max_allowed_outside_vector": 10,
   "max_allowed_missing_flanking": 70,
-  "container_version": ":latest"
+  "container_version": ":dev"
 }
