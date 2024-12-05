@@ -111,6 +111,9 @@ workflow laava {
     alignments_tsv = make_report.out.alignments_tsv
     per_read_tsv = make_report.out.per_read_tsv
     nonmatch_tsv = make_report.out.nonmatch_tsv
+    agg_ref_type_tsv = make_report.out.agg_ref_type_tsv
+    agg_subtype_tsv = make_report.out.agg_subtype_tsv
+    agg_flipflop_tsv = make_report.out.agg_subtype_tsv
     tagged_bam = make_report.out.tagged_bam
     subtype_bams = make_report.out.subtype_bams
     subtype_bais = make_report.out.subtype_bais
