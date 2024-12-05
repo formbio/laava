@@ -63,6 +63,9 @@ else
     echo "Skipping flip/flop analysis"
 fi
 
+ls -Alh
+aggregate_tables.py --path-prefix "${sample_id}"
+
 echo
 echo "Starting create_report"
 create_report.R "./${sample_id}" "$vector_type" "$annotation_txt"

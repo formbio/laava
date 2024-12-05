@@ -116,6 +116,8 @@ workflow laava {
     subtype_bais = make_report.out.subtype_bais
     flipflop_bams = make_report.out.flipflop_bams
     flipflop_tsv = make_report.out.flipflop_tsv
+    agg_ref_type_tsv = make_report.out.agg_ref_type_tsv
+    agg_subtype_tsv = make_report.out.agg_subtype_tsv
 }
 
 

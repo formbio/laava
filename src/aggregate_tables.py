@@ -77,59 +77,56 @@ def analyze_alignments(path_prefix):
     ].copy()  # was: x_read_vector
     total_read_count_vector = read_vector["effective_count"].sum()
 
-    ref_type_agg = get_ref_type_agg(
-        read_df, total_read_count_all, total_read_count_vector
-    )
-    subtype_agg = get_subtype_agg(
-        read_vector, total_read_count_all, total_read_count_vector
-    )
-
     return {
-        "ref_type_agg": ref_type_agg,
-        "subtype_agg": subtype_agg,
+        "agg_ref_type": get_ref_type_agg(
+            read_df, total_read_count_all, total_read_count_vector
+        ),
+        "agg_subtype": get_subtype_agg(
+            read_vector, total_read_count_all, total_read_count_vector
+        ),
     }
 
 
 def get_ref_type_agg(read_df, total_read_count_all, total_read_count_vector):
     """Get overall read distribution by reference and type."""
-    ref_type_agg = (
+    agg_ref_type = (
         read_df
         .groupby(["reference_label", "assigned_type"], dropna=False)
         ["effective_count"].sum()
         .reset_index(name="e_count")
     )
-    ref_type_agg = ref_type_agg.sort_values(
+    agg_ref_type = agg_ref_type.sort_values(
         ["reference_label", "e_count"], ascending=[False, False]
     )
-    ref_type_agg["pct_total"] = round(
-        ref_type_agg["e_count"] * 100 / total_read_count_all, 2
+    agg_ref_type["pct_total"] = round(
+        agg_ref_type["e_count"] * 100 / total_read_count_all, 2
     )
-    pct_vector = round(ref_type_agg["e_count"] * 100 / total_read_count_vector, 2)
+    pct_vector = round(agg_ref_type["e_count"] * 100 / total_read_count_vector, 2)
     # Only show pct_vector for vector reads, otherwise NaN
-    pct_vector[ref_type_agg["reference_label"] != "vector"] = np.nan
-    ref_type_agg["pct_vector"] = pct_vector
+    pct_vector[agg_ref_type["reference_label"] != "vector"] = np.nan
+    agg_ref_type["pct_vector"] = pct_vector
     # was: df_read1, df_read_vector1
-    return ref_type_agg
+    return agg_ref_type
 
 
 def get_subtype_agg(read_vector, total_read_count_all, total_read_count_vector):
     """Type and subtype analysis"""
-    subtype_agg = (
+    df = (
         read_vector.groupby(["assigned_type", "assigned_subtype"])["effective_count"]
         .sum()
         .reset_index(name="e_count")
     )
-    subtype_agg = subtype_agg.sort_values(
+    df = df.sort_values(
         ["assigned_type", "e_count"], ascending=[False, False]
     )
-    subtype_agg["pct_vector"] = round(
-        subtype_agg["e_count"] * 100 / total_read_count_vector, 2
+    df["pct_vector"] = round(
+        df["e_count"] * 100 / total_read_count_vector, 2
     )
-    subtype_agg["pct_total"] = round(
-        subtype_agg["e_count"] * 100 / total_read_count_all, 2
+    df["pct_total"] = round(
+        df["e_count"] * 100 / total_read_count_all, 2
     )
     # was: df_read_vector2, sopt3
-    return subtype_agg
+    return df
 
 
 def write_results(results, output_dir, sample_id, verbose):
@@ -138,10 +135,10 @@ def write_results(results, output_dir, sample_id, verbose):
     output_dir.mkdir(parents=True, exist_ok=True)
     # Save each analysis result
     write_table(
-        results["ref_type_agg"], output_dir / f"{sample_id}.ref_type_agg.tsv", verbose
+        results["agg_ref_type"], output_dir / f"{sample_id}.agg_ref_type.tsv", verbose
     )
     write_table(
-        results["subtype_agg"], output_dir / f"{sample_id}.subtype_agg.tsv", verbose
+        results["agg_subtype"], output_dir / f"{sample_id}.agg_subtype.tsv", verbose
     )
 
 
