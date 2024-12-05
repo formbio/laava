@@ -2,6 +2,6 @@
   "seq_reads_file": "test/samples/sc.subsample005.bam",
   "vector_bed": "test/samples/sc.annotation.bed",
   "vector_fa": "test/samples/sc.construct.fasta",
-  "container_version": ":latest"
+  "container_version": ":dev"
 }
 
