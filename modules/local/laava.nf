@@ -15,7 +15,7 @@ process match_metadata_to_files {
 
 
 process map_reads() {
-    publishDir "$params.output", mode: "copy"
+    publishDir "$params.output/alignment", mode: "copy"
 
     input:
     tuple val(sample_id),
@@ -58,7 +58,7 @@ process map_reads() {
 
 
 process make_report() {
-    publishDir "$params.output", mode: "copy"
+    publishDir "$params.output/report", mode: "copy"
 
     input:
     tuple val(sample_id),
