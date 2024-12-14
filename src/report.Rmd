@@ -173,7 +173,7 @@ ref_counts <- x.all.read %>%
   group_by(reference_label) %>%
   summarise(e_count = sum(effective_count)) %>%
   arrange(desc(e_count))
-ref_levels = c(ref_counts$reference_label, "(unmapped)")
+ref_levels <- c(ref_counts$reference_label, "(unmapped)")
 
 x.all.read <- x.all.read %>%
   mutate(
@@ -192,26 +192,35 @@ x.summary.primary <- filter(x.all.summary, is_mapped == "Y", is_supp == "N")
 x.joined.vector <- left_join(x.read.vector, x.summary.primary,
                              by = "read_id", multiple = "first") %>%
                     uncount(effective_count)
+
+# -------------------------------------
+# Aggregate tables
+# -------------------------------------
+
+agg_ref_type <- read_tsv(paste0(params$path_prefix, '.agg_ref_type.tsv'), show_col_types = FALSE) %>%
+  mutate(
+    reference_label = factor(reference_label, levels = ref_levels),
+    assigned_type = factor(assigned_type, levels = valid_types)) %>%
+  arrange(reference_label)
+
+agg_subtype <- read_tsv(paste0(params$path_prefix, '.agg_subtype.tsv'), show_col_types = FALSE) %>%
+  mutate(
+    assigned_type = factor(assigned_type, levels = valid_types),
+    assigned_subtype = factor(assigned_subtype, levels = valid_subtypes))
 ```
 
 # Assigned types by read alignment characteristics
 
 ```{r typetable, message=FALSE, warning=FALSE}
-df.read1 <- x.all.read %>%
-  group_by(reference_label, assigned_type) %>%
-  summarise(e_count = sum(effective_count)) %>%
-  mutate(freq = round(e_count * 100 / total_read_count_all, 2)) %>%
-  arrange(reference_label, desc(freq))
-
-flextable(df.read1) %>%
+flextable(agg_ref_type %>% select(! pct_vector)) %>%
   set_header_labels(values = c("Mapped Reference", "Assigned Type", "Count", "Frequency (%)"))
 ```
 
 ```{r typeplots, message=FALSE, warning=FALSE}
-countreads <- df.read1 %>% dplyr::filter(reference_label != "lambda")
+countreads <- agg_ref_type %>% filter(reference_label != "lambda")
 
 # Bar chart
-ggplot(countreads, aes(x = reference_label, y = freq, fill = assigned_type)) +
+ggplot(countreads, aes(x = reference_label, y = pct_total, fill = assigned_type)) +
   geom_bar(stat = "identity") +
   scale_x_discrete("Sequence", guide = guide_axis(angle = 30)) +
   scale_y_continuous("Reads (%)",
@@ -219,7 +228,7 @@ ggplot(countreads, aes(x = reference_label, y = freq, fill = assigned_type)) +
                      expand = c(0, 0))
 
 # Pie chart
-ggplot(countreads, aes(x = "", y = e_count, fill = reference_label)) +
+ggplot(countreads, aes(x = "", y = effective_count, fill = reference_label)) +
   geom_bar(stat = "identity", width = 1) +
   coord_polar("y", start = 0) +
   theme_void()
@@ -229,14 +238,9 @@ ggplot(countreads, aes(x = "", y = e_count, fill = reference_label)) +
 ## Frequency of vector assigned types
 
 ```{r vectypes, message=FALSE, warning=FALSE}
-df.read.vector1 <- x.read.vector %>%
-  group_by(assigned_type) %>%
-  summarise(e_count = sum(effective_count)) %>%
-  mutate(freq = round(e_count * 100 / total_read_count_vector, 2)) %>%
-  arrange(assigned_type, desc(freq))
-
-vectypes <- df.read.vector1 %>%
-  mutate(totfreq = round(100 * e_count / total_read_count_all, 2))
+vectypes <- agg_ref_type %>%
+    filter(reference_label == "vector") %>%
+    select(! reference_label)
 
 flextable(vectypes) %>%
   set_header_labels(values = c(
@@ -308,17 +312,8 @@ other-vector |unclassified    |Read alignment does not match any of the above or
 
 ## Assigned types and subtypes
 
-```{r sopt3, message=FALSE, warning=FALSE}
-df.read.vector2 <- x.read.vector %>%
-  group_by(assigned_type, assigned_subtype) %>%
-  summarise(e_count = sum(effective_count)) %>%
-  mutate(freq = round(e_count * 100 / total_read_count_vector, 2)) %>%
-  arrange(assigned_type, desc(freq))
-
-sopt3 <- df.read.vector2 %>%
-  mutate(totfreq = round(100 * e_count / total_read_count_all, 2))
-
-flextable(sopt3) %>%
+```{r subtypetable, message=FALSE, warning=FALSE}
+flextable(agg_subtype) %>%
   set_header_labels(
     values = c(
       "Assigned Type",
@@ -561,17 +556,14 @@ Flip/Flop|One ITR is formed by two palindromic arms, called B–B' and C–C', e
 # flipflop.tsv.gz (if available)
 # --------------------------------------------------
 
-flipflop_tsv <- paste0(params$path_prefix, '.flipflop.tsv.gz')
-if (file.exists(flipflop_tsv)) {
-  data.flipflop <- read_tsv(flipflop_tsv, show_col_types = FALSE)
-  df.flipflop <- data.flipflop %>%
-    group_by(type, subtype, leftITR, rightITR) %>%
-    summarise(count = n())
+agg_flipflop_tsv <- paste0(params$path_prefix, '.agg_flipflop.tsv')
+if (file.exists(agg_flipflop_tsv)) {
+  df.flipflop <- read_tsv(agg_flipflop_tsv, show_col_types = FALSE)
 }
 ```
 
 ```{r ffplot, message=FALSE, warning=FALSE, results='asis'}
-if (exists("df.flipflop")) {
+if (exists("df.flipflop") && (nrow(df.flipflop) > 1)) {
   # Generate flip/flop summary plot
   ffplot <- df.flipflop %>%
     mutate(
@@ -607,7 +599,8 @@ if (exists("df.flipflop") && (nrow(df.flipflop) > 1)) {
 ```
 
 ```{r saverdata, message=FALSE, warning=FALSE}
-save.image(file=paste0(params$path_prefix, '.Rdata'))
+# Enable for troubleshooting -- takes some time to generate
+# save.image(file=paste0(params$path_prefix, '.Rdata'))
 ```
 
 `\break`{=latex}
