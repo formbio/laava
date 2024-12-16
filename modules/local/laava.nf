@@ -15,7 +15,7 @@ process match_metadata_to_files {
 
 
 process map_reads() {
-    publishDir "$params.output", mode: "copy"
+    publishDir "$params.output/alignment", mode: "copy"
 
     input:
     tuple val(sample_id),
@@ -58,7 +58,7 @@ process map_reads() {
 
 
 process make_report() {
-    publishDir "$params.output", mode: "copy"
+    publishDir "$params.output/report", mode: "copy"
 
     input:
     tuple val(sample_id),
@@ -81,7 +81,11 @@ process make_report() {
     path("${sample_id}.alignments.tsv.gz"), emit: alignments_tsv
     path("${sample_id}.per_read.tsv.gz"), emit: per_read_tsv
     path("${sample_id}.nonmatch.tsv.gz"), emit: nonmatch_tsv
+    path("${sample_id}.agg_ref_type.tsv"), emit: agg_ref_type_tsv
+    path("${sample_id}.agg_subtype.tsv"), emit: agg_subtype_tsv
     path("${sample_id}.flipflop.tsv.gz"), emit: flipflop_tsv, optional: true
+    path("${sample_id}.agg_flipflop.tsv"), emit: agg_flipflop_tsv, optional:true
+
     // intermediate data
     path("${sample_id}.tagged.bam"), emit: tagged_bam
     path("${sample_id}.*.tagged.sorted.bam"), emit: subtype_bams

@@ -18,11 +18,18 @@ test: sc ss
 	pytest test_outputs.py
 
 
-$(out_dir)/sc_AAV_report.html: ../src/create_report.R ../src/report.Rmd $(out_dir)/sc.annotation.txt $(out_dir)/sc.metadata.tsv $(out_dir)/sc.tagged.bam
+$(out_dir)/sc_AAV_report.html: ../src/create_report.R ../src/report.Rmd $(out_dir)/sc.annotation.txt $(out_dir)/sc.metadata.tsv $(out_dir)/sc.agg_ref_type.tsv
 	$< $(out_dir)/sc sc $(word 3,$^)
 
-$(out_dir)/ss_AAV_report.html: ../src/create_report.R ../src/report.Rmd $(out_dir)/ss.annotation.txt $(out_dir)/ss.metadata.tsv $(out_dir)/ss.flipflop.tsv.gz
+$(out_dir)/ss_AAV_report.html: ../src/create_report.R ../src/report.Rmd $(out_dir)/ss.annotation.txt $(out_dir)/ss.metadata.tsv $(out_dir)/ss.agg_ref_type.tsv
 	$< $(out_dir)/ss ss $(word 3,$^)
+
+
+$(out_dir)/sc.agg_ref_type.tsv: ../src/aggregate_tables.py $(out_dir)/sc.tagged.bam
+	$< --path-prefix $(out_dir)/sc --output-dir $(out_dir)
+
+$(out_dir)/ss.agg_ref_type.tsv: ../src/aggregate_tables.py $(out_dir)/ss.flipflop.tsv.gz
+	$< --path-prefix $(out_dir)/ss --output-dir $(out_dir) --verbose
 
 
 $(out_dir)/sc.metadata.tsv: ../src/write_sample_metadata.py $(in_dir)/sc.subsample005.bam

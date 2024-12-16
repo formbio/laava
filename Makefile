@@ -19,7 +19,10 @@ clean:
 	rm -fr workflow-outputs/*
 
 
-laava laava_dev: %: %.dockerfile laava.conda_env.yml
+laava: laava.dockerfile laava.conda_env.yml
+	docker build -t ghcr.io/formbio/$@:dev -f $< .
+
+laava_dev: laava_dev.dockerfile laava_dev.conda_env.yml
 	docker build -t ghcr.io/formbio/$@:latest -f $< .
 
 
