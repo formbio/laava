@@ -68,6 +68,7 @@ process make_report() {
           path(vector_annotation),
           val(itr_label_1),
           val(itr_label_2),
+          val(mitr_label),
           val(vector_type),
           val(target_gap_threshold),
           val(max_allowed_outside_vector),
@@ -101,7 +102,7 @@ process make_report() {
     write_sample_metadata.py "${sample_id}" "${sample_name}" "${mapped_reads}" \\
         -o "${sample_id}.metadata.tsv"
     prepare_annotation.py "${vector_annotation}" "${reference_names}" \\
-        "${itr_label_1}" "${itr_label_2}" \\
+        "${itr_label_1}" "${itr_label_2}" "${mitr_label}" \\
         -o annotation.txt
     make_report.sh \\
         "${sample_id}" \\

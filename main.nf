@@ -65,6 +65,7 @@ workflow laava {
     host_fa
     itr_label_1
     itr_label_2
+    mitr_label
     repcap_name
     helper_name
     lambda_name
@@ -96,6 +97,7 @@ workflow laava {
         .combine( channel.fromPath( vector_bed ) )
         .combine( channel.of( itr_label_1 ) )
         .combine( channel.of( itr_label_2 ) )
+        .combine( channel.of( mitr_label ) )
         .combine( channel.of( vector_type ) )
         .combine( channel.of( target_gap_threshold ) )
         .combine( channel.of( max_allowed_outside_vector ) )
@@ -134,6 +136,7 @@ workflow {
         params.host_fa,
         params.itr_label_1,
         params.itr_label_2,
+        params.mitr_label,
         params.repcap_name,
         params.helper_name,
         params.lambda_name,
