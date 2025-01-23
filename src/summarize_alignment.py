@@ -23,10 +23,10 @@ CIGAR_DICT = {
     3: "N",
     4: "S",
     5: "H",
-    6: "P",
+    # 6: "P",  # Not supported
     7: "=",
     8: "X",
-    9: "B",
+    # 9: "B",  # Not supported
 }
 
 annot_rex = re.compile(r"NAME=([^;\s]+);TYPE=([^;\s]+);(REGION=\d+\-\d+){0,1}")
@@ -85,20 +85,14 @@ def subset_sam_by_readname_list(
 
 
 def iter_cigar(rec):
-    # first we exclude cigar front/end that is hard-clipped (due to supp alignment)
-    cigar_list = rec.cigar
-    if CIGAR_DICT[cigar_list[0][0]] == "H":
-        cigar_list = cigar_list[1:]
-    if CIGAR_DICT[cigar_list[-1][0]] == "H":
-        cigar_list = cigar_list[:-1]
-
-    # warning_printed = False
-    for _type, count in cigar_list:
-        x = CIGAR_DICT[_type]
-        if x in ("M", "=", "X", "I", "D", "S", "N"):
-            yield from itertools.repeat((x, count), count)
-        else:
-            raise RuntimeError(f"Unexpected cigar {count}{x} seen! Abort!")
+    for intcode, count in rec.cigartuples:
+        if intcode not in CIGAR_DICT:
+            raise RuntimeError(f"Unexpected cigar string: {rec.cigarstring}")
+        charcode = CIGAR_DICT[intcode]
+        if charcode == "H":
+            # Ignore hard-clipping (due to supp alignment)
+            continue
+        yield from itertools.repeat((charcode, count), count)
 
 
 def iter_cigar_w_aligned_pair(rec, writer):
