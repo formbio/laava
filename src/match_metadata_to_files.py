@@ -23,7 +23,7 @@ VALID_EXTENSIONS = (".bam", ".fastq", ".fastq.gz", ".fq", ".fq.gz")
 available_files = [
     f for f in Path(args.sample_folder).iterdir() if f.name.endswith(VALID_EXTENSIONS)
 ]
-print("Available files:", available_files, file=sys.stderr)
+print("Available files in", args.sample_folder, ":\n", available_files, file=sys.stderr)
 
 with Path(args.sample_in_metadata).open() as infile:
     reader = csv.DictReader(infile, dialect="excel-tab")
