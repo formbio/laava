@@ -53,7 +53,7 @@ $(out_dir)/ss.tagged.bam: ../src/summarize_alignment.py $(in_dir)/ss.subsample00
 
 
 $(out_dir)/sc.annotation.txt: ../src/prepare_annotation.py $(in_dir)/sc.annotation.bed $(out_dir)/sc.reference_names.tsv
-	$^ ITR-L ITR-R -o $@
+	$^ wtITR mITR -o $@
 
 $(out_dir)/ss.annotation.txt: ../src/prepare_annotation.py $(in_dir)/ss.annotation.bed $(out_dir)/ss.reference_names.tsv
 	$^ ITR -o $@
