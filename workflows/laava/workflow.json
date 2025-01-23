@@ -71,7 +71,7 @@
     "sample_in_metadata": {
       "title": "Sample metadata",
       "description": "Unique ID and display name for each sample (TSV)",
-      "help_text": "Two-column, tab-separated file with headers 'sample_unique_id' (e.g. barcode number, unique within a sequencing run) and 'sample_display' name (to display in the report, not required to be unique). Each sample unique ID (column 1) must be present in exactly one sequencing reads filename (BAM/FASTQ), as a prefix or substring, so that each of these metadata rows can be mapped 1:1 to an input sequencing reads file.",
+      "help_text": "Two-column, tab-separated file with headers 'sample_unique_id' (e.g. barcode number, unique within a sequencing run) and 'sample_display_name' (to display in the report, not required to be unique). Each sample unique ID (column 1) must be present in exactly one sequencing reads filename (BAM/FASTQ), as a prefix or substring, so that each of these metadata rows can be mapped 1:1 to an input sequencing reads file.",
       "format": "spreadsheet",
       "filetype": ".tsv",
       "hidden": true,

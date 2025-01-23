@@ -48,14 +48,19 @@ The remaining parameters are shared by all samples:
 
 These string inputs are used to guide the handling of the file inputs above.
 
-- ITR labels used in the vector annotation BED file: itr_label_1, itr_label_2
+- ITR labels used in the vector annotation BED file: itr_label_1, itr_label_2, mitr_label
     - These are case-sensitive and must match exactly.
-    - The order does not matter: LAAVA will check for the presence of both labels in the
-      annotation BED file, and treat the first match as the left (5') ITR and the second
-      as the right (3') ITR. If the annotation uses the same label for both, e.g. 'ITR',
-      you only need to specify itr_label_1 as 'ITR', and that label will correctly match
-      both ITR regions in the annotation BED.
-    - If both fields are left blank, LAAVA will fall back to the legacy mode of looking
+    - The order does not matter: LAAVA will check for the presence of all the given
+      labels in the annotation BED file, and treat the first match as the left (5') ITR
+      and the second as the right (3') ITR. If the annotation uses the same label for
+      both, e.g. 'ITR', you only need to specify itr_label_1 as 'ITR', and that label
+      will correctly match both ITR regions in the annotation BED.
+    - For scAAV vector constructs, the mutant ITR (mITR) should be specified with mitr_label
+      instead of itr_label_2. The location of this ITR relative to the payload (left or
+      right, 5' or 3') will be used in classification to distinguish "itr-partial"
+      (originating in the wild-type ITR, likely packaged) from "unclassified
+      (originating in the mITR, likely an artifact).
+    - If these fields are left blank, LAAVA will fall back to the legacy mode of looking
       for a region labeled "vector" instead.
 - Sequence IDs used in the packaging FASTA file: repcap_name, helper_name, lambda_name
     - These are case-sensitive and must match exactly.
