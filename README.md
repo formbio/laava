@@ -24,7 +24,7 @@ their dependencies as a [Docker
 image](https://github.com/formbio/laava/pkgs/container/laava).
 
 To get started, create a JSON file with your parameter values, similar to
-[params-local-small.json](https://raw.githubusercontent.com/formbio/laava/main/params-local-small.json)
+[params-local-ss.json](https://raw.githubusercontent.com/formbio/laava/main/params-local-ss.json)
 in this repo, and run it with:
 
 ```
