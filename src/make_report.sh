@@ -1,23 +1,44 @@
 #!/bin/bash -ex
+# Implement the 'make_report' Nextflow process.
 sample_id=$1
-vector_type=$2
-target_gap_threshold=$3
-max_allowed_outside_vector=$4
-max_allowed_missing_flanking=$5
-mapped_reads_sam=$6
-annotation_txt=$7
-flipflop_name=$8
-flipflop_fa=$9
+sample_name=$2
+reference_names=$3
+mapped_reads=$4
+vector_annotation=$5
+itr_label_1=$6
+itr_label_2=$7
+mitr_label=$8
+vector_type=$9
+target_gap_threshold=${10}
+max_allowed_outside_vector=${11}
+max_allowed_missing_flanking=${12}
+flipflop_name=${13}
+flipflop_fa=${14}
+
+# Special filename for the intermediate annotation format
+annotation_txt="annotation.txt"
 
 ls -Alh
 
-if [[ $mapped_reads_sam == *.bam ]]; then
-    echo "Converting $mapped_reads_sam from BAM to SAM"
-    sam_fname="${mapped_reads_sam%%.sam}"
-    samtools view -b -o "$sam_fname" "$mapped_reads_sam"
-    mapped_reads_sam="$sam_fname"
+write_sample_metadata.py "${sample_id}" "${sample_name}" "${mapped_reads}" \
+    -o "${sample_id}.metadata.tsv"
+
+ls -Alh
+
+prepare_annotation.py "${vector_annotation}" "${reference_names}" \
+    "${itr_label_1}" "${itr_label_2}" "${mitr_label}" \
+    -o "$annotation_txt"
+
+
+ls -Alh
+
+if [[ $mapped_reads == *.bam ]]; then
+    echo "Converting $mapped_reads from BAM to SAM"
+    sam_fname="${mapped_reads%%.sam}"
+    samtools view -b -o "$sam_fname" "$mapped_reads"
+    mapped_reads="$sam_fname"
 else
-    echo "Reads $mapped_reads_sam appear to be in SAM format"
+    echo "Reads $mapped_reads appear to be in SAM format"
 fi
 
 if [ "$vector_type" == "unspecified" ]; then
@@ -28,12 +49,12 @@ fi
 echo
 echo "Starting summarize_alignment"
 summarize_alignment.py \
-    "$mapped_reads_sam" "$annotation_txt" "$sample_id" \
+    "$mapped_reads" "$annotation_txt" "$sample_id" \
     --sample-id="$sample_id" \
     --vector-type="$vector_type" \
-    --target-gap-threshold=$target_gap_threshold \
-    --max-allowed-outside-vector=$max_allowed_outside_vector \
-    --max-allowed-missing-flanking=$max_allowed_missing_flanking \
+    --target-gap-threshold="$target_gap_threshold" \
+    --max-allowed-outside-vector="$max_allowed_outside_vector" \
+    --max-allowed-missing-flanking="$max_allowed_missing_flanking" \
     --cpus $(nproc)
 
 echo "Finished summarize_alignment"
@@ -66,10 +87,12 @@ fi
 echo "Starting aggregate_tables"
 aggregate_tables.py --path-prefix "${sample_id}"
 echo "Finished aggregate_tables"
+
 ls -Alh
 
 echo
 echo "Starting create_report"
 create_report.R "./${sample_id}" "$vector_type" "$annotation_txt"
 echo "Finished create_report"
+
 ls -Alh

@@ -93,19 +93,19 @@ process make_report() {
     script:
     def ff_fa_path = flipflop_fa.name != "NO_FILE" ? "$flipflop_fa" : ""
     """
-    write_sample_metadata.py "${sample_id}" "${sample_name}" "${mapped_reads}" \\
-        -o "${sample_id}.metadata.tsv"
-    prepare_annotation.py "${vector_annotation}" "${reference_names}" \\
-        "${itr_label_1}" "${itr_label_2}" "${mitr_label}" \\
-        -o annotation.txt
     make_report.sh \\
         "${sample_id}" \\
-        $vector_type \\
-        $target_gap_threshold \\
-        $max_allowed_outside_vector \\
-        $max_allowed_missing_flanking \\
+        "${sample_name}" \\
+        "${reference_names}" \\
         "${mapped_reads}" \\
-        annotation.txt \\
+        "${vector_annotation}" \\
+        "${itr_label_1}" \\
+        "${itr_label_2}" \\
+        "${mitr_label}" \\
+        "${vector_type}" \\
+        "${target_gap_threshold}" \\
+        "${max_allowed_outside_vector}" \\
+        "${max_allowed_missing_flanking}" \\
         "${flipflop_name}" \\
         "${ff_fa_path}"
     """
