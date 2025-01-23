@@ -77,6 +77,7 @@ process make_report() {
           path(flipflop_fa)
 
     output:
+    val(sample_id), emit: sample_id
     // summary tables
     path("${sample_id}.metadata.tsv"), emit: metadata_tsv
     path("${sample_id}.alignments.tsv.gz"), emit: alignments_tsv
