@@ -35,7 +35,6 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
-from collections.abc import Iterable
 from pathlib import Path
 from typing import NamedTuple
 
@@ -161,44 +160,6 @@ def read_reference_names(fname: str):
             yield AnnRow(seq_name, ref_label, None, None)
 
 
-def write_annotation_txt(out_fname: str, bed_rows: dict, other_rows: Iterable):
-    """Write PacBio-style annotations to `out_fname`.
-
-    Take the vector annotations and non-'vector' sequence names and labels, format
-    it for annotation.txt, and append it to the same output file.
-
-    Skip any duplicate 'vector' sequence label appearing in the other references, and
-    catch if a sequence name is reused across multiple labels.
-    """
-    vector_row = bed_rows["vector"]
-    repcap_row = bed_rows["repcap"]
-    with Path(out_fname).open("w+") as outf:
-        outf.write("NAME={};TYPE={};REGION={}-{};\n".format(*vector_row))
-        seen_seq_names_and_labels = {vector_row.seq_name: vector_row.ref_label}
-        if repcap_row:
-            outf.write("NAME={};TYPE={};REGION={}-{};\n".format(*repcap_row))
-            seen_seq_names_and_labels[repcap_row.seq_name] = repcap_row.ref_label
-        for orow in other_rows:
-            if orow.ref_label == "vector":
-                if orow.seq_name != vector_row.seq_name:
-                    raise RuntimeError(
-                        "Reference label 'vector' listed for additional "
-                        f"reference names, but sequence name {orow.seq_name} does not "
-                        f"match the previously given {vector_row.seq_name}"
-                    )
-                continue
-            if orow.seq_name in seen_seq_names_and_labels:
-                prev_type = seen_seq_names_and_labels[orow.seq_name]
-                if orow.ref_label != prev_type:
-                    raise RuntimeError(
-                        f"Sequence name {orow.seq_name} listed with "
-                        f"different labels: first {prev_type}, then "
-                        f"{orow.ref_label}"
-                    )
-                continue
-            outf.write("NAME={seq_name};TYPE={ref_label};\n".format(**orow._asdict()))
-
-
 if __name__ == "__main__":
     AP = argparse.ArgumentParser(description=__doc__)
     AP.add_argument(
@@ -210,14 +171,13 @@ if __name__ == "__main__":
         help="Reference sequence names and their labels, in 2 columns.",
     )
     AP.add_argument("itr_labels", nargs="*", help="ITR label(s) in annotation BED")
-    AP.add_argument("-o", "--output", help="Output filename (*.txt).")
     args = AP.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
 
     try:
+        # Just exercise the parsing code
         bed_rows = read_annotation_bed(args.annotation_bed, args.itr_labels)
         otr_rows = read_reference_names(args.reference_names)
-        write_annotation_txt(args.output, bed_rows, otr_rows)
     except RuntimeError as exc:
         sys.exit(str(exc))

@@ -15,20 +15,11 @@ max_allowed_missing_flanking=${12}
 flipflop_name=${13}
 flipflop_fa=${14}
 
-# Special filename for the intermediate annotation format
-annotation_txt="annotation.txt"
 
 ls -Alh
 
 write_sample_metadata.py "${sample_id}" "${sample_name}" "${mapped_reads}" \
     -o "${sample_id}.metadata.tsv"
-
-ls -Alh
-
-prepare_annotation.py "${vector_annotation}" "${reference_names}" \
-    "${itr_label_1}" "${itr_label_2}" "${mitr_label}" \
-    -o "$annotation_txt"
-
 
 ls -Alh
 

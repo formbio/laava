@@ -52,13 +52,6 @@ $(out_dir)/ss.tagged.bam: ../src/summarize_alignment.py $(in_dir)/ss.subsample00
 	$^ ITR -o $(out_dir)/ss --sample-id ss.subsample005 --vector-type ss --cpus $(NCPU)
 
 
-$(out_dir)/sc.annotation.txt: ../src/prepare_annotation.py $(in_dir)/sc.annotation.bed $(out_dir)/sc.reference_names.tsv
-	$^ wtITR mITR -o $@
-
-$(out_dir)/ss.annotation.txt: ../src/prepare_annotation.py $(in_dir)/ss.annotation.bed $(out_dir)/ss.reference_names.tsv
-	$^ ITR -o $@
-
-
 $(out_dir)/sc.reference_names.tsv $(out_dir)/ss.reference_names.tsv: \
 	$(out_dir)/%.reference_names.tsv: \
 	samples/%.construct.fasta fasta/packaging.fa fasta/hg38.chr19trunc-chrM.fa
