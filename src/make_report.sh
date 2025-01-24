@@ -50,7 +50,9 @@ fi
 echo
 echo "Starting summarize_alignment"
 summarize_alignment.py \
-    "$mapped_reads" "$annotation_txt" "$sample_id" \
+    "$mapped_reads" "$vector_annotation" "${reference_names}" \
+    "${itr_label_1}" "${itr_label_2}" "${mitr_label}" \
+    --output-prefix="$sample_id" \
     --sample-id="$sample_id" \
     --vector-type="$vector_type" \
     --target-gap-threshold="$target_gap_threshold" \

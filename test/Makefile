@@ -45,11 +45,11 @@ $(out_dir)/ss.flipflop.tsv.gz: ../src/get_flipflop_config.py $(out_dir)/ss.tagge
 	$^ -o $(out_dir)/ss
 
 
-$(out_dir)/sc.tagged.bam: ../src/summarize_alignment.py $(in_dir)/sc.subsample005.bam $(out_dir)/sc.annotation.txt
-	$^ $(out_dir)/sc --sample-id sc.subsample005 --vector-type sc --cpus $(NCPU)
+$(out_dir)/sc.tagged.bam: ../src/summarize_alignment.py $(in_dir)/sc.subsample005.bam $(in_dir)/sc.annotation.bed $(out_dir)/sc.reference_names.tsv
+	$^ wtITR mITR -o $(out_dir)/sc --sample-id sc.subsample005 --vector-type sc --cpus $(NCPU)
 
-$(out_dir)/ss.tagged.bam: ../src/summarize_alignment.py $(in_dir)/ss.subsample005.bam $(out_dir)/ss.annotation.txt
-	$^ $(out_dir)/ss --sample-id ss.subsample005 --vector-type ss --cpus $(NCPU)
+$(out_dir)/ss.tagged.bam: ../src/summarize_alignment.py $(in_dir)/ss.subsample005.bam $(in_dir)/ss.annotation.bed $(out_dir)/ss.reference_names.tsv
+	$^ ITR -o $(out_dir)/ss --sample-id ss.subsample005 --vector-type ss --cpus $(NCPU)
 
 
 $(out_dir)/sc.annotation.txt: ../src/prepare_annotation.py $(in_dir)/sc.annotation.bed $(out_dir)/sc.reference_names.tsv
