@@ -42,7 +42,8 @@ else
 fi
 
 if [ "$vector_type" == "unspecified" ]; then
-    vector_type=$(guess_vector_type_length.py "$annotation_txt")
+    vector_type=$(guess_vector_type_length.py "$vector_annotation" \
+                  "${itr_label_1}" "${itr_label_2}" "${mitr_label}")
     echo "Inferred vector_type: $vector_type"
 fi
 

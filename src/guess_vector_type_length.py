@@ -18,27 +18,21 @@ from __future__ import annotations
 import argparse
 import sys
 
-from summarize_alignment import load_annotation_file
+from prepare_annotation import read_annotation_bed
 
 SC_MAX_THRESHOLD = 2300
 
 
-def length_from_annotation(fname: str) -> int:
-    """Read annotation.txt to calculate the expression cassette length."""
-    cassette_len = -1
-    for anno in load_annotation_file(fname).values():
-        if anno["label"] == "vector":
-            ref_coords = anno["region"]
-            if ref_coords is not None:
-                start1, end = ref_coords
-                cassette_len = end - start1 + 1
-                break
-    return cassette_len
+def length_from_annotation(fname: str, itr_labels: list[str]) -> int:
+    """Read annotation BED to calculate the expression cassette length."""
+    vec = read_annotation_bed(fname, itr_labels)["vector"]
+    return vec.end - vec.start1 + 1
 
 
 if __name__ == "__main__":
     AP = argparse.ArgumentParser(description=__doc__)
-    AP.add_argument("ann_file", help="Vector annotation (.txt)")
+    AP.add_argument("ann_file", help="Vector annotation (.bed)")
+    AP.add_argument("itr_labels", nargs="*", help="ITR label(s) in annotation BED")
     AP.add_argument(
         "-t",
         "--sc-max-threshold",
@@ -48,7 +42,7 @@ if __name__ == "__main__":
         given vector annotation to report as scAAV. [Default: %(default)d]""",
     )
     args = AP.parse_args()
-    cassette_len = length_from_annotation(args.ann_file)
+    cassette_len = length_from_annotation(args.ann_file, args.itr_labels)
     print("Expression cassette length is", cassette_len, file=sys.stderr)
     if cassette_len <= args.sc_max_threshold:
         print("sc")
