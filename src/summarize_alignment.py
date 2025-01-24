@@ -270,6 +270,7 @@ def process_alignment_bam(
     vector_type,
     sorted_sam_filename,
     annotation,
+    is_mitr_left,
     output_prefix,
     starting_readname=None,
     ending_readname=None,
@@ -349,6 +350,7 @@ def process_alignment_bam(
                     vector_type,
                     records,
                     annotation,
+                    is_mitr_left,
                     out_alignments,
                     out_nonmatch,
                     out_per_read,
@@ -366,6 +368,7 @@ def process_alignment_bam(
         vector_type,
         records,
         annotation,
+        is_mitr_left,
         out_alignments,
         out_nonmatch,
         out_per_read,
@@ -451,6 +454,7 @@ def process_alignment_records_for_a_read(
     vector_type,
     records,
     annotation,
+    is_mitr_left,
     out_alignments,
     out_nonmatch,
     out_per_read,
@@ -664,9 +668,13 @@ def process_alignment_records_for_a_read(
                     # Proper scAAV subtypes
                     if read_target_overlap in ("full", "full-gap", "partial"):
                         read_subtype = read_target_overlap
-                    elif read_target_overlap == "left-partial":
+                    elif read_target_overlap == (
+                        "right-partial" if is_mitr_left else "left-partial"
+                    ):
                         read_subtype = "snapback"
-                    elif read_target_overlap == "right-partial":
+                    elif read_target_overlap == (
+                        "left-partial" if is_mitr_left else "right-partial"
+                    ):
                         # NB: Replication from mITR shouldn't happen -- special case
                         # Proposed term "direct-plasmid-packaged"
                         read_type, read_subtype = "other-vector", "unclassified"
@@ -684,7 +692,9 @@ def process_alignment_records_for_a_read(
                     # Additional not-really-scAAV subtypes
                     read_type = "other-vector"
                     assert supp_orientation is None, f"Unrecognized {supp_orientation=}"
-                    if read_target_overlap == "left-partial":
+                    if read_target_overlap == (
+                        "right-partial" if is_mitr_left else "left-partial"
+                    ):
                         read_subtype = "itr-partial"
                     else:
                         read_subtype = "unclassified"
@@ -716,7 +726,13 @@ def process_alignment_records_for_a_read(
 
 
 def run_processing_parallel(
-    sample_id, vector_type, sorted_sam_filename, annotation, output_prefix, num_chunks=1
+    sample_id,
+    vector_type,
+    sorted_sam_filename,
+    annotation,
+    is_mitr_left,
+    output_prefix,
+    num_chunks=1,
 ):
     reader = pysam.AlignmentFile(open(sorted_sam_filename), check_sq=False)
     # Get all distinct read names, keeping input order
@@ -751,6 +767,7 @@ def run_processing_parallel(
                 vector_type,
                 sorted_sam_filename,
                 annotation,
+                is_mitr_left,
                 output_prefix + "." + str(i + 1),
                 starting_readname,
                 ending_readname,
@@ -822,17 +839,40 @@ def run_processing_parallel(
     return outpath_per_read, outpath_bam
 
 
+def check_is_mitr_left(annotation_bed, itr_labels):
+    "Return True if the mutant ITR label appears first in the annotation BED." ""
+    if len(itr_labels) < 2:
+        return None
+    wtitr_label, mitr_label = itr_labels[0], itr_labels[-1]
+    with open(annotation_bed) as inf:
+        cw = csv.reader(inf, delimiter="\t")
+        for row in cw:
+            label = row[3]
+            if label == mitr_label:
+                return True
+            if label == wtitr_label:
+                return False
+    return None
+
+
 def main(args):
     """Entry point."""
     annotation = load_annotation_bed(
         args.annotation_bed, args.reference_names, args.itr_labels
     )
+    # ENH: refactor into an Annotation class
+    if args.vector_type == "sc":
+        is_mitr_left = check_is_mitr_left(args.annotation_bed, args.itr_labels)
+    else:
+        is_mitr_left = None
+
     if args.cpus == 1:
         per_read_tsv, full_out_bam = process_alignment_bam(
             args.sample_id,
             args.vector_type,
             args.sam_filename,
             annotation,
+            is_mitr_left,
             args.output_prefix,
         )
     else:
@@ -841,6 +881,7 @@ def main(args):
             args.vector_type,
             args.sam_filename,
             annotation,
+            is_mitr_left,
             args.output_prefix,
             num_chunks=args.cpus,
         )
