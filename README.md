@@ -136,6 +136,9 @@ R packages:
 
 ## Testing
 
+This repo includes small test files based on [PacBio's public AAV sequencing
+examples](https://downloads.pacbcloud.com/public/dataset/AAV/).
+
 ### Automated local tests
 
 The `test/` subdirectory in this repo contains small example input files and a Makefile
