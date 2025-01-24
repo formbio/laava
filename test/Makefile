@@ -18,11 +18,11 @@ test: sc ss
 	pytest test_outputs.py
 
 
-$(out_dir)/sc_AAV_report.html: ../src/create_report.R ../src/report.Rmd $(out_dir)/sc.annotation.txt $(out_dir)/sc.metadata.tsv $(out_dir)/sc.agg_ref_type.tsv
-	$< $(out_dir)/sc sc $(word 3,$^)
+$(out_dir)/sc_AAV_report.html: ../src/create_report.R ../src/report.Rmd $(in_dir)/sc.annotation.bed $(out_dir)/sc.metadata.tsv $(out_dir)/sc.agg_ref_type.tsv
+	$< $(out_dir)/sc sc `../src/emit_target_coords.py $(word 3,$^) wtITR mITR`
 
-$(out_dir)/ss_AAV_report.html: ../src/create_report.R ../src/report.Rmd $(out_dir)/ss.annotation.txt $(out_dir)/ss.metadata.tsv $(out_dir)/ss.agg_ref_type.tsv
-	$< $(out_dir)/ss ss $(word 3,$^)
+$(out_dir)/ss_AAV_report.html: ../src/create_report.R ../src/report.Rmd $(in_dir)/ss.annotation.bed $(out_dir)/ss.metadata.tsv $(out_dir)/ss.agg_ref_type.tsv
+	$< $(out_dir)/ss ss `../src/emit_target_coords.py $(word 3,$^) ITR`
 
 
 $(out_dir)/sc.agg_ref_type.tsv: ../src/aggregate_tables.py $(out_dir)/sc.tagged.bam

@@ -95,7 +95,9 @@ ls -Alh
 
 echo
 echo "Starting create_report"
-create_report.R "./${sample_id}" "$vector_type" "$annotation_txt"
+create_report.R "./${sample_id}" "$vector_type" \
+    $(emit_target_coords.py "${vector_annotation}" \
+        "${itr_label_1}" "${itr_label_2}" "${mitr_label}")
 echo "Finished create_report"
 
 ls -Alh

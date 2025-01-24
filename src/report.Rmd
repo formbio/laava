@@ -10,8 +10,14 @@ params:
     value: ""
   vector_type:
     value: ""
-  annotation_txt:
-    value: ""
+  target_start:
+    value: 0
+  target_end:
+    value: 0
+  target_start_repcap:
+    value: 0
+  target_end_repcap:
+    value: 0
 ---
 
 ```{r setup, include=FALSE}
@@ -103,37 +109,6 @@ The definitions of full, partial, and backbone reads are the same as in ssAAV.
 
 `\break`{=latex}
 
-```{r loadanno, message=FALSE, warning=FALSE}
-# -------------------------
-# annotation.txt -> TARGET_REGION_{START,END}(_REPCAP)
-# -------------------------
-# Read the annotation file to find the vector target region
-# ----------------------------------------------------------
-# e.g.
-#   NAME=myHost;TYPE=host;
-#   NAME=myVector;TYPE=vector;REGION=1795-6553;
-#   NAME=mRepCap;TYPE=repcap;REGION=1895-5987;
-
-TARGET_REGION_START <- 0
-TARGET_REGION_END <- 0
-TARGET_REGION_START_REPCAP <- 0
-TARGET_REGION_END_REPCAP <- 0
-
-annot <- read.table(params$annotation_txt)
-for (i in 1:dim(annot)[1]) {
-  if (unlist(strsplit(annot[i, ], ';'))[2] == 'TYPE=vector') {
-    p <- unlist(strsplit(annot[i, ], ';'))[3];
-    s_e <- as.integer(unlist(strsplit(unlist(strsplit(p, '='))[2], '-')));
-    TARGET_REGION_START <- s_e[1];
-    TARGET_REGION_END <- s_e[2];
-  } else if (unlist(strsplit(annot[i, ], ';'))[2] == 'TYPE=repcap') {
-    p <- unlist(strsplit(annot[i, ], ';'))[3];
-    s_e <- as.integer(unlist(strsplit(unlist(strsplit(p, '='))[2], '-')));
-    TARGET_REGION_START_REPCAP <- s_e[1];
-    TARGET_REGION_END_REPCAP <- s_e[2];
-  }
-}
-```
 
 ```{r calculate, message=FALSE, warning=FALSE}
 # -------------------------------------
@@ -354,10 +329,10 @@ p1.map_starts <- ggplot(x.joined.vector, aes(map_start0 + 1, fill = assigned_sub
                  binwidth = 125,
                  boundary = 0,
                  closed = "left") +
-  geom_vline(xintercept = TARGET_REGION_START,
+  geom_vline(xintercept = params$target_start,
              color = "black",
              lty = 2) +
-  geom_vline(xintercept = TARGET_REGION_END,
+  geom_vline(xintercept = params$target_end,
              color = "black",
              lty = 2) +
   scale_x_continuous("Mapped reference start position",
@@ -373,10 +348,10 @@ p1.map_ends <- ggplot(x.joined.vector, aes(map_end1, fill = assigned_subtype)) +
                  binwidth = 125,
                  boundary = 0,
                  closed = "left") +
-  geom_vline(xintercept = TARGET_REGION_START,
+  geom_vline(xintercept = params$target_start,
              color = "black",
              lty = 2) +
-  geom_vline(xintercept = TARGET_REGION_END,
+  geom_vline(xintercept = params$target_end,
              color = "black",
              lty = 2) +
   scale_x_continuous("Mapped reference end position",
@@ -422,7 +397,7 @@ if (dim(x.read.repcap)[1] > 10) {
                    binwidth = 125,
                    boundary = 0,
                    closed = "left") +
-    geom_vline(xintercept = TARGET_REGION_START_REPCAP,
+    geom_vline(xintercept = params$target_start_repcap,
                color = 'red',
                lty = 2) +
     labs(title = "Distribution of mapped read starts on RepCap") +
@@ -444,7 +419,7 @@ if (exists("x.summary.repcap")) {
                    binwidth = 125,
                    boundary = 0,
                    closed = "left") +
-    geom_vline(xintercept = TARGET_REGION_END_REPCAP,
+    geom_vline(xintercept = params$target_end_repcap,
                color = 'red',
                lty = 2) +
     labs(title = "Distribution of mapped read ends on RepCap") +
@@ -509,7 +484,7 @@ df.err.vector <- x.err.vector %>%
 p1.err_sub <- ggplot(filter(df.err.vector, type == 'mismatch'),
                      aes(x = pos0_div, y = count)) +
   geom_bar(fill = 'darkgreen', stat = 'identity') +
-  xlim(c(TARGET_REGION_START, TARGET_REGION_END)) +
+  xlim(c(params$target_start, params$target_end)) +
   labs(title = "Substitutions by reference position",
        subtitle = "Higher bars indicate hot spots for substitutions w.r.t reference",
        x = "Reference position") +
@@ -520,7 +495,7 @@ p1.err_sub <- ggplot(filter(df.err.vector, type == 'mismatch'),
 p1.err_del <- ggplot(filter(df.err.vector, type == 'deletion'),
                      aes(x = pos0_div, y = count)) +
   geom_bar(fill = 'darkred', stat = 'identity') +
-  xlim(c(TARGET_REGION_START, TARGET_REGION_END)) +
+  xlim(c(params$target_start, params$target_end)) +
   labs(title = "Deletions by reference position",
        subtitle = "Higher bars indicate hot spots for deletion w.r.t reference",
        x = "Reference position") +
@@ -531,7 +506,7 @@ p1.err_del <- ggplot(filter(df.err.vector, type == 'deletion'),
 p1.err_ins <- ggplot(filter(df.err.vector, type == 'insertion'),
                      aes(x = pos0_div, y = count)) +
   geom_bar(fill = 'darkblue', stat = 'identity') +
-  xlim(c(TARGET_REGION_START, TARGET_REGION_END)) +
+  xlim(c(params$target_start, params$target_end)) +
   labs(title = "Insertions by reference position",
        subtitle = "Higher bars indicate hot spots for insertion w.r.t reference",
        x = "Reference position") +
