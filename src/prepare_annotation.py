@@ -78,7 +78,7 @@ def read_annotation_bed(fname: str, itr_labels: list[str]):
                 # Only allow 1 of each
                 if out_rows[label] is not None:
                     raise RuntimeError(
-                        f"Input {args.annotation_bed} contains more than one row "
+                        f"Input {fname} contains more than one row "
                         f"labeled '{label}'."
                     )
                 out_rows[label] = region
@@ -86,7 +86,7 @@ def read_annotation_bed(fname: str, itr_labels: list[str]):
                 # Assign to left and then right slot; labels 1 & 2 are interchangeable
                 if len(itr_slots) > 1:
                     raise RuntimeError(
-                        f"Input {args.annotation_bed} contains more than two rows "
+                        f"Input {fname} contains more than two rows "
                         f"with potential ITR labels ('{itr_labels}')."
                     )
                 if len(itr_slots) == 1 and itr_slots[0].seq_name != seq_name:
@@ -127,17 +127,17 @@ def read_annotation_bed(fname: str, itr_labels: list[str]):
             raise RuntimeError(
                 f"ITR labels were specified as {itr_labels}; expected to find 2, "
                 f"but only found 1 ({itr_slots[0]}) in "
-                f"the input annotation file {args.annotation_bed}"
+                f"the input annotation file {fname}"
             )
         else:
             raise RuntimeError(
                 f"ITR labels were specified as {itr_labels}, but were not found in "
-                f"the input annotation file {args.annotation_bed}"
+                f"the input annotation file {fname}"
             )
     elif out_rows["vector"] is None:
         # Legacy mode: require 'vector' label if ITR labels were not specified
         raise RuntimeError(
-            f"Input {args.annotation_bed} must contain a row labeled 'vector'."
+            f"Input {fname} must contain a row labeled 'vector'."
         )
 
     return out_rows
