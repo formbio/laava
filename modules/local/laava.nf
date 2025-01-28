@@ -40,19 +40,12 @@ process map_reads() {
 
     script:
     // Hack for optional inputs
-    def packaging_fa_opt = packaging_fa.name != "NO_FILE" ? "--packaging \"$packaging_fa\"" : ""
-    def host_fa_opt = host_fa.name != "NO_FILE2" ? "--host \"$host_fa\"" : ""
-    def repcap_name_opt = repcap_name ? "--repcap-name \"$repcap_name\"" : ""
-    def helper_name_opt = helper_name ? "--helper-name \"$helper_name\"" : ""
-    def lambda_name_opt = lambda_name ? "--lambda-name \"$lambda_name\"" : ""
     def packaging_fa_path = packaging_fa.name != "NO_FILE" ? "$packaging_fa" : ""
     def host_fa_path = host_fa.name != "NO_FILE2" ? "$host_fa" : ""
     """
-    get_reference_names.py "${vector_fa}" ${packaging_fa_opt} ${host_fa_opt} \\
-        ${repcap_name_opt} ${helper_name_opt} ${lambda_name_opt} \\
-        -o "${sample_id}.reference_names.tsv"
-    map_reads.sh ${sample_id} "${reads}" "${vector_fa}" \\
-        "${packaging_fa_path}" "${host_fa_path}"
+    map_reads.sh ${sample_id} "${reads}" \\
+        "${vector_fa}" "${packaging_fa}" "${host_fa}" \\
+        "${repcap_name}" "${helper_name}" "${lambda_name}"
     """
 }
 
@@ -68,6 +61,7 @@ process make_report() {
           path(vector_annotation),
           val(itr_label_1),
           val(itr_label_2),
+          val(mitr_label),
           val(vector_type),
           val(target_gap_threshold),
           val(max_allowed_outside_vector),
@@ -76,6 +70,7 @@ process make_report() {
           path(flipflop_fa)
 
     output:
+    val(sample_id), emit: sample_id
     // summary tables
     path("${sample_id}.metadata.tsv"), emit: metadata_tsv
     path("${sample_id}.alignments.tsv.gz"), emit: alignments_tsv
@@ -98,19 +93,19 @@ process make_report() {
     script:
     def ff_fa_path = flipflop_fa.name != "NO_FILE" ? "$flipflop_fa" : ""
     """
-    write_sample_metadata.py "${sample_id}" "${sample_name}" "${mapped_reads}" \\
-        -o "${sample_id}.metadata.tsv"
-    prepare_annotation.py "${vector_annotation}" "${reference_names}" \\
-        "${itr_label_1}" "${itr_label_2}" \\
-        -o annotation.txt
     make_report.sh \\
         "${sample_id}" \\
-        $vector_type \\
-        $target_gap_threshold \\
-        $max_allowed_outside_vector \\
-        $max_allowed_missing_flanking \\
+        "${sample_name}" \\
+        "${reference_names}" \\
         "${mapped_reads}" \\
-        annotation.txt \\
+        "${vector_annotation}" \\
+        "${itr_label_1}" \\
+        "${itr_label_2}" \\
+        "${mitr_label}" \\
+        "${vector_type}" \\
+        "${target_gap_threshold}" \\
+        "${max_allowed_outside_vector}" \\
+        "${max_allowed_missing_flanking}" \\
         "${flipflop_name}" \\
         "${ff_fa_path}"
     """

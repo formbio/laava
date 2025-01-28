@@ -10,12 +10,14 @@ analysis results and supporting tabular data.
 ``` mermaid
 graph TD
 
-seqreads(Sequencing reads) --> bam(Read alignment)
-refseqs(Reference sequences) --> bam
-bam --> sumtables(Summary data tables)
-anno(Annotation) --> sumtables
-meta(Sample metadata) --> sumtables
-sumtables --> report(Report)
+seqreads(Sequencing reads) --> map_reads(Read alignment)
+refseqs(Reference sequences) --> map_reads
+map_reads --> classify(Read classification)
+anno(Annotation) --> classify
+meta(Sample metadata) --> classify
+classify --> aggtables(Summary tables)
+classify --> report(Report)
+aggtables --> report(Report)
 ```
 
 ## Methods

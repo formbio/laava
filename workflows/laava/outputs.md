@@ -19,3 +19,6 @@
   - SampleID.per_read.tsv.gz
   - SampleID.nonmatch.tsv.gz
   - SampleID.flipflop.tsv.gz (optional)
+  - SampleID.agg_ref_type.tsv
+  - SampleID.agg_subtype.tsv
+  - SampleID.agg_flipflop.tsv (optional)

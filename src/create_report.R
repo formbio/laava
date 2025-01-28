@@ -9,7 +9,10 @@ args = commandArgs(trailingOnly = TRUE)
 input_params = list(
   path_prefix = args[1],
   vector_type = args[2],
-  annotation_txt = args[3]
+  target_start = as.integer(args[3]),
+  target_end = as.integer(args[4]),
+  target_start_repcap = as.integer(args[5]),
+  target_end_repcap = as.integer(args[6])
 )
 message("Parameters:")
 print(input_params)

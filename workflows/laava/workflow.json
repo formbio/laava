@@ -71,7 +71,7 @@
     "sample_in_metadata": {
       "title": "Sample metadata",
       "description": "Unique ID and display name for each sample (TSV)",
-      "help_text": "Two-column, tab-separated file with headers 'sample_unique_id' (e.g. barcode number, unique within a sequencing run) and 'sample_display' name (to display in the report, not required to be unique). Each sample unique ID (column 1) must be present in exactly one sequencing reads filename (BAM/FASTQ), as a prefix or substring, so that each of these metadata rows can be mapped 1:1 to an input sequencing reads file.",
+      "help_text": "Two-column, tab-separated file with headers 'sample_unique_id' (e.g. barcode number, unique within a sequencing run) and 'sample_display_name' (to display in the report, not required to be unique). Each sample unique ID (column 1) must be present in exactly one sequencing reads filename (BAM/FASTQ), as a prefix or substring, so that each of these metadata rows can be mapped 1:1 to an input sequencing reads file.",
       "format": "spreadsheet",
       "filetype": ".tsv",
       "hidden": true,
@@ -208,6 +208,16 @@
       "default": "",
       "type": "string"
     },
+    "mitr_label": {
+      "title": "Mutated ITR region label",
+      "description": "Mutated ITR label in annotation BED",
+      "help_text": "For self-complementary vectors, the region label used in the vector annotation BED file to indicate the mutated inverted terminal repeat (mITR), as opposed to wild-type ITR (WT-ITR or wtITR). is often 'mITR', but can vary. Case-sensitive.",
+      "format": "text",
+      "hidden": false,
+      "required": false,
+      "default": "mITR",
+      "type": "string"
+    },
     "repcap_name": {
       "title": "RepCap sequence ID",
       "description": "RepCap plasmid sequence identifier used in the packaging FASTA file",
@@ -332,6 +342,25 @@
           }
         }
       }
+    },
+    {
+      "if": [
+        {
+          "vector_type": {
+            "eq": "sc"
+          }
+        }
+      ],
+      "then": {
+        "inputs": {
+          "itr_label_2": {
+            "hidden": true
+          },
+          "mitr_label": {
+            "required": true
+          }
+        }
+      }
     }
   ],
   "ui": {
@@ -353,7 +382,8 @@
           "vector_bed",
           "vector_fa",
           "itr_label_1",
-          "itr_label_2"
+          "itr_label_2",
+          "mitr_label"
         ]
       },
       {

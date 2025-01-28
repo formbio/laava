@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import csv
 import gzip
 import itertools
 import logging
@@ -10,11 +11,13 @@ import os
 import re
 import subprocess
 import sys
-from csv import DictReader, DictWriter
 from multiprocessing import Process
 
 # import pdb
 import pysam
+
+from prepare_annotation import read_annotation_bed
+
 
 CIGAR_DICT = {
     0: "M",
@@ -23,15 +26,13 @@ CIGAR_DICT = {
     3: "N",
     4: "S",
     5: "H",
-    6: "P",
+    # 6: "P",  # Not supported
     7: "=",
     8: "X",
-    9: "B",
+    # 9: "B",  # Not supported
 }
 
-annot_rex = re.compile(r"NAME=([^;\s]+);TYPE=([^;\s]+);(REGION=\d+\-\d+){0,1}")
 ccs_rex = re.compile(r"\S+\/\d+\/ccs(\/fwd|\/rev)?")
-ANNOT_TYPE_PRIORITIES = {"vector": 1, "repcap": 2, "helper": 3, "lambda": 4, "host": 5}
 
 MAX_MISSING_FLANK = 100
 MAX_OUTSIDE_VECTOR = 100
@@ -50,7 +51,7 @@ def subset_sam_by_readname_list(
 ):
     qname_lookup = {}  # qname --> (a_type, a_subtype)
     with gzip.open(per_read_tsv, "rt") as per_read_f:
-        for row in DictReader(per_read_f, delimiter="\t"):
+        for row in csv.DictReader(per_read_f, delimiter="\t"):
             # pdb.set_trace()
             if (
                 wanted_types is None
@@ -85,20 +86,14 @@ def subset_sam_by_readname_list(
 
 
 def iter_cigar(rec):
-    # first we exclude cigar front/end that is hard-clipped (due to supp alignment)
-    cigar_list = rec.cigar
-    if CIGAR_DICT[cigar_list[0][0]] == "H":
-        cigar_list = cigar_list[1:]
-    if CIGAR_DICT[cigar_list[-1][0]] == "H":
-        cigar_list = cigar_list[:-1]
-
-    # warning_printed = False
-    for _type, count in cigar_list:
-        x = CIGAR_DICT[_type]
-        if x in ("M", "=", "X", "I", "D", "S", "N"):
-            yield from itertools.repeat((x, count), count)
-        else:
-            raise RuntimeError(f"Unexpected cigar {count}{x} seen! Abort!")
+    for intcode, count in rec.cigartuples:
+        if intcode not in CIGAR_DICT:
+            raise RuntimeError(f"Unexpected cigar string: {rec.cigarstring}")
+        charcode = CIGAR_DICT[intcode]
+        if charcode == "H":
+            # Ignore hard-clipping (due to supp alignment)
+            continue
+        yield from itertools.repeat((charcode, count), count)
 
 
 def iter_cigar_w_aligned_pair(rec, writer):
@@ -132,49 +127,61 @@ def iter_cigar_w_aligned_pair(rec, writer):
     return total_err, total_len
 
 
-def load_annotation_file(annot_filename):
-    """Parse the annotation.txt file into a dictionary.
+def load_annotation_bed(annotation_bed, reference_names_tsv, itr_labels):
+    """Parse the annotation BED file into a dictionary.
 
-    Example:
+    Example::
 
-        NAME=chr1;TYPE=host;
-        NAME=chr2;TYPE=host;
-        NAME=myVector;TYPE=vector;REGION=1795-6553;
-        NAME=myCapRep;TYPE=repcap;REGION=1895-5987;
-        NAME=myHelper;TYPE=helper;
+        annotation_bed:
+            myVector	1795	6553	vector
+            myCapRep	1895	5987	repcap
+        reference_names_fname:
+            Name	Label
+            dsCB-GFP	vector
+            pRep2Cap9	repcap
+            E1A_E1B	E1A_E1B
+            Fiber	Fiber
+            Lambda	lambda
+            pHelper	helper
+            chr19	host
+            chrM	host
 
-    :param annot_filename: Annotation file following the format indicated above. Only "vector" is required. Others optional.
+    :param annotation_bed:
+        Annotation BED file following the format indicated above. Only "vector" is
+        required. Others optional.
     :return:
+        Nested dict like::
+
+        { "myVector": { "label": "vector", "region": (1795, 6553) },
+          "myCapRep": { "label": "repcap", "region": (1895, 5987) },
+          "myHelper": { "label": "helper", "region": None },
+          "chr1":     { "label": "host",   "region": None },
+          "chr2":     { "label": "host",   "region": None },
+        }
 
     """
-    result = {}
-    for line in open(annot_filename):
-        stuff = line.strip()
-        m = annot_rex.match(stuff)
-        if m is None:
-            raise RuntimeError(
-                f"{stuff} is not a valid annotation line! Should follow format "
-                "`NAME=xxxx;TYPE=xxxx;REGION=xxxx;` or `NAME=xxxx;TYPE=xxxx;`. Abort!"
-            )
+    # Load vector and (optional) repcap coordinates from BED
+    ann_lookup = read_annotation_bed(annotation_bed, itr_labels)
 
-        seq_name = m.group(1)
-        ref_label = m.group(2)
-        coord_region = (
-            None
-            if m.group(3) is None
-            else tuple(map(int, m.group(3).split("=")[1].split("-")))
-        )
-        if ref_label in result:
-            raise RuntimeError(
-                f"Annotation file has multiple {ref_label} types. Abort!"
-            )
-        if ref_label not in ANNOT_TYPE_PRIORITIES:
-            logging.info(
-                "Nonstandard reference label %s; the known labels are: %s",
-                ref_label,
-                ", ".join(ANNOT_TYPE_PRIORITIES.keys()),
-            )
-        result[seq_name] = {"label": ref_label, "region": coord_region}
+    result = {}
+    with open(reference_names_tsv) as rn_f:
+        for row in csv.DictReader(rn_f, delimiter="\t"):
+            region = None
+            # NB: Not all seqs in reference_names are also in BED
+            if ann_lookup.get(row["Label"]) is not None:
+                # Take region coordinates from BED
+                ann_row = ann_lookup[row["Label"]]
+                region = (ann_row.start1 - 1, ann_row.end)
+                if ann_row.seq_name != row["Name"]:
+                    logging.warning(
+                        "For label %s, sequence name in BED row (%s) "
+                        "does not match that in reference_names TSV (%s)",
+                        row["Label"],
+                        ann_row.seq_name,
+                        row["Name"],
+                    )
+            result[row["Name"]] = {"label": row["Label"], "region": region}
+
     return result
 
 
@@ -239,6 +246,7 @@ def is_on_target(r, target_start, target_end):
     return "vector+backbone"
 
 
+# TODO - use ITR coordinates directly instead of 'vector' here
 def assign_alignment_type(r, annotation):
     """Determine the read alignment type and subtype.
 
@@ -262,6 +270,7 @@ def process_alignment_bam(
     vector_type,
     sorted_sam_filename,
     annotation,
+    is_mitr_left,
     output_prefix,
     starting_readname=None,
     ending_readname=None,
@@ -303,9 +312,9 @@ def process_alignment_bam(
     f_nonmatch = open(output_prefix + ".nonmatch.tsv", "w")
     f_per_read = open(output_prefix + ".per_read.tsv", "w")
 
-    out_alignments = DictWriter(f_alignments, ALIGNMENT_FIELDS, delimiter="\t")
-    out_nonmatch = DictWriter(f_nonmatch, NONMATCH_FIELDS, delimiter="\t")
-    out_per_read = DictWriter(f_per_read, PER_READ_FIELDS, delimiter="\t")
+    out_alignments = csv.DictWriter(f_alignments, ALIGNMENT_FIELDS, delimiter="\t")
+    out_nonmatch = csv.DictWriter(f_nonmatch, NONMATCH_FIELDS, delimiter="\t")
+    out_per_read = csv.DictWriter(f_per_read, PER_READ_FIELDS, delimiter="\t")
     out_alignments.writeheader()
     out_nonmatch.writeheader()
     out_per_read.writeheader()
@@ -341,6 +350,7 @@ def process_alignment_bam(
                     vector_type,
                     records,
                     annotation,
+                    is_mitr_left,
                     out_alignments,
                     out_nonmatch,
                     out_per_read,
@@ -358,6 +368,7 @@ def process_alignment_bam(
         vector_type,
         records,
         annotation,
+        is_mitr_left,
         out_alignments,
         out_nonmatch,
         out_per_read,
@@ -443,6 +454,7 @@ def process_alignment_records_for_a_read(
     vector_type,
     records,
     annotation,
+    is_mitr_left,
     out_alignments,
     out_nonmatch,
     out_per_read,
@@ -656,9 +668,13 @@ def process_alignment_records_for_a_read(
                     # Proper scAAV subtypes
                     if read_target_overlap in ("full", "full-gap", "partial"):
                         read_subtype = read_target_overlap
-                    elif read_target_overlap == "left-partial":
+                    elif read_target_overlap == (
+                        "right-partial" if is_mitr_left else "left-partial"
+                    ):
                         read_subtype = "snapback"
-                    elif read_target_overlap == "right-partial":
+                    elif read_target_overlap == (
+                        "left-partial" if is_mitr_left else "right-partial"
+                    ):
                         # NB: Replication from mITR shouldn't happen -- special case
                         # Proposed term "direct-plasmid-packaged"
                         read_type, read_subtype = "other-vector", "unclassified"
@@ -676,7 +692,9 @@ def process_alignment_records_for_a_read(
                     # Additional not-really-scAAV subtypes
                     read_type = "other-vector"
                     assert supp_orientation is None, f"Unrecognized {supp_orientation=}"
-                    if read_target_overlap == "left-partial":
+                    if read_target_overlap == (
+                        "right-partial" if is_mitr_left else "left-partial"
+                    ):
                         read_subtype = "itr-partial"
                     else:
                         read_subtype = "unclassified"
@@ -708,7 +726,13 @@ def process_alignment_records_for_a_read(
 
 
 def run_processing_parallel(
-    sample_id, vector_type, sorted_sam_filename, annotation, output_prefix, num_chunks=1
+    sample_id,
+    vector_type,
+    sorted_sam_filename,
+    annotation,
+    is_mitr_left,
+    output_prefix,
+    num_chunks=1,
 ):
     reader = pysam.AlignmentFile(open(sorted_sam_filename), check_sq=False)
     # Get all distinct read names, keeping input order
@@ -743,6 +767,7 @@ def run_processing_parallel(
                 vector_type,
                 sorted_sam_filename,
                 annotation,
+                is_mitr_left,
                 output_prefix + "." + str(i + 1),
                 starting_readname,
                 ending_readname,
@@ -814,15 +839,40 @@ def run_processing_parallel(
     return outpath_per_read, outpath_bam
 
 
+def check_is_mitr_left(annotation_bed, itr_labels):
+    "Return True if the mutant ITR label appears first in the annotation BED." ""
+    if len(itr_labels) < 2:
+        return None
+    wtitr_label, mitr_label = itr_labels[0], itr_labels[-1]
+    with open(annotation_bed) as inf:
+        cw = csv.reader(inf, delimiter="\t")
+        for row in cw:
+            label = row[3]
+            if label == mitr_label:
+                return True
+            if label == wtitr_label:
+                return False
+    return None
+
+
 def main(args):
     """Entry point."""
-    annotation = load_annotation_file(args.annotation_txt)
+    annotation = load_annotation_bed(
+        args.annotation_bed, args.reference_names, args.itr_labels
+    )
+    # ENH: refactor into an Annotation class
+    if args.vector_type == "sc":
+        is_mitr_left = check_is_mitr_left(args.annotation_bed, args.itr_labels)
+    else:
+        is_mitr_left = None
+
     if args.cpus == 1:
         per_read_tsv, full_out_bam = process_alignment_bam(
             args.sample_id,
             args.vector_type,
             args.sam_filename,
             annotation,
+            is_mitr_left,
             args.output_prefix,
         )
     else:
@@ -831,6 +881,7 @@ def main(args):
             args.vector_type,
             args.sam_filename,
             annotation,
+            is_mitr_left,
             args.output_prefix,
             num_chunks=args.cpus,
         )
@@ -926,18 +977,20 @@ def main(args):
 if __name__ == "__main__":
     from argparse import ArgumentParser
 
-    parser = ArgumentParser()
-    parser.add_argument("sam_filename", help="Sorted by read name SAM file")
-    parser.add_argument("annotation_txt", help="Annotation file")
-    parser.add_argument("output_prefix", help="Output prefix")
-    parser.add_argument("-i", "--sample-id", required=True, help="Sample unique ID")
-    parser.add_argument(
+    AP = ArgumentParser()
+    AP.add_argument("sam_filename", help="Sorted by read name SAM file")
+    AP.add_argument("annotation_bed", help="Annotation file")
+    AP.add_argument("reference_names", help="Reference sequence names file")
+    AP.add_argument("itr_labels", nargs="*", help="ITR label(s) in annotation BED")
+    AP.add_argument("-o", "--output-prefix", required=True, help="Output prefix")
+    AP.add_argument("-i", "--sample-id", required=True, help="Sample unique ID")
+    AP.add_argument(
         "--vector-type",
         choices=["sc", "ss", "unspecified"],
         default="unspecified",
         help="Vector type; one of: sc, ss, unspecified",
     )
-    parser.add_argument(
+    AP.add_argument(
         "--max-allowed-missing-flanking",
         default=100,
         type=int,
@@ -946,7 +999,7 @@ if __name__ == "__main__":
                 'partial'.
                 [Default: %(default)s]""",
     )
-    parser.add_argument(
+    AP.add_argument(
         "--max-allowed-outside-vector",
         default=100,
         type=int,
@@ -955,19 +1008,19 @@ if __name__ == "__main__":
                 'full' rather than 'vector+backbone'.
                 [Default: %(default)s]""",
     )
-    parser.add_argument(
+    AP.add_argument(
         "--target-gap-threshold",
         default=200,
         type=int,
         help="""Skipping through the on-target region for more than this is
                 considered 'full-gap'. [Default: %(default)s]""",
     )
-    parser.add_argument(
+    AP.add_argument(
         "--cpus", default=1, type=int, help="Number of CPUs. [Default: %(default)s]"
     )
-    parser.add_argument("--debug", action="store_true", default=False)
+    AP.add_argument("--debug", action="store_true", default=False)
 
-    args = parser.parse_args()
+    args = AP.parse_args()
 
     log_level = logging.DEBUG if args.debug else logging.INFO
     logging.basicConfig(level=log_level, format="%(message)s")
