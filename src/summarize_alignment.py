@@ -7,6 +7,7 @@ import csv
 import gzip
 import itertools
 import logging
+import math
 import os
 import re
 import subprocess
@@ -744,7 +745,7 @@ def run_processing_parallel(
     logging.info("Scanned %d alignments in %s", n_alignments + 1, sorted_sam_filename)
 
     total_num_reads = len(readname_list)
-    chunk_size = (total_num_reads // num_chunks) + 1
+    chunk_size = math.ceil(total_num_reads / num_chunks)
     logging.info(
         "Total %d reads, dividing into %d chunks of size %d...",
         total_num_reads,
