@@ -15,13 +15,7 @@ lambda_name=$8
 
 ls -Alh
 
-get_reference_names.py "${vector_fa}" \
-    ${packaging_fa:+--packaging "$packaging_fa"} \
-    ${host_fa:+--host "$host_fa"} \
-    ${repcap_name:+--repcap-name "$repcap_name"} \
-    ${helper_name:+--helper-name "$helper_name"} \
-    ${lambda_name:+--lambda-name "$lambda_name"} \
-    -o "${sample_id}.reference_names.tsv"
+# Skip reference names generation since it's handled by the Python runner
 
 
 ls -Alh
@@ -49,17 +43,17 @@ else
     reads_fn="$reads"
 fi
 
-threads=$(nproc)
-minimap2 --eqx -a --secondary=no -t $threads all_refs.fa "$reads_fn" > tmp.mapped.sam
+threads=${LAAVA_THREADS:-1}  # Use LAAVA_THREADS env var if set, otherwise default to NPROC
+minimap2 --eqx -a --secondary=no -t "$threads" all_refs.fa "$reads_fn" > tmp.mapped.sam
 # Sort the mapped reads by name
 name_sam="$sample_id.sort_by_name.sam"
-samtools sort -@ $threads -n -O SAM -o "$name_sam" tmp.mapped.sam
+samtools sort -@ "$threads" -n -O SAM -o "$name_sam" tmp.mapped.sam
 
 # Make a position-sorted BAM output file for other downstream consumers
 pos_bam="$sample_id.sort_by_pos.bam"
 # Drop unmapped reads
-samtools view -@ $threads --fast -o tmp.sorted.bam tmp.mapped.sam
-samtools sort -@ $threads -o "$pos_bam" tmp.sorted.bam
+samtools view -@ "$threads" --fast -o tmp.sorted.bam tmp.mapped.sam
+samtools sort -@ "$threads" -o "$pos_bam" tmp.sorted.bam
 samtools index "$pos_bam"
 
 # Logging

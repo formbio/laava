@@ -49,6 +49,28 @@ Then run it interactively in your current directory:
 docker run -v $(pwd):$(pwd) -w $(pwd) -it ghcr.io/formbio/laava_dev:latest bash
 ```
 
+### Python Runner
+
+LAAVA now includes a unified Python-based runner that orchestrates the entire analysis pipeline:
+
+```bash
+python src/laava_run.py --input-bam <input.bam> --vector-fasta <vector.fasta> \
+    --annotation-bed <annotation.bed> --itr-label ITR
+```
+
+This runner coordinates vector type analysis, read mapping, and alignment analysis in a single command. A minimal conda environment (laava_minimal.conda_env.yml) is also available for running the core analysis components.
+
+Example using the test data:
+```bash
+# Using the included test samples
+python src/laava_run.py \
+    --input-bam test/samples/ss.subsample005.bam \
+    --vector-fasta test/samples/ss.construct.fasta \
+    --annotation-bed test/samples/ss.annotation.bed \
+    --itr-label ITR \
+    --output-dir test_runner_results/ss \
+    --sample-id ss
+```
 
 ## For developers
 
@@ -85,9 +107,10 @@ This opens a Bash shell with the scripts in the PATH, and the original working d
 ### Option 2: Conda
 
 The conda (or mamba) channels and dependencies are in the configuration files
-`laava.conda_env.yml` and `laava_dev.conda_env.yml`. These two environments are similar,
-and both will work for running LAAVA itself, but `_dev` includes some additional
-developer tools.
+`laava.conda_env.yml`, `laava_dev.conda_env.yml`, and `laava_minimal.conda_env.yml`. 
+The first two environments are similar and both will work for running LAAVA itself 
+(with `_dev` including additional developer tools), while `_minimal` provides just 
+the core components needed for the Python runner.
 
 First, install conda via Miniconda or Anaconda. Then, for example, suppose you have
 [anaconda](https://docs.anaconda.com/anaconda/install/linux/) installed and the binary
