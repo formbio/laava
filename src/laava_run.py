@@ -14,7 +14,7 @@ if src_dir not in sys.path:
     sys.path.insert(0, src_dir)
 
 # Import the modules
-import importlib.util
+import importlib.util  # noqa: E402
 
 get_reference_names = importlib.import_module("src.get_reference_names")
 guess_vector_type_length = importlib.import_module("src.guess_vector_type_length")
@@ -118,7 +118,7 @@ def run_pipeline(args: argparse.Namespace) -> int:
             import multiprocessing
 
             threads = str(multiprocessing.cpu_count())
-        except:
+        except (NotImplementedError, ValueError):
             threads = "1"
         env["THREADS"] = threads
 
