@@ -51,8 +51,17 @@ def subset_sam_by_readname_list(
     exclude_type=False,
 ):
     qname_lookup = {}  # qname --> (a_type, a_subtype)
-    with gzip.open(per_read_tsv, "rt") as per_read_f:
-        for row in csv.DictReader(per_read_f, delimiter="\t"):
+    # Try to open as gzipped first, if that fails open as regular file
+    try:
+        f = gzip.open(per_read_tsv, "rt")
+        # Test if it's actually gzipped by reading a bit
+        f.read(1)
+        f.seek(0)
+    except (OSError, gzip.BadGzipFile):
+        f = open(per_read_tsv, "rt")
+    
+    with f:
+        for row in csv.DictReader(f, delimiter="\t"):
             # pdb.set_trace()
             if (
                 wanted_types is None
