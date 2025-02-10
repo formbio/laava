@@ -713,11 +713,11 @@ def process_alignment_records_for_a_read(
     # NOTE: This fails to count some scAAV reads that also represent 2 species; these
     # cannot be detected because the dumbell info is not included in the PacBio CCS or
     # subread BAMs. But they are only a small fraction of the reads.
-
-    if (
-        read_info["has_primary"] == "Y"
-        and len(supps) == 0
-        and read_info["read_id"].endswith("/ccs")
+    if read_info["read_id"].endswith("/ccs") and not (
+        # Exclude scAAV vector from double-counting -- SMRTbell is only on one side
+        read_info["reference_label"] == "vector"
+        and read_info["has_primary"] == "Y"
+        and supp is not None
     ):
         read_info["effective_count"] = 2
 
