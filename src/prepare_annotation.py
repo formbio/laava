@@ -72,6 +72,9 @@ def read_annotation_bed(fname: str, itr_labels: list[str]):
     with Path(fname).open() as infile:
         for line in infile:
             # Require BED4 or more
+            if line.startswith("#"):
+                # Skip the header if it exists
+                continue
             seq_name, start0, end, label = line.rstrip().split("\t")[:4]
             region = AnnRow(seq_name, label, int(start0) + 1, int(end))
             if label in ("vector", "repcap"):
