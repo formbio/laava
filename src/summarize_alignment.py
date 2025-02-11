@@ -758,7 +758,7 @@ def run_processing_parallel(
         starting_readname = readname_list[i * chunk_size]
         ending_readname = (
             None
-            if (i + 1) * chunk_size > total_num_reads
+            if (i + 1) * chunk_size >= total_num_reads
             else readname_list[(i + 1) * chunk_size]
         )
         p = Process(
