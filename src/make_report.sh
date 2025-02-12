@@ -2,24 +2,25 @@
 # Implement the 'make_report' Nextflow process.
 sample_id=$1
 sample_name=$2
-reference_names=$3
-mapped_reads=$4
-vector_annotation=$5
-itr_label_1=$6
-itr_label_2=$7
-mitr_label=$8
-vector_type=$9
-target_gap_threshold=${10}
-max_allowed_outside_vector=${11}
-max_allowed_missing_flanking=${12}
-flipflop_name=${13}
-flipflop_fa=${14}
+version=$3
+reference_names=$4
+mapped_reads=$5
+vector_annotation=$6
+itr_label_1=$7
+itr_label_2=$8
+mitr_label=$9
+vector_type=${10}
+target_gap_threshold=${11}
+max_allowed_outside_vector=${12}
+max_allowed_missing_flanking=${13}
+flipflop_name=${14}
+flipflop_fa=${15}
 
 
 ls -Alh
 
-write_sample_metadata.py "${sample_id}" "${sample_name}" "${mapped_reads}" \
-    -o "${sample_id}.metadata.tsv"
+write_sample_metadata.py "$sample_id" "$sample_name" "$mapped_reads" \
+    -v "$version" -o "${sample_id}.metadata.tsv"
 
 ls -Alh
 
@@ -34,7 +35,7 @@ fi
 
 if [ "$vector_type" == "unspecified" ]; then
     vector_type=$(guess_vector_type_length.py "$vector_annotation" \
-                  "${itr_label_1}" "${itr_label_2}" "${mitr_label}")
+                  "$itr_label_1" "$itr_label_2" "$mitr_label")
     echo "Inferred vector_type: $vector_type"
 fi
 

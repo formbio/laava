@@ -96,6 +96,7 @@ process make_report() {
     make_report.sh \\
         "${sample_id}" \\
         "${sample_name}" \\
+        "${workflow.manifest.version}" \\
         "${reference_names}" \\
         "${mapped_reads}" \\
         "${vector_annotation}" \\
