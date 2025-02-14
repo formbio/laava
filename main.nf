@@ -3,8 +3,8 @@ nextflow.enable.dsl=2
 
 include { match_metadata_to_files; map_reads; make_report } from './modules/local/laava'
 
-NO_FILE = file("$projectDir/bin/NO_FILE")
-NO_FILE2 = file("$projectDir/bin/NO_FILE2")
+NO_FILE = file("${params.laava_dir}/bin/NO_FILE")
+NO_FILE2 = file("${params.laava_dir}/bin/NO_FILE2")
 
 // Unpack the input sample(s) and metadata
 def prepare_input(

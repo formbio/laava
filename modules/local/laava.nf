@@ -15,6 +15,7 @@ process match_metadata_to_files {
 
 
 process map_reads() {
+    container "${params.container_repo}/laava${params.container_version}"
     publishDir "$params.output/alignment", mode: "copy"
 
     input:
@@ -51,6 +52,7 @@ process map_reads() {
 
 
 process make_report() {
+    container "${params.container_repo}/laava${params.container_version}"
     publishDir "$params.output/report", mode: "copy"
 
     input:
@@ -96,6 +98,7 @@ process make_report() {
     make_report.sh \\
         "${sample_id}" \\
         "${sample_name}" \\
+        "${workflow.manifest.version}" \\
         "${reference_names}" \\
         "${mapped_reads}" \\
         "${vector_annotation}" \\
