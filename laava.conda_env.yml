@@ -4,7 +4,7 @@ channels:
     - bioconda
     - defaults
 dependencies:
-    - python>=3.7.6
+    - python>=3.8
     - r-base>=3.6.0
     - biopython
     - pandas
@@ -12,7 +12,9 @@ dependencies:
     - pysam
     - pytest
     - r-flextable
+    - r-gdtools
     - r-lintr
     - r-rmarkdown
+    - r-systemfonts
     - r-tidyverse
     - ruff
