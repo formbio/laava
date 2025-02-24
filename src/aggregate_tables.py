@@ -111,7 +111,7 @@ def write_results(results, path_prefix, verbose):
 
 
 def write_table(df, out_path, verbose):
-    df.to_csv(out_path, index=False, sep="\t")
+    df.to_csv(out_path, index=False, sep="\t", float_format="%.2f")
     if verbose:
         print(out_path, ":")
         print(df.to_string(index=False, na_rep=""))
