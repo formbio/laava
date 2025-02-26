@@ -74,6 +74,7 @@ workflow laava {
     target_gap_threshold
     max_allowed_outside_vector
     max_allowed_missing_flanking
+    min_supp_joint_coverage
     flipflop_name
     flipflop_fa
 
@@ -102,6 +103,7 @@ workflow laava {
         .combine( channel.of( target_gap_threshold ) )
         .combine( channel.of( max_allowed_outside_vector ) )
         .combine( channel.of( max_allowed_missing_flanking ) )
+        .combine( channel.of( min_supp_joint_coverage ) )
         .combine( channel.of( flipflop_name ) )
         .combine( flipflop_fa ? channel.fromPath( flipflop_fa ) : Channel.of( NO_FILE ) )
     )
@@ -146,6 +148,7 @@ workflow {
         params.target_gap_threshold,
         params.max_allowed_outside_vector,
         params.max_allowed_missing_flanking,
+        params.min_supp_joint_coverage,
         params.flipflop_name,
         params.flipflop_fa
     )

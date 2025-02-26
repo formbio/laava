@@ -13,8 +13,9 @@ vector_type=${10}
 target_gap_threshold=${11}
 max_allowed_outside_vector=${12}
 max_allowed_missing_flanking=${13}
-flipflop_name=${14}
-flipflop_fa=${15}
+min_supp_joint_coverage=${14}
+flipflop_name=${15}
+flipflop_fa=${16}
 
 
 ls -Alh
@@ -50,6 +51,7 @@ summarize_alignment.py \
     --target-gap-threshold="$target_gap_threshold" \
     --max-allowed-outside-vector="$max_allowed_outside_vector" \
     --max-allowed-missing-flanking="$max_allowed_missing_flanking" \
+    --min-supp-joint-coverage="$min_supp_joint_coverage" \
     --cpus $(nproc)
 
 echo "Finished summarize_alignment"

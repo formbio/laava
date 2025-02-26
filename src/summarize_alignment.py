@@ -38,6 +38,7 @@ ccs_rex = re.compile(r"\S+\/\d+\/ccs(\/fwd|\/rev)?")
 MAX_MISSING_FLANK = 100
 MAX_OUTSIDE_VECTOR = 100
 TARGET_GAP_THRESHOLD = 200  # skipping through the on-target region for more than this is considered "full-gap"
+MIN_PRIM_SUPP_COV = 0.8  # at minimum the total of prim + main supp should cover this much of the original sequence
 
 
 def subset_sam_by_readname_list(
@@ -382,9 +383,6 @@ def process_alignment_bam(
     return f_per_read.name, output_prefix + ".tagged.bam"
 
 
-MIN_PRIM_SUPP_COV = 0.8  # at minimum the total of prim + main supp should cover this much of the original sequence
-
-
 def find_companion_supp_to_primary(prim, supps):
     """Return the most likely companion supp to the primary.
 
@@ -400,10 +398,13 @@ def find_companion_supp_to_primary(prim, supps):
         offset = cigarlen if CIGAR_DICT[cigartype] == "H" else 0
         if rec.is_reverse:  # on - strand
             # we need to know the true length
-            return true_qlen - (rec.qend + offset), true_qlen - (rec.qstart + offset)
+            return (
+                true_qlen - (rec.query_alignment_end + offset),
+                true_qlen - (rec.query_alignment_start + offset),
+            )
         else:  # on + strand
             # just need to look at clipping
-            return rec.qstart + offset, rec.qend + offset
+            return rec.query_alignment_start + offset, rec.query_alignment_end + offset
 
     # if prim['rec'].qname=='m64011_220616_211638/9503552/ccsfwd':
     # pdb.set_trace()
@@ -1017,16 +1018,26 @@ if __name__ == "__main__":
                 considered 'full-gap'. [Default: %(default)s]""",
     )
     AP.add_argument(
+        "--min-supp-joint-coverage",
+        default=0.8,
+        type=float,
+        help="""Minimum fraction of a read's total length that must be covered jointly
+                by a pair of primary and supplementary alignments, start-to-end, to call
+                the read as self-complementary or tandem repeat.""",
+    )
+    AP.add_argument(
         "--cpus", default=1, type=int, help="Number of CPUs. [Default: %(default)s]"
     )
     AP.add_argument("--debug", action="store_true", default=False)
 
     args = AP.parse_args()
 
-    log_level = logging.DEBUG if args.debug else logging.INFO
-    logging.basicConfig(level=log_level, format="%(message)s")
     MAX_MISSING_FLANK = args.max_allowed_missing_flanking
     MAX_OUTSIDE_VECTOR = args.max_allowed_outside_vector
     TARGET_GAP_THRESHOLD = args.target_gap_threshold
+    MIN_PRIM_SUPP_COV = args.min_supp_joint_coverage
+
+    log_level = logging.DEBUG if args.debug else logging.INFO
+    logging.basicConfig(level=log_level, format="%(message)s")
 
     main(args)

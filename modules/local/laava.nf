@@ -68,6 +68,7 @@ process make_report() {
           val(target_gap_threshold),
           val(max_allowed_outside_vector),
           val(max_allowed_missing_flanking),
+          val(min_supp_joint_coverage),
           val(flipflop_name),
           path(flipflop_fa)
 
@@ -109,6 +110,7 @@ process make_report() {
         "${target_gap_threshold}" \\
         "${max_allowed_outside_vector}" \\
         "${max_allowed_missing_flanking}" \\
+        "${min_supp_joint_coverage}" \\
         "${flipflop_name}" \\
         "${ff_fa_path}"
     """
