@@ -84,10 +84,8 @@ This opens a Bash shell with the scripts in the PATH, and the original working d
 
 ### Option 2: Conda
 
-The conda (or mamba) channels and dependencies are in the configuration files
-`laava.conda_env.yml` and `laava_dev.conda_env.yml`. These two environments are similar,
-and both will work for running LAAVA itself, but `_dev` includes some additional
-developer tools.
+The conda (or mamba) channels and dependencies are in the configuration file
+`conda_env.yml`.
 
 First, install conda via Miniconda or Anaconda. Then, for example, suppose you have
 [anaconda](https://docs.anaconda.com/anaconda/install/linux/) installed and the binary
@@ -101,7 +99,7 @@ $ export PATH=$HOME/anaCogentPy37/bin:$PATH
 Next, use the YAML configuration file to create a new conda environment and install its dependencies:
 
 ```
-$ conda env create -f laava.conda_env.yml
+$ conda env create -f conda_env.yml
 ```
 
 Finally, once installation completes, activate the new environment:
