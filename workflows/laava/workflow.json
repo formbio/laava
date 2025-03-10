@@ -370,6 +370,26 @@
           }
         }
       }
+    },
+    {
+      "if": [
+        {
+          "vector_type": {
+            "eq": "ss"
+          }
+        }
+      ],
+      "then": {
+        "inputs": {
+          "itr_label_2": {
+            "hidden": false
+          },
+          "mitr_label": {
+            "hidden": true,
+            "required": false
+          }
+        }
+      }
     }
   ],
   "ui": {
