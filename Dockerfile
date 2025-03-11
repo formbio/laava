@@ -1,5 +1,6 @@
 # Interactive environment with scripts and extra dependencies
 FROM --platform=linux/amd64 continuumio/miniconda3:24.11.1-0
+
 LABEL org.opencontainers.image.source https://github.com/formbio/laava
 
 RUN apt-get update \
@@ -20,9 +21,9 @@ RUN apt-get update \
 RUN rm -rf /var/lib/apt/lists/*
 
 # Install directly into 'base' conda environment
-COPY laava.conda_env.yml ./conda_env.yml
+COPY conda_env.yml ./conda_env.yml
 RUN conda env update -v -n base -f conda_env.yml
-RUN conda install awscli=2.24.2
+RUN conda install conda-forge::awscli=2.24.2
 
 # Executable scripts
 RUN mkdir -p /opt/laava

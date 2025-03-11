@@ -302,6 +302,15 @@
       "minimum": 0,
       "maximum": 200
     },
+    "min_supp_joint_coverage": {
+      "title": "Minimum threshold for scAAV and tandem read classification",
+      "description": "",
+      "help_text": "Minimum fraction of a read's total length that must be covered jointly by a pair of primary and supplementary alignments, start-to-end, to call the read as self-complementary or tandem repeat.",
+      "type": "text",
+      "hidden": false,
+      "required": true,
+      "default": 0.8
+    },
     "container_version": {
       "title": "Container version",
       "description": "Use 'latest' for development",
@@ -361,6 +370,26 @@
           }
         }
       }
+    },
+    {
+      "if": [
+        {
+          "vector_type": {
+            "eq": "ss"
+          }
+        }
+      ],
+      "then": {
+        "inputs": {
+          "itr_label_2": {
+            "hidden": false
+          },
+          "mitr_label": {
+            "hidden": true,
+            "required": false
+          }
+        }
+      }
     }
   ],
   "ui": {
@@ -411,7 +440,8 @@
         "fields": [
           "target_gap_threshold",
           "max_allowed_outside_vector",
-          "max_allowed_missing_flanking"
+          "max_allowed_missing_flanking",
+          "min_supp_joint_coverage"
         ]
       }
     ]

@@ -2,41 +2,35 @@
 
 # Nextflow workflow output directory
 wf_out_dir := workflow-outputs/output
-snapshot_dir := test/build-snapshot
+
+# Local test directories
+in_dir = test/samples
+out_dir = test/build
+fa_dir = test/fasta
 
 # Form Bio workflow deployment
 formbio_org := form-bio-solutions
 formbio_project := aav-qc-workshop
 # Avoid uploading the local test dir; it's > the upload size limit
 tmp_stash_dir := /tmp/laava-deploy-test
+docker_repo := ghcr.io/formbio
 
-all: laava laava_dev sc ss min folder
+all: laava laava_dev sc ss min folder test
 
-.PHONY: clean laava laava_dev sc ss min folder diffcheck-sc diffcheck-ss formbio
+.PHONY: clean laava laava_dev formbio sc ss min folder test
 clean:
 	rm -f .nextflow.log*
 	rm -fr .nextflow/*
 	rm -fr workflow-outputs/*
+	rm -frv $(out_dir)/*
 
+# Build & deploy
 
-laava: laava.dockerfile laava.conda_env.yml
-	docker build -t ghcr.io/formbio/$@:dev -f $< .
+laava: Dockerfile conda_env.yml
+	docker build -t $(docker_repo)/$@:dev -f $< .
 
-laava_dev: laava_dev.dockerfile laava.conda_env.yml
-	docker build -t ghcr.io/formbio/$@:latest -f $< .
-
-
-sc ss min folder: %: params-local-%.json
-	nextflow run -profile local main.nf -params-file $<
-
-
-diffcheck-sc: $(wf_out_dir)/sc.subsample005.per_read.tsv
-	diff $(snapshot_dir)/sc.per_read.tsv $< && echo "OK"
-
-diffcheck-ss: $(wf_out_dir)/ss.subsample005.per_read.tsv $(wf_out_dir)/ss.subsample005.flipflop.tsv
-	#diff $(snapshot_dir)/ss.per_read.tsv $< && echo "OK"
-	diff $(snapshot_dir)/ss.flipflop.tsv $(lastword $^) && echo "OK"
-
+laava_dev: laava_dev.dockerfile conda_env.yml
+	docker build -t $(docker_repo)/$@:latest -f $< .
 
 formbio: clean
 	mv test/ "$(tmp_stash_dir)"
@@ -45,3 +39,15 @@ formbio: clean
 		--env prod --visibility PROJECT \
 		--version dev --repo . --workflow laava
 	mv "$(tmp_stash_dir)" test
+
+
+# Test Nextflow pipeline execution
+
+sc ss min folder: %: params-local-%.json
+	nextflow run -profile local main.nf -params-file $<
+
+# Test local execution and outputs
+
+test: laava_dev
+	docker run --rm -v $(CURDIR):/data -w /data -it $(docker_repo)/laava_dev:latest \
+		make -B -C test test

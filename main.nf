@@ -74,6 +74,7 @@ workflow laava {
     target_gap_threshold
     max_allowed_outside_vector
     max_allowed_missing_flanking
+    min_supp_joint_coverage
     flipflop_name
     flipflop_fa
 
@@ -93,7 +94,7 @@ workflow laava {
         .combine( channel.of( lambda_name ) )
     )
     make_report(
-        map_reads.out.mapped_sam
+        map_reads.out.mapped_name_bam
         .combine( channel.fromPath( vector_bed ) )
         .combine( channel.of( itr_label_1 ) )
         .combine( channel.of( itr_label_2 ) )
@@ -102,13 +103,14 @@ workflow laava {
         .combine( channel.of( target_gap_threshold ) )
         .combine( channel.of( max_allowed_outside_vector ) )
         .combine( channel.of( max_allowed_missing_flanking ) )
+        .combine( channel.of( min_supp_joint_coverage ) )
         .combine( channel.of( flipflop_name ) )
         .combine( flipflop_fa ? channel.fromPath( flipflop_fa ) : Channel.of( NO_FILE ) )
     )
 
     emit:
-    mapped_sam = map_reads.out.mapped_sam
-    mapped_bam = map_reads.out.mapped_bam
+    mapped_name_bam = map_reads.out.mapped_name_bam
+    mapped_pos_bam = map_reads.out.mapped_pos_bam
     metadata_out_tsv = make_report.out.metadata_tsv
     alignments_tsv = make_report.out.alignments_tsv
     per_read_tsv = make_report.out.per_read_tsv
@@ -146,6 +148,7 @@ workflow {
         params.target_gap_threshold,
         params.max_allowed_outside_vector,
         params.max_allowed_missing_flanking,
+        params.min_supp_joint_coverage,
         params.flipflop_name,
         params.flipflop_fa
     )
