@@ -33,7 +33,7 @@ jobs:
         id: push
         uses: docker/build-push-action@v6
         with:
-          file: laava.dockerfile
+          file: Dockerfile
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
       - name: Generate artifact attestation
