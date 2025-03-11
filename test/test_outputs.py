@@ -36,6 +36,7 @@ EXPECTED_ROW_COUNTS = {
 }
 
 BUILD_DIR = "build"
+BAM_DIR = "samples"
 
 
 class TestCompareTSVs:
@@ -88,7 +89,7 @@ class TestCompareTSVs:
         tsv_path, expected_count, row_count = self.check_tsv_row_count(
             build_dir, name_prefix, "per_read", "tsv.gz"
         )
-        bam_path = Path(f"samples/{name_prefix}.subsample005.bam")
+        bam_path = Path(f"{BAM_DIR}/{name_prefix}.subsample005.bam")
         with pysam.AlignmentFile(bam_path, "rb") as bam_file:
             primary_count = sum(
                 1

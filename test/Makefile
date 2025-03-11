@@ -11,12 +11,12 @@ all: sc ss
 clean:
 	rm -frv build/*
 
+test: sc ss
+	pytest test_outputs.py
+
 sc: $(out_dir)/sc_AAV_report.html
 
 ss: $(out_dir)/ss_AAV_report.html
-
-test: sc ss
-	pytest test_outputs.py
 
 
 $(out_dir)/sc_AAV_report.html: \
