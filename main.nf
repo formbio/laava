@@ -94,7 +94,7 @@ workflow laava {
         .combine( channel.of( lambda_name ) )
     )
     make_report(
-        map_reads.out.mapped_sam
+        map_reads.out.mapped_name_bam
         .combine( channel.fromPath( vector_bed ) )
         .combine( channel.of( itr_label_1 ) )
         .combine( channel.of( itr_label_2 ) )
@@ -109,8 +109,8 @@ workflow laava {
     )
 
     emit:
-    mapped_sam = map_reads.out.mapped_sam
-    mapped_bam = map_reads.out.mapped_bam
+    mapped_name_bam = map_reads.out.mapped_name_bam
+    mapped_pos_bam = map_reads.out.mapped_pos_bam
     metadata_out_tsv = make_report.out.metadata_tsv
     alignments_tsv = make_report.out.alignments_tsv
     per_read_tsv = make_report.out.per_read_tsv

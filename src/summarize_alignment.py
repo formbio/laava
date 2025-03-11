@@ -270,7 +270,7 @@ def assign_alignment_type(r, annotation):
 def process_alignment_bam(
     sample_id,
     vector_type,
-    sorted_sam_filename,
+    sorted_bam_filename,
     annotation,
     is_mitr_left,
     output_prefix,
@@ -279,7 +279,7 @@ def process_alignment_bam(
 ):
     """Process the read alignments versus annotations.
 
-    :param sorted_sam_filename: Sorted (by read name) SAM filename
+    :param sorted_bam_filename: Sorted (by read name) BAM filename
     :param annotation:
     :param output_prefix:
     """
@@ -321,7 +321,7 @@ def process_alignment_bam(
     out_nonmatch.writeheader()
     out_per_read.writeheader()
 
-    reader = pysam.AlignmentFile(sorted_sam_filename, check_sq=False)
+    reader = pysam.AlignmentFile(sorted_bam_filename, check_sq=False)
     bam_writer = pysam.AlignmentFile(
         output_prefix + ".tagged.bam", "wb", header=reader.header
     )
@@ -730,20 +730,20 @@ def process_alignment_records_for_a_read(
 def run_processing_parallel(
     sample_id,
     vector_type,
-    sorted_sam_filename,
+    sorted_bam_filename,
     annotation,
     is_mitr_left,
     output_prefix,
     num_chunks=1,
 ):
-    reader = pysam.AlignmentFile(open(sorted_sam_filename), check_sq=False)
+    reader = pysam.AlignmentFile(open(sorted_bam_filename), check_sq=False)
     # Get all distinct read names, keeping input order
     readname_list = [next(reader).qname]
     n_alignments = -1
     for n_alignments, r in enumerate(reader):
         if r.qname != readname_list[-1]:
             readname_list.append(r.qname)
-    logging.info("Scanned %d alignments in %s", n_alignments + 1, sorted_sam_filename)
+    logging.info("Scanned %d alignments in %s", n_alignments + 1, sorted_bam_filename)
 
     total_num_reads = len(readname_list)
     chunk_size = math.ceil(total_num_reads / num_chunks)
@@ -767,7 +767,7 @@ def run_processing_parallel(
             args=(
                 sample_id,
                 vector_type,
-                sorted_sam_filename,
+                sorted_bam_filename,
                 annotation,
                 is_mitr_left,
                 output_prefix + "." + str(i + 1),
@@ -872,7 +872,7 @@ def main(args):
         per_read_tsv, full_out_bam = process_alignment_bam(
             args.sample_id,
             args.vector_type,
-            args.sam_filename,
+            args.bam_filename,
             annotation,
             is_mitr_left,
             args.output_prefix,
@@ -881,7 +881,7 @@ def main(args):
         per_read_tsv, full_out_bam = run_processing_parallel(
             args.sample_id,
             args.vector_type,
-            args.sam_filename,
+            args.bam_filename,
             annotation,
             is_mitr_left,
             args.output_prefix,
@@ -980,7 +980,7 @@ if __name__ == "__main__":
     from argparse import ArgumentParser
 
     AP = ArgumentParser()
-    AP.add_argument("sam_filename", help="Sorted by read name SAM file")
+    AP.add_argument("bam_filename", help="Sorted by read name BAM file")
     AP.add_argument("annotation_bed", help="Annotation file")
     AP.add_argument("reference_names", help="Reference sequence names file")
     AP.add_argument("itr_labels", nargs="*", help="ITR label(s) in annotation BED")
