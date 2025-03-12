@@ -2,7 +2,7 @@
   "schema": "v3",
   "id": "laava",
   "title": "formbio/laava",
-  "workflowVersion": "dev",
+  "workflowVersion": "v4.0.0",
   "displayName": "LAAVA: Long-read AAV Analysis",
   "description": "Perform standard analysis of AAV long-read sequencing data.",
   "type": "object",
