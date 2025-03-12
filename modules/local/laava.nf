@@ -15,6 +15,7 @@ process match_metadata_to_files {
 
 
 process map_reads() {
+    container "${params.container_repo}/laava${params.container_version}"
     publishDir "$params.output/alignment", mode: "copy"
 
     input:
@@ -32,11 +33,11 @@ process map_reads() {
     tuple val(sample_id),
           val(sample_name),
           path("${sample_id}.reference_names.tsv"),
-          path("${sample_id}.sort_by_name.sam"), emit: mapped_sam
+          path("${sample_id}.sort_by_name.bam"), emit: mapped_name_bam
     tuple val(sample_id),
           val(sample_name),
           path("${sample_id}.sort_by_pos.bam"),
-          path("${sample_id}.sort_by_pos.bam.bai"), emit: mapped_bam
+          path("${sample_id}.sort_by_pos.bam.bai"), emit: mapped_pos_bam
 
     script:
     // Hack for optional inputs
@@ -51,6 +52,7 @@ process map_reads() {
 
 
 process make_report() {
+    container "${params.container_repo}/laava${params.container_version}"
     publishDir "$params.output/report", mode: "copy"
 
     input:
@@ -66,6 +68,7 @@ process make_report() {
           val(target_gap_threshold),
           val(max_allowed_outside_vector),
           val(max_allowed_missing_flanking),
+          val(min_supp_joint_coverage),
           val(flipflop_name),
           path(flipflop_fa)
 
@@ -96,6 +99,7 @@ process make_report() {
     make_report.sh \\
         "${sample_id}" \\
         "${sample_name}" \\
+        "${workflow.manifest.version}" \\
         "${reference_names}" \\
         "${mapped_reads}" \\
         "${vector_annotation}" \\
@@ -106,7 +110,9 @@ process make_report() {
         "${target_gap_threshold}" \\
         "${max_allowed_outside_vector}" \\
         "${max_allowed_missing_flanking}" \\
+        "${min_supp_joint_coverage}" \\
         "${flipflop_name}" \\
-        "${ff_fa_path}"
+        "${ff_fa_path}" \\
+        "."
     """
 }

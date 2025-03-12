@@ -38,6 +38,7 @@ ccs_rex = re.compile(r"\S+\/\d+\/ccs(\/fwd|\/rev)?")
 MAX_MISSING_FLANK = 100
 MAX_OUTSIDE_VECTOR = 100
 TARGET_GAP_THRESHOLD = 200  # skipping through the on-target region for more than this is considered "full-gap"
+MIN_PRIM_SUPP_COV = 0.8  # at minimum the total of prim + main supp should cover this much of the original sequence
 
 
 def subset_sam_by_readname_list(
@@ -278,7 +279,7 @@ def assign_alignment_type(r, annotation):
 def process_alignment_bam(
     sample_id,
     vector_type,
-    sorted_sam_filename,
+    sorted_bam_filename,
     annotation,
     is_mitr_left,
     output_prefix,
@@ -287,7 +288,7 @@ def process_alignment_bam(
 ):
     """Process the read alignments versus annotations.
 
-    :param sorted_sam_filename: Sorted (by read name) SAM filename
+    :param sorted_bam_filename: Sorted (by read name) BAM filename
     :param annotation:
     :param output_prefix:
     """
@@ -329,7 +330,7 @@ def process_alignment_bam(
     out_nonmatch.writeheader()
     out_per_read.writeheader()
 
-    reader = pysam.AlignmentFile(sorted_sam_filename, check_sq=False)
+    reader = pysam.AlignmentFile(sorted_bam_filename, check_sq=False)
     bam_writer = pysam.AlignmentFile(
         output_prefix + ".tagged.bam", "wb", header=reader.header
     )
@@ -391,9 +392,6 @@ def process_alignment_bam(
     return f_per_read.name, output_prefix + ".tagged.bam"
 
 
-MIN_PRIM_SUPP_COV = 0.8  # at minimum the total of prim + main supp should cover this much of the original sequence
-
-
 def find_companion_supp_to_primary(prim, supps):
     """Return the most likely companion supp to the primary.
 
@@ -409,10 +407,13 @@ def find_companion_supp_to_primary(prim, supps):
         offset = cigarlen if CIGAR_DICT[cigartype] == "H" else 0
         if rec.is_reverse:  # on - strand
             # we need to know the true length
-            return true_qlen - (rec.qend + offset), true_qlen - (rec.qstart + offset)
+            return (
+                true_qlen - (rec.query_alignment_end + offset),
+                true_qlen - (rec.query_alignment_start + offset),
+            )
         else:  # on + strand
             # just need to look at clipping
-            return rec.qstart + offset, rec.qend + offset
+            return rec.query_alignment_start + offset, rec.query_alignment_end + offset
 
     # if prim['rec'].qname=='m64011_220616_211638/9503552/ccsfwd':
     # pdb.set_trace()
@@ -722,11 +723,11 @@ def process_alignment_records_for_a_read(
     # NOTE: This fails to count some scAAV reads that also represent 2 species; these
     # cannot be detected because the dumbell info is not included in the PacBio CCS or
     # subread BAMs. But they are only a small fraction of the reads.
-
-    if (
-        read_info["has_primary"] == "Y"
-        and len(supps) == 0
-        and read_info["read_id"].endswith("/ccs")
+    if read_info["read_id"].endswith("/ccs") and not (
+        # Exclude scAAV vector from double-counting -- SMRTbell is only on one side
+        read_info["reference_label"] == "vector"
+        and read_info["has_primary"] == "Y"
+        and supp is not None
     ):
         read_info["effective_count"] = 2
 
@@ -738,20 +739,20 @@ def process_alignment_records_for_a_read(
 def run_processing_parallel(
     sample_id,
     vector_type,
-    sorted_sam_filename,
+    sorted_bam_filename,
     annotation,
     is_mitr_left,
     output_prefix,
     num_chunks=1,
 ):
-    reader = pysam.AlignmentFile(open(sorted_sam_filename), check_sq=False)
+    reader = pysam.AlignmentFile(open(sorted_bam_filename), check_sq=False)
     # Get all distinct read names, keeping input order
     readname_list = [next(reader).qname]
     n_alignments = -1
     for n_alignments, r in enumerate(reader):
         if r.qname != readname_list[-1]:
             readname_list.append(r.qname)
-    logging.info("Scanned %d alignments in %s", n_alignments + 1, sorted_sam_filename)
+    logging.info("Scanned %d alignments in %s", n_alignments + 1, sorted_bam_filename)
 
     total_num_reads = len(readname_list)
     chunk_size = math.ceil(total_num_reads / num_chunks)
@@ -767,7 +768,7 @@ def run_processing_parallel(
         starting_readname = readname_list[i * chunk_size]
         ending_readname = (
             None
-            if (i + 1) * chunk_size > total_num_reads
+            if (i + 1) * chunk_size >= total_num_reads
             else readname_list[(i + 1) * chunk_size]
         )
         p = Process(
@@ -775,7 +776,7 @@ def run_processing_parallel(
             args=(
                 sample_id,
                 vector_type,
-                sorted_sam_filename,
+                sorted_bam_filename,
                 annotation,
                 is_mitr_left,
                 output_prefix + "." + str(i + 1),
@@ -880,7 +881,7 @@ def main(args):
         per_read_tsv, full_out_bam = process_alignment_bam(
             args.sample_id,
             args.vector_type,
-            args.sam_filename,
+            args.bam_filename,
             annotation,
             is_mitr_left,
             args.output_prefix,
@@ -889,7 +890,7 @@ def main(args):
         per_read_tsv, full_out_bam = run_processing_parallel(
             args.sample_id,
             args.vector_type,
-            args.sam_filename,
+            args.bam_filename,
             annotation,
             is_mitr_left,
             args.output_prefix,
@@ -988,7 +989,7 @@ if __name__ == "__main__":
     from argparse import ArgumentParser
 
     AP = ArgumentParser()
-    AP.add_argument("sam_filename", help="Sorted by read name SAM file")
+    AP.add_argument("bam_filename", help="Sorted by read name BAM file")
     AP.add_argument("annotation_bed", help="Annotation file")
     AP.add_argument("reference_names", help="Reference sequence names file")
     AP.add_argument("itr_labels", nargs="*", help="ITR label(s) in annotation BED")
@@ -1026,16 +1027,26 @@ if __name__ == "__main__":
                 considered 'full-gap'. [Default: %(default)s]""",
     )
     AP.add_argument(
+        "--min-supp-joint-coverage",
+        default=0.8,
+        type=float,
+        help="""Minimum fraction of a read's total length that must be covered jointly
+                by a pair of primary and supplementary alignments, start-to-end, to call
+                the read as self-complementary or tandem repeat.""",
+    )
+    AP.add_argument(
         "--cpus", default=1, type=int, help="Number of CPUs. [Default: %(default)s]"
     )
     AP.add_argument("--debug", action="store_true", default=False)
 
     args = AP.parse_args()
 
-    log_level = logging.DEBUG if args.debug else logging.INFO
-    logging.basicConfig(level=log_level, format="%(message)s")
     MAX_MISSING_FLANK = args.max_allowed_missing_flanking
     MAX_OUTSIDE_VECTOR = args.max_allowed_outside_vector
     TARGET_GAP_THRESHOLD = args.target_gap_threshold
+    MIN_PRIM_SUPP_COV = args.min_supp_joint_coverage
+
+    log_level = logging.DEBUG if args.debug else logging.INFO
+    logging.basicConfig(level=log_level, format="%(message)s")
 
     main(args)

@@ -1,5 +1,5 @@
 # Development environment for running the scripts, no scripts, extra dependencies
-FROM --platform=linux/amd64 continuumio/miniconda3:24.7.1-0
+FROM --platform=linux/amd64 continuumio/miniconda3:24.11.1-0
 
 # Set the container's timezone to match this local machine
 RUN ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
@@ -11,12 +11,16 @@ RUN apt-get update \
         apt-transport-https \
         build-essential \
         git \
+        graphviz \
         less \
         minimap2 \
         samtools \
+        shellcheck \
         texlive-latex-extra \
         texlive-latex-recommended \
+        unzip \
         vim \
+        wget \
     && apt-get remove -y \
         fonts-urw-base35 \
         libgs9 \
@@ -26,8 +30,9 @@ RUN apt-get update \
     && apt-get autoremove -y
 
 # Install directly into 'base' conda environment
-COPY laava_dev.conda_env.yml ./conda_env.yml
+COPY conda_env.yml ./conda_env.yml
 RUN conda env update -v -n base -f conda_env.yml
+RUN conda install -n base conda-forge::awscli=2.24.2 bioconda::nextflow
 
 WORKDIR /data/
 

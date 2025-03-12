@@ -19,6 +19,8 @@ EXPECTED_ROW_COUNTS = {
         "metadata": 1,
         "reference_names": 8,
         "nonmatch": 52620,
+        "agg_ref_type": 4,
+        "agg_subtype": 9,
     },
     "ss": {
         "alignments": 5489,
@@ -27,10 +29,14 @@ EXPECTED_ROW_COUNTS = {
         "metadata": 1,
         "reference_names": 8,
         "nonmatch": 78330,
+        "agg_ref_type": 9,
+        "agg_subtype": 13,
+        "agg_flipflop": 15,
     },
 }
 
 BUILD_DIR = "build"
+BAM_DIR = "samples"
 
 
 class TestCompareTSVs:
@@ -45,59 +51,63 @@ class TestCompareTSVs:
         ), f"Expected {expected_count} rows, got {len(df)} for {path}"
         return df
 
+    def check_tsv_row_count(self, build_dir, name_prefix, key, suffix):
+        tsv_path = build_dir / f"{name_prefix}.{key}.{suffix}"
+        expected_count = EXPECTED_ROW_COUNTS[name_prefix][key]
+        df = self.check_row_count(tsv_path, expected_count)
+        return tsv_path, expected_count, len(df)
+
+    @pytest.mark.parametrize("name_prefix", EXPECTED_ROW_COUNTS.keys())
+    def test_metadata(self, build_dir, name_prefix):
+        self.check_tsv_row_count(build_dir, name_prefix, "metadata", "tsv")
+
     @pytest.mark.parametrize("name_prefix", EXPECTED_ROW_COUNTS.keys())
     def test_alignments(self, build_dir, name_prefix):
-        path = build_dir / f"{name_prefix}.alignments.tsv.gz"
-        expected_count = EXPECTED_ROW_COUNTS[name_prefix]["alignments"]
-        self.check_row_count(path, expected_count)
+        self.check_tsv_row_count(build_dir, name_prefix, "alignments", "tsv.gz")
+
+    @pytest.mark.parametrize("name_prefix", EXPECTED_ROW_COUNTS.keys())
+    def test_nonmatch(self, build_dir, name_prefix):
+        self.check_tsv_row_count(build_dir, name_prefix, "nonmatch", "tsv.gz")
+
+    @pytest.mark.parametrize("name_prefix", EXPECTED_ROW_COUNTS.keys())
+    def test_agg_ref_type(self, build_dir, name_prefix):
+        self.check_tsv_row_count(build_dir, name_prefix, "agg_ref_type", "tsv")
+
+    @pytest.mark.parametrize("name_prefix", EXPECTED_ROW_COUNTS.keys())
+    def test_agg_subtype(self, build_dir, name_prefix):
+        self.check_tsv_row_count(build_dir, name_prefix, "agg_subtype", "tsv")
+
+    # Only ssAAV
+    def test_ss_flipflop(self, build_dir):
+        self.check_tsv_row_count(build_dir, "ss", "flipflop", "tsv.gz")
+
+    def test_ss_agg_flipflop(self, build_dir):
+        self.check_tsv_row_count(build_dir, "ss", "agg_flipflop", "tsv")
 
     @pytest.mark.parametrize("name_prefix", EXPECTED_ROW_COUNTS.keys())
     def test_per_read(self, build_dir, name_prefix):
-        tsv_path = build_dir / f"{name_prefix}.per_read.tsv.gz"
-        bam_path = Path(f"samples/{name_prefix}.subsample005.bam")
-        expected_count = EXPECTED_ROW_COUNTS[name_prefix]["per_read"]
-
-        df = self.check_row_count(tsv_path, expected_count)
-
+        tsv_path, expected_count, row_count = self.check_tsv_row_count(
+            build_dir, name_prefix, "per_read", "tsv.gz"
+        )
+        bam_path = Path(f"{BAM_DIR}/{name_prefix}.subsample005.bam")
         with pysam.AlignmentFile(bam_path, "rb") as bam_file:
             primary_count = sum(
                 1
                 for read in bam_file
                 if not read.is_secondary and not read.is_supplementary
             )
-
         assert (
-            len(df) == expected_count == primary_count
-        ), f"Expected {expected_count} primary reads, got {len(df)} in TSV and {primary_count} in SAM for {tsv_path}"
-
-    @pytest.mark.parametrize("name_prefix", EXPECTED_ROW_COUNTS.keys())
-    def test_metadata(self, build_dir, name_prefix):
-        path = build_dir / f"{name_prefix}.metadata.tsv"
-        expected_count = EXPECTED_ROW_COUNTS[name_prefix]["metadata"]
-        self.check_row_count(path, expected_count)
+            row_count == expected_count == primary_count
+        ), f"Expected {expected_count} primary reads, got {row_count} in TSV and {primary_count} in SAM for {tsv_path}"
 
     @pytest.mark.parametrize("name_prefix", EXPECTED_ROW_COUNTS.keys())
     def test_reference_names(self, build_dir, name_prefix):
-        tsv_path = build_dir / f"{name_prefix}.reference_names.tsv"
+        tsv_path, expected_count, row_count = self.check_tsv_row_count(
+            build_dir, name_prefix, "reference_names", "tsv"
+        )
         bam_path = build_dir / f"{name_prefix}.tagged.bam"
-        expected_count = EXPECTED_ROW_COUNTS[name_prefix]["reference_names"]
-
-        df = self.check_row_count(tsv_path, expected_count)
-
         with pysam.AlignmentFile(bam_path, "rb") as bam_file:
             sn_count = len(bam_file.references)
-
         assert (
-            len(df) == expected_count == sn_count
-        ), f"Expected {expected_count} references, got {len(df)} in TSV and {sn_count} in BAM for {tsv_path}"
-
-    @pytest.mark.parametrize("name_prefix", EXPECTED_ROW_COUNTS.keys())
-    def test_nonmatch(self, build_dir, name_prefix):
-        path = build_dir / f"{name_prefix}.nonmatch.tsv.gz"
-        expected_count = EXPECTED_ROW_COUNTS[name_prefix]["nonmatch"]
-        self.check_row_count(path, expected_count)
-
-    def test_ss_flipflop(self, build_dir):
-        path = build_dir / "ss.flipflop.tsv.gz"
-        expected_count = EXPECTED_ROW_COUNTS["ss"]["flipflop"]
-        self.check_row_count(path, expected_count)
+            row_count == expected_count == sn_count
+        ), f"Expected {expected_count} references, got {row_count} in TSV and {sn_count} in BAM for {tsv_path}"

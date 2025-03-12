@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write sample ID, name, and sequencing run ID as a 2-line TSV."""
+"""Write sample ID, name, sequencing run ID, and optionally version as a 2-line TSV."""
 
 from __future__ import annotations
 
@@ -22,12 +22,17 @@ if __name__ == "__main__":
     AP.add_argument("sample_id")
     AP.add_argument("sample_name")
     AP.add_argument("mapped_reads")
+    AP.add_argument("-v", "--version", help="Workflow version string")
     AP.add_argument("-o", "--output", required=True, help="*.tsv")
     args = AP.parse_args()
 
+    fieldnames = ["sample_unique_id", "sample_display_name", "sequencing_run_id"]
+    outrow = [args.sample_id, args.sample_name, seq_run_id_from_bam(args.mapped_reads)]
+    if args.version:
+        fieldnames.append("version")
+        outrow.append(args.version)
+
     with Path(args.output).open("w") as out_handle:
         cw = csv.writer(out_handle, delimiter="\t")
-        cw.writerow(["sample_unique_id", "sample_display_name", "sequencing_run_id"])
-        cw.writerow(
-            [args.sample_id, args.sample_name, seq_run_id_from_bam(args.mapped_reads)]
-        )
+        cw.writerow(fieldnames)
+        cw.writerow(outrow)

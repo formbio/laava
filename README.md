@@ -46,7 +46,7 @@ docker pull ghcr.io/formbio/laava:latest
 Then run it interactively in your current directory:
 
 ```
-docker run -v $(pwd):$(pwd) -w $(pwd) -it ghcr.io/formbio/laava_dev:latest bash
+docker run -v $(pwd):/data -w /data -it ghcr.io/formbio/laava:latest bash
 ```
 
 ### Python Runner
@@ -87,7 +87,8 @@ There are several ways to satisfy the script dependencies locally.
 
 The `laava_dev.dockerfile` in this repo installs the scripts' dependencies, but not the
 scripts themselves, into a Docker container image that you can then use to run the local
-copies of the scripts.
+copies of the scripts. This allows you to edit the code in this repo in-place and run it
+within the container environment without rebuilding the container.
 
 To build the container image with the name `laava_dev` (you can use another name if you prefer):
 
@@ -106,25 +107,27 @@ This opens a Bash shell with the scripts in the PATH, and the original working d
 
 ### Option 2: Conda
 
+
 The conda (or mamba) channels and dependencies are in the configuration files
 `laava.conda_env.yml`, `laava_dev.conda_env.yml`, and `laava_minimal.conda_env.yml`. 
 The first two environments are similar and both will work for running LAAVA itself 
 (with `_dev` including additional developer tools), while `_minimal` provides just 
 the core components needed for the Python runner.
 
-First, install conda via Miniconda or Anaconda. Then, for example, suppose you have
-[anaconda](https://docs.anaconda.com/anaconda/install/linux/) installed and the binary
-is in `$HOME/anaCogentPy37/bin`. To make the installed scripts available in your
-environment, you would add the binary to $PATH if it isn't there already:
+The conda channels and dependencies are in the configuration file `conda_env.yml`.
+With this environment and a LaTeX installation (via e.g. apt), you'll have all the
+dependencies you need to run LAAVA scripts directly on Linux, and *nearly* everything
+you need on Mac.
+The same environment is also used by the Docker container images internally.
 
-```
-$ export PATH=$HOME/anaCogentPy37/bin:$PATH
-```
+
+First, install conda via [Miniconda or
+Anaconda](https://www.anaconda.com/download/success).
 
 Next, use the YAML configuration file to create a new conda environment and install its dependencies:
 
 ```
-$ conda env create -f laava.conda_env.yml
+$ conda env create -f conda_env.yml
 ```
 
 Finally, once installation completes, activate the new environment:
@@ -133,28 +136,8 @@ Finally, once installation completes, activate the new environment:
 $ source activate laava
 ```
 
-At this point the prompt should change to `(laava) $` and the executable scripts should be available in your PATH.
-
-
-#### Option 3: Manual installation from scratch
-
-Bypassing all the above, you can use other package managers to install the dependencies
-individually.
-
-The prerequisites to run these scripts include:
-
-* Python 3.7 or later
-* R 3.6 or later
-
-Python packages:
-* [biopython](https://anaconda.org/bioconda/biopython)
-* [pysam](https://anaconda.org/bioconda/pysam)
-* [parasail-python](https://anaconda.org/bioconda/parasail-python)
-
-R packages:
-* tidyverse
-* flextable
-* Rmarkdown
+At this point the prompt should change to `(laava) $` and the executable scripts should
+be available in your PATH.
 
 
 ## Testing
@@ -167,34 +150,16 @@ examples](https://downloads.pacbcloud.com/public/dataset/AAV/).
 The `test/` subdirectory in this repo contains small example input files and a Makefile
 to run the scripts to reanalyze them and produce example HTML and PDF reports.
 
-Once you've completed installation (above), activate your conda environment or Docker
-container and change to the test directory:
+If you have Docker, Nextflow, and Make available, you can run a variety of tests from
+the top directory of this repo.
 
-```
-cd test
-```
-
-To generate the HTML and PDF reports from the test dataset included in the repo, use any
-of these commands:
-
-* `make sc` -- run the example self-complementary AAV (scAAV) sample. This takes about 1-2 minutes.
+* `make test` -- run both test samples using the Docker image directly, skipping Nextflow, and check the results quantitatively.
+* `make sc` -- run the example self-complementary AAV (scAAV) sample with the Nextflow pipeline. This takes about 1-2 minutes.
 * `make ss` -- run the example single-stranded AAV (ssAAV) sample. This takes about 2-3 minutes, including an additional flip/flop analysis step.
-* `make all` -- run both example AAV samples.
-* `make test` -- run both samples and check the results quantitatively.
+* `make all` -- run both example AAV samples using Nextflow.
+* `make min` -- run the scAAV sample with the minimum number of required parameters, exercising the default behavior including guessing the construct vector type (sc/ss).
+* `make folder` -- run both samples via folder input, exercising a batch processing mode.
 
+Each of these commands will generate example HTML and PDF reports from the test datasets
+included in the repo, which you can view locally.
 
-### Example Nextflow jobs
-
-The top level of this repo includes several JSON files with Nextflow parameter
-configurations (`params-*.json`). They use the same inputs as the automated test suite
-(above), plus the `laava` Docker image and a local installation of `nextflow` (which you
-can install any way you like, e.g. conda or brew).
-
-You can run them directly with Nextflow as usual, or use the Makefile at the top level
-of the repo to launch them:
-
-* `make sc` or `make ss` -- run the example self-complementary AAV (scAAV) or
-  single-stranded AAV (ssAAV) sample, as above.
-* `make min` -- run the scAAV sample with the minimum number of required parameters,
-  exercising the default behavior including guessing the construct vector type (sc/ss).
-* `make folder` -- run both samples via folder input.
