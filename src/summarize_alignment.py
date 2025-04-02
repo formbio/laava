@@ -758,12 +758,15 @@ def run_processing_parallel(
 
     pool = []
     for i in range(num_chunks):
-        starting_readname = readname_list[i * chunk_size]
-        ending_readname = (
-            None
-            if (i + 1) * chunk_size >= total_num_reads
-            else readname_list[(i + 1) * chunk_size]
-        )
+        start_index = i * chunk_size
+        end_index = min((i + 1) * chunk_size, total_num_reads)
+
+        if start_index >= total_num_reads:
+            break  # Prevent out-of-range access
+
+        starting_readname = readname_list[start_index]
+        ending_readname = None if end_index >= total_num_reads else readname_list[end_index]
+
         p = Process(
             target=process_alignment_bam,
             args=(
