@@ -692,13 +692,15 @@ def process_alignment_records_for_a_read(
 
                 else:
                     # Additional not-really-scAAV subtypes
-                    read_type = "other-vector"
+                    # read_type = "other-vector"
                     assert supp_orientation is None, f"Unrecognized {supp_orientation=}"
                     if read_target_overlap == (
                         "right-partial" if is_mitr_left else "left-partial"
-                    ):
+                    ):  
+                        read_type = "scAAV"
                         read_subtype = "itr-partial"
                     else:
+                        read_type = "other-vector"
                         read_subtype = "unclassified"
 
             else:
