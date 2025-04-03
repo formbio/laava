@@ -139,6 +139,7 @@ jobs:
       
       # Upload Docker Scout results to GitHub Security tab
       - name: Upload Docker Scout results to GitHub Security tab
+        if: github.event_name != 'pull_request'
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'scout-results.sarif'
