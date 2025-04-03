@@ -42,6 +42,7 @@ jobs:
       
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
+        if: github.event.pull_request.head.repo.full_name == github.repository
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -58,6 +59,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=ref,event=branch
+            type=raw,value=${{ github.head_ref }},enable=${{ github.event_name == 'pull_request' }}
             type=ref,event=pr
             type=sha,format=short
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', github.event.repository.default_branch) }}
@@ -78,7 +80,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: true
+          push: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=local,src=/tmp/.buildx-cache
@@ -89,7 +91,7 @@ jobs:
       
       # Attest build provenance
       - name: Attest Build Provenance
-        if: steps.build-and-push.outcome == 'success'
+        if: steps.build-and-push.outcome == 'success' && github.event.pull_request.head.repo.full_name == github.repository
         uses: actions/attest-build-provenance@v1
         with:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
@@ -139,7 +141,7 @@ jobs:
       
       # Upload Docker Scout results to GitHub Security tab
       - name: Upload Docker Scout results to GitHub Security tab
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'scout-results.sarif'
