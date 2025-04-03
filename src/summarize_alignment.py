@@ -699,6 +699,7 @@ def process_alignment_records_for_a_read(
                     ):  
                         read_type = "scAAV"
                         read_subtype = "itr-partial"
+                        logging.debug("%s %s", read_type,read_subtype)
                     else:
                         read_type = "other-vector"
                         read_subtype = "unclassified"
