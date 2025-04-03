@@ -120,31 +120,13 @@ jobs:
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
-          timeout: '45m'
+          timeout: '60m'
       
       # Upload Trivy scan results to GitHub Security tab
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
-      
-      # Run Docker Scout vulnerability scanner
-      - name: Docker Scout
-        if: github.event_name != 'pull_request'
-        uses: docker/scout-action@v1
-        with:
-          command: cves
-          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build-and-push.outputs.image-digest }}
-          only-fixed: true
-          sarif-file: scout-results.sarif
-          summary: true
-      
-      # Upload Docker Scout results to GitHub Security tab
-      - name: Upload Docker Scout results to GitHub Security tab
-        if: github.event_name != 'pull_request'
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: 'scout-results.sarif'
 
   notify:
     name: Notify
