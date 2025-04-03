@@ -85,11 +85,12 @@ jobs:
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
           platforms: linux/amd64,linux/arm64
-          provenance: false
+          provenance: true
           sbom: true
       
       # Attest build provenance
       - name: Attest Build Provenance
+        if: steps.build-and-push.outcome == 'success'
         uses: actions/attest-build-provenance@v1
         with:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
