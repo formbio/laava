@@ -692,13 +692,16 @@ def process_alignment_records_for_a_read(
 
                 else:
                     # Additional not-really-scAAV subtypes
-                    read_type = "other-vector"
+                    # read_type = "other-vector"
                     assert supp_orientation is None, f"Unrecognized {supp_orientation=}"
                     if read_target_overlap == (
                         "right-partial" if is_mitr_left else "left-partial"
-                    ):
+                    ):  
+                        read_type = "scAAV"
                         read_subtype = "itr-partial"
+                        logging.debug("%s %s", read_type,read_subtype)
                     else:
+                        read_type = "other-vector"
                         read_subtype = "unclassified"
 
             else:
@@ -756,12 +759,15 @@ def run_processing_parallel(
 
     pool = []
     for i in range(num_chunks):
-        starting_readname = readname_list[i * chunk_size]
-        ending_readname = (
-            None
-            if (i + 1) * chunk_size >= total_num_reads
-            else readname_list[(i + 1) * chunk_size]
-        )
+        start_index = i * chunk_size
+        end_index = min((i + 1) * chunk_size, total_num_reads)
+
+        if start_index >= total_num_reads:
+            break  # Prevent out-of-range access
+
+        starting_readname = readname_list[start_index]
+        ending_readname = None if end_index >= total_num_reads else readname_list[end_index]
+
         p = Process(
             target=process_alignment_bam,
             args=(
