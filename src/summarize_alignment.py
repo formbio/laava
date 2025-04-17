@@ -829,10 +829,10 @@ def run_processing_parallel(
     first_bam_chunk = f"{output_prefix}.1.tagged.bam"
     bam_chunk_paths = [first_bam_chunk]
     outpath_bam = output_prefix + ".tagged.bam"
+    bam_reader = pysam.AlignmentFile(first_bam_chunk, "rb", check_sq=False)
     f_tagged_bam = pysam.AlignmentFile(outpath_bam, "wb", template=bam_reader)
 
     if os.path.exists(first_bam_chunk):
-        bam_reader = pysam.AlignmentFile(first_bam_chunk, "rb", check_sq=False)
         for r in bam_reader:
             f_tagged_bam.write(r)
     # Copy the remaining chunks
