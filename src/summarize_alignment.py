@@ -828,17 +828,20 @@ def run_processing_parallel(
     # Copy the first chunk over
     first_bam_chunk = f"{output_prefix}.1.tagged.bam"
     bam_chunk_paths = [first_bam_chunk]
-    bam_reader = pysam.AlignmentFile(first_bam_chunk, "rb", check_sq=False)
     outpath_bam = output_prefix + ".tagged.bam"
     f_tagged_bam = pysam.AlignmentFile(outpath_bam, "wb", template=bam_reader)
-    for r in bam_reader:
-        f_tagged_bam.write(r)
+
+    if os.path.exists(first_bam_chunk):
+        bam_reader = pysam.AlignmentFile(first_bam_chunk, "rb", check_sq=False)
+        for r in bam_reader:
+            f_tagged_bam.write(r)
     # Copy the remaining chunks
     for i in range(1, num_chunks):
         chunk_path = f"{output_prefix}.{i+1}.tagged.bam"
-        for r in pysam.AlignmentFile(chunk_path, "rb", check_sq=False):
-            f_tagged_bam.write(r)
-        bam_chunk_paths.append(chunk_path)
+        if os.path.exists(chunk_path):
+            for r in pysam.AlignmentFile(chunk_path, "rb", check_sq=False):
+                f_tagged_bam.write(r)
+            bam_chunk_paths.append(chunk_path)
     f_tagged_bam.close()
     bam_reader.close()
     # Delete the chunk data
