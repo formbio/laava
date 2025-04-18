@@ -798,17 +798,19 @@ def run_processing_parallel(
         f_out = gzip.open(out_path, "wt")
         first_chunk = f"{output_prefix}.1{suffix}"
         chunk_paths = [first_chunk]
-        with open(first_chunk) as f_in:
-            for line in f_in:
-                f_out.write(line)
+        if os.path.exists(first_chunk):
+            with open(first_chunk) as f_in:
+                for line in f_in:
+                    f_out.write(line)
         # Copy the remaining chunks
         for i in range(1, num_chunks):
             chunk_path = f"{output_prefix}.{i+1}{suffix}"
-            with open(chunk_path) as f_in:
-                f_in.readline()  # Skip the header
-                for line in f_in:
-                    f_out.write(line)
-            chunk_paths.append(chunk_path)
+            if os.path.exists(chunk_path):
+                with open(chunk_path) as f_in:
+                    f_in.readline()  # Skip the header
+                    for line in f_in:
+                        f_out.write(line)
+                chunk_paths.append(chunk_path)
         f_out.close()
         # Delete the chunk data
         logging.info("Data combining complete. Deleting chunk data (*%s).", suffix)
@@ -826,17 +828,20 @@ def run_processing_parallel(
     # Copy the first chunk over
     first_bam_chunk = f"{output_prefix}.1.tagged.bam"
     bam_chunk_paths = [first_bam_chunk]
-    bam_reader = pysam.AlignmentFile(first_bam_chunk, "rb", check_sq=False)
     outpath_bam = output_prefix + ".tagged.bam"
+    bam_reader = pysam.AlignmentFile(first_bam_chunk, "rb", check_sq=False)
     f_tagged_bam = pysam.AlignmentFile(outpath_bam, "wb", template=bam_reader)
-    for r in bam_reader:
-        f_tagged_bam.write(r)
+
+    if os.path.exists(first_bam_chunk):
+        for r in bam_reader:
+            f_tagged_bam.write(r)
     # Copy the remaining chunks
     for i in range(1, num_chunks):
         chunk_path = f"{output_prefix}.{i+1}.tagged.bam"
-        for r in pysam.AlignmentFile(chunk_path, "rb", check_sq=False):
-            f_tagged_bam.write(r)
-        bam_chunk_paths.append(chunk_path)
+        if os.path.exists(chunk_path):
+            for r in pysam.AlignmentFile(chunk_path, "rb", check_sq=False):
+                f_tagged_bam.write(r)
+            bam_chunk_paths.append(chunk_path)
     f_tagged_bam.close()
     bam_reader.close()
     # Delete the chunk data
