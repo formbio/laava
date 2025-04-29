@@ -29,7 +29,7 @@ clean:
 laava: Dockerfile conda_env.yml
 	docker build -t $(docker_repo)/$@:dev -f $< .
 
-laava_dev: laava_dev.dockerfile conda_env.yml
+laava_dev: dev.Dockerfile conda_env.yml
 	docker build -t $(docker_repo)/$@:latest -f $< .
 
 formbio: clean

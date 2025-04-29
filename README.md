@@ -63,7 +63,7 @@ There are several ways to satisfy the script dependencies locally.
 
 ### Option 1: Development docker image (`laava_dev` container image)
 
-The `laava_dev.dockerfile` in this repo installs the scripts' dependencies, but not the
+The `dev.Dockerfile` in this repo installs the scripts' dependencies, but not the
 scripts themselves, into a Docker container image that you can then use to run the local
 copies of the scripts. This allows you to edit the code in this repo in-place and run it
 within the container environment without rebuilding the container.
@@ -71,7 +71,7 @@ within the container environment without rebuilding the container.
 To build the container image with the name `laava_dev` (you can use another name if you prefer):
 
 ```
-docker build -t laava_dev:latest -f laava_dev.dockerfile .
+docker build -t laava_dev:latest -f dev.Dockerfile .
 ```
 
 To run the container in the current working directory:
