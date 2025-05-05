@@ -28,40 +28,11 @@ out_dir = dirname(out_path)
 out_filename = basename(out_path)
 message(paste("Output location:", out_path, sep = " "))
 
-# Create a temporary directory with appropriate permissions
-tmp_dir <- "/tmp/rmarkdown"
-dir.create(tmp_dir, showWarnings = FALSE, recursive = TRUE)
-Sys.setenv(TMPDIR = tmp_dir)
-# Set R temporary directory
-options(tinytex.verbose = TRUE)
-tempdir <- tmp_dir
-message(paste("Tempdir:", tmp_dir, sep = " "))
-message(paste("Tempdir:", tmp_dir, sep = " "))
-
-listOutTmp <- system(paste("ls -al", shQuote(tmp_dir)), intern = TRUE)
-# Display the output
-cat(listOutTmp, sep = "\n")
-
-# Copy all files from the Rmd directory to the temporary directory
-files_to_copy <- list.files(rmd_dir, full.names = TRUE)
-message(paste("Copying files from", rmd_dir, "to", tmp_dir))
-copied_successfully <- file.copy(from = files_to_copy, to = tmp_dir, overwrite = TRUE, recursive = FALSE) # recursive=FALSE to copy files, not the dir itself if it were passed
-
-if (!all(copied_successfully)) {
-  failed_files <- files_to_copy[!copied_successfully]
-  stop(paste("Failed to copy the following files to", tmp_dir, ":", paste(basename(failed_files), collapse=", ")))
-}
-
-# Define the path to the Rmd file within the temporary directory
-tmp_rmd_path <- file.path(tmp_dir, basename(rmd_path))
-
 rmarkdown::render(
-  tmp_rmd_path, # Use the copied Rmd file in the temp directory
+  rmd_path,
   output_format = "all",
   output_file = out_filename,
   output_dir = out_dir,
   knit_root_dir = working_dir,
-  intermediates_dir = working_dir,
-
   params = input_params
 )
