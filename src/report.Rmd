@@ -467,7 +467,8 @@ x.all.err <- read_tsv(paste0(params$path_prefix, '.nonmatch.tsv.gz'), show_col_t
 x.err.vector <- filter(x.all.err, read_id %in% x.read.vector$read_id)
 
 # Remove duplicated lines
-x.err.vector <- x.err.vector[!duplicated(x.err.vector), ]
+#x.err.vector <- x.err.vector[!duplicated(x.err.vector), ]
+x.err.vector <- distinct(x.err.vector)
 
 # Spell out nonmatch types -- from CIGAR codes to words
 x.err.vector[x.err.vector$type == 'D', "type"] <- 'deletion'
