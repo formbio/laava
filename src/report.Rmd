@@ -490,7 +490,7 @@ p1.err_sub <- ggplot(filter(df.err.vector, type == 'mismatch'),
   geom_bar(fill = 'darkgreen', stat = 'identity') +
   xlim(c(params$target_start, params$target_end)) +
   labs(title = "Nucleotide substitutions along vector genome",
-       subtitle = "Counts binned by 10 nucleotides (NTs) (y-axis) and position (x-axis) for substitutions in all full vector genomes (including the ITRs)",
+       subtitle = "Counts binned by 10 nucleotides (NTs) (y-axis) and position (x-axis)",
        x = "Reference position") +
   scale_y_continuous("Counts",
                      limits = c(0, NA),
@@ -501,7 +501,7 @@ p1.err_del <- ggplot(filter(df.err.vector, type == 'deletion'),
   geom_bar(fill = 'darkred', stat = 'identity') +
   xlim(c(params$target_start, params$target_end)) +
   labs(title = "Nucleotide deletions along vector genome",
-       subtitle = "Counts binned by 10 nucleotides (NTs) (y-axis) and position (x-axis) for deletions in all full vector genomes (including the ITRs)",
+       subtitle = "Counts binned by 10 nucleotides (NTs) (y-axis) and position (x-axis)",
        x = "Reference position") +
   scale_y_continuous("Counts",
                      limits = c(0, NA),
@@ -512,7 +512,7 @@ p1.err_ins <- ggplot(filter(df.err.vector, type == 'insertion'),
   geom_bar(fill = 'darkblue', stat = 'identity') +
   xlim(c(params$target_start, params$target_end)) +
   labs(title = "Insertions by reference position",
-       subtitle = "Counts binned by 10 nucleotides (NTs) (y-axis) and position (x-axis) for insertions in all full vector genomes (including the ITRs)",
+       subtitle = "Counts binned by 10 nucleotides (NTs) (y-axis) and position (x-axis)",
        x = "Reference position") +
   scale_y_continuous("Counts",
                      limits = c(0, NA),
