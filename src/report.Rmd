@@ -466,6 +466,10 @@ x.all.err <- read_tsv(paste0(params$path_prefix, '.nonmatch.tsv.gz'), show_col_t
 # Filter for ss/scAAV vector only
 x.err.vector <- filter(x.all.err, read_id %in% x.read.vector$read_id)
 
+# Remove duplicated lines
+#x.err.vector <- x.err.vector[!duplicated(x.err.vector), ]
+x.err.vector <- distinct(x.err.vector)
+
 # Spell out nonmatch types -- from CIGAR codes to words
 x.err.vector[x.err.vector$type == 'D', "type"] <- 'deletion'
 x.err.vector[x.err.vector$type == 'I', "type"] <- 'insertion'
@@ -485,10 +489,10 @@ p1.err_sub <- ggplot(filter(df.err.vector, type == 'mismatch'),
                      aes(x = pos0_div, y = count)) +
   geom_bar(fill = 'darkgreen', stat = 'identity') +
   xlim(c(params$target_start, params$target_end)) +
-  labs(title = "Substitutions by reference position",
-       subtitle = "Higher bars indicate hot spots for substitutions w.r.t reference",
+  labs(title = "Nucleotide substitutions along vector genome",
+       subtitle = "Counts binned by 10 nucleotides (NTs) (y-axis) and position (x-axis)",
        x = "Reference position") +
-  scale_y_continuous("Frequency",
+  scale_y_continuous("Counts",
                      limits = c(0, NA),
                      expand = expansion(mult = c(0, 0.05)))
 
@@ -496,10 +500,10 @@ p1.err_del <- ggplot(filter(df.err.vector, type == 'deletion'),
                      aes(x = pos0_div, y = count)) +
   geom_bar(fill = 'darkred', stat = 'identity') +
   xlim(c(params$target_start, params$target_end)) +
-  labs(title = "Deletions by reference position",
-       subtitle = "Higher bars indicate hot spots for deletion w.r.t reference",
+  labs(title = "Nucleotide deletions along vector genome",
+       subtitle = "Counts binned by 10 nucleotides (NTs) (y-axis) and position (x-axis)",
        x = "Reference position") +
-  scale_y_continuous("Frequency",
+  scale_y_continuous("Counts",
                      limits = c(0, NA),
                      expand = expansion(mult = c(0, 0.05)))
 
@@ -508,9 +512,9 @@ p1.err_ins <- ggplot(filter(df.err.vector, type == 'insertion'),
   geom_bar(fill = 'darkblue', stat = 'identity') +
   xlim(c(params$target_start, params$target_end)) +
   labs(title = "Insertions by reference position",
-       subtitle = "Higher bars indicate hot spots for insertion w.r.t reference",
+       subtitle = "Counts binned by 10 nucleotides (NTs) (y-axis) and position (x-axis)",
        x = "Reference position") +
-  scale_y_continuous("Frequency",
+  scale_y_continuous("Counts",
                      limits = c(0, NA),
                      expand = expansion(mult = c(0, 0.05)))
 
