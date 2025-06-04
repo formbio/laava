@@ -543,28 +543,32 @@ if (file.exists(agg_flipflop_tsv)) {
 
 ```{r ffplot, message=FALSE, warning=FALSE, results='asis'}
 if (exists("df.flipflop") && (nrow(df.flipflop) > 1)) {
-  # Generate flip/flop summary plot
-  ffplot <- df.flipflop %>%
-    mutate(
-      class = if_else(
-        leftITR == 'unclassified' | rightITR == 'unclassified',
-        "unclassified",
-        paste(leftITR, rightITR, sep = '-')
-      )
-    ) %>%
-    mutate(
-      unclass = if_else( class == "unclassified", "unclassified", "classified")
-    ) %>%
-    group_by(type, subtype, class, unclass) %>%
-    summarize(classct = sum(count)) %>%
-    filter(subtype == 'full')
-  ggplot(ffplot, aes(x = class, y = classct, fill = unclass)) +
-    geom_bar(stat = 'identity', show.legend = FALSE) +
-    labs(x = 'Assigned type') +
-    scale_y_continuous("Number of reads",
-                       limits = c(0, NA),
-                       expand = expansion(mult = c(0, 0.05)))
+  if (params$vector_type == "ss") {
+    # Generate flip/flop summary plot
+    ffplot <- df.flipflop %>%
+      mutate(
+        class = if_else(
+          leftITR == 'unclassified' | rightITR == 'unclassified',
+          "unclassified",
+          paste(leftITR, rightITR, sep = '-')
+        )
+      ) %>%
+      mutate(
+        unclass = if_else( class == "unclassified", "unclassified", "classified")
+      ) %>%
+      group_by(type, subtype, class, unclass) %>%
+      summarize(classct = sum(count)) %>%
+      filter(subtype == 'full')
+    ggplot(ffplot, aes(x = class, y = classct, fill = unclass)) +
+      geom_bar(stat = 'identity', show.legend = FALSE) +
+      labs(x = 'Assigned type') +
+      scale_y_continuous("Number of reads",
+                        limits = c(0, NA),
+                        expand = expansion(mult = c(0, 0.05)))
+  }
+  # } else if (params$vector_type == "sc") {
 
+  # }
 } else {
   cat("No flip/flop analysis results available to display.")
 }
