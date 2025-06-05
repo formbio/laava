@@ -565,7 +565,6 @@ if (exists("df.flipflop") && (nrow(df.flipflop) > 1)) {
       scale_y_continuous("Number of reads",
                         limits = c(0, NA),
                         expand = expansion(mult = c(0, 0.05)))
-  #}
   } else if (params$vector_type == "sc") {
     # Generate flip/flop summary plot
     ffplot <- df.flipflop %>%
