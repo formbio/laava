@@ -576,8 +576,12 @@ if (exists("df.flipflop") && (nrow(df.flipflop) > 1)) {
 
 ```{r fftable, message=FALSE, warning=FALSE, results='asis'}
 if (exists("df.flipflop") && (nrow(df.flipflop) > 1)) {
-  flextable(df.flipflop) %>%
-    set_header_labels(values = c("type", "subtype", "leftITR", "rightITR", "count"))
+  if (params$vector_type == "ss") {
+    flextable(df.flipflop) %>%
+      set_header_labels(values = c("type", "subtype", "leftITR", "rightITR", "count"))
+  }
+  # else if (params$vector_type == "sc") {
+  # }  
 }
 ```
 
