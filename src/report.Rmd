@@ -608,6 +608,8 @@ if (exists("df.flipflop") && (nrow(df.flipflop) > 1)) {
     #   select(type, subtype, rightITR, count)
     #print(colnames(df.flipflop))
     df.flipflop %>%
+    group_by(type, subtype, rightITR) %>%
+    summarize(count = sum(count), .groups = "drop") %>%
     select(type, subtype, rightITR, count) %>%
     flextable() %>%
     set_header_labels(values = c("type" = "Type", "subtype" = "Subtype", "rightITR" = "Right ITR", "count" = "Count"))
