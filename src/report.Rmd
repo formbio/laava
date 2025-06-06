@@ -572,7 +572,7 @@ if (exists("df.flipflop") && (nrow(df.flipflop) > 1)) {
         class = if_else(
           rightITR == 'unclassified',
           "unclassified",
-          "righITR"
+          paste(rightITR)
         )
       ) %>%
       mutate(
@@ -597,7 +597,8 @@ if (exists("df.flipflop") && (nrow(df.flipflop) > 1)) {
 if (exists("df.flipflop") && (nrow(df.flipflop) > 1)) {
   if (params$vector_type == "ss") {
     flextable(df.flipflop) %>%
-      set_header_labels(values = c("type", "subtype", "leftITR", "rightITR", "count"))
+          set_header_labels(values = c("type" = "Type", "subtype" = "Subtype", "leftITR" = "Left ITR", "rightITR" = "Right ITR", "count" = "Count"))
+
   }
   else if (params$vector_type == "sc") {
     # flextable(df.flipflop) %>%
@@ -605,7 +606,11 @@ if (exists("df.flipflop") && (nrow(df.flipflop) > 1)) {
     # flextable(df.flipflop) %>%
     #   set_header_labels(values = c("type", "subtype", "leftITR", "rightITR", "count")) %>%
     #   select(type, subtype, rightITR, count)
-    print(colnames(df.flipflop))
+    #print(colnames(df.flipflop))
+    df.flipflop %>%
+    select(type, subtype, rightITR, count) %>%
+    flextable() %>%
+    set_header_labels(values = c("type" = "Type", "subtype" = "Subtype", "rightITR" = "Right ITR", "count" = "Count"))
   }  
 }
 ```
