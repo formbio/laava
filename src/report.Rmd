@@ -600,8 +600,11 @@ if (exists("df.flipflop") && (nrow(df.flipflop) > 1)) {
       set_header_labels(values = c("type", "subtype", "leftITR", "rightITR", "count"))
   }
   else if (params$vector_type == "sc") {
-    flextable(df.flipflop) %>%
-      set_header_labels(values = c("type", "subtype", "rightITR", "count"))
+    # flextable(df.flipflop) %>%
+    #   set_header_labels(values = c("type", "subtype", "leftITR", "rightITR", "count"))
+    flextable(df.flipflop %>%
+      set_header_labels(values = c("type", "subtype", "leftITR", "rightITR", "count")) %>%
+      select(type, subtype, rightITR, count))
   }  
 }
 ```
