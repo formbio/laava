@@ -570,13 +570,13 @@ if (exists("df.flipflop") && (nrow(df.flipflop) > 1)) {
     ffplot <- df.flipflop %>%
       mutate(
         class = if_else(
-          leftITR == 'unclassified',
+          rightITR == 'unclassified',
           "unclassified",
-          paste(leftITR, rightITR, sep = '-')
+          "righITR"
         )
       ) %>%
       mutate(
-        unclass = if_else( class == "unclassified", "unclassified")
+        unclass = if_else( class == "unclassified", "unclassified", "classified")
       ) %>%
       group_by(type, subtype, class, unclass) %>%
       summarize(classct = sum(count)) %>%
