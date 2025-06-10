@@ -580,7 +580,7 @@ if (exists("df.flipflop") && (nrow(df.flipflop) > 1)) {
       ) %>%
       group_by(type, subtype, class, unclass) %>%
       summarize(classct = sum(count)) %>%
-      filter(subtype == 'full')
+      filter(subtype == 'full' | subtype == 'right-partial') 
     ggplot(ffplot, aes(x = class, y = classct, fill = unclass)) +
       geom_bar(stat = 'identity', show.legend = FALSE) +
       labs(x = 'Assigned type') +
