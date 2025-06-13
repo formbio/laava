@@ -1,4 +1,4 @@
-[![Test Status](https://github.com/formbio/laava/actions/workflows/ci.yaml/badge.svg)](https://github.com/formbio/laava/actions/workflows/ci.yaml)
+[![Test Status](https://github.com/formbio/laava/actions/workflows/tests.yaml/badge.svg)](https://github.com/formbio/laava/actions/workflows/tests.yaml)
 
 # LAAVA: Long-read AAV Analysis
 

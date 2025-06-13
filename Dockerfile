@@ -29,6 +29,7 @@ RUN conda install conda-forge::awscli=2.24.2
 RUN mkdir -p /opt/laava
 RUN chmod +x /opt/laava
 COPY src/* /opt/laava/
+RUN chmod -R 777 /opt/laava
 RUN chmod +x /opt/laava/*.py /opt/laava/*.R /opt/laava/*.sh
 ENV PATH "/opt/laava:$PATH"
 ENV PYTHONPATH "/opt/laava:$PYTHONPATH"

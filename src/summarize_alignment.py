@@ -701,13 +701,16 @@ def process_alignment_records_for_a_read(
 
                 else:
                     # Additional not-really-scAAV subtypes
-                    read_type = "other-vector"
+                    # read_type = "other-vector"
                     assert supp_orientation is None, f"Unrecognized {supp_orientation=}"
                     if read_target_overlap == (
                         "right-partial" if is_mitr_left else "left-partial"
-                    ):
+                    ):  
+                        read_type = "scAAV"
                         read_subtype = "itr-partial"
+                        logging.debug("%s %s", read_type,read_subtype)
                     else:
+                        read_type = "other-vector"
                         read_subtype = "unclassified"
 
             else:
@@ -765,12 +768,15 @@ def run_processing_parallel(
 
     pool = []
     for i in range(num_chunks):
-        starting_readname = readname_list[i * chunk_size]
-        ending_readname = (
-            None
-            if (i + 1) * chunk_size >= total_num_reads
-            else readname_list[(i + 1) * chunk_size]
-        )
+        start_index = i * chunk_size
+        end_index = min((i + 1) * chunk_size, total_num_reads)
+
+        if start_index >= total_num_reads:
+            break  # Prevent out-of-range access
+
+        starting_readname = readname_list[start_index]
+        ending_readname = None if end_index >= total_num_reads else readname_list[end_index]
+
         p = Process(
             target=process_alignment_bam,
             args=(
@@ -801,17 +807,19 @@ def run_processing_parallel(
         f_out = gzip.open(out_path, "wt")
         first_chunk = f"{output_prefix}.1{suffix}"
         chunk_paths = [first_chunk]
-        with open(first_chunk) as f_in:
-            for line in f_in:
-                f_out.write(line)
+        if os.path.exists(first_chunk):
+            with open(first_chunk) as f_in:
+                for line in f_in:
+                    f_out.write(line)
         # Copy the remaining chunks
         for i in range(1, num_chunks):
             chunk_path = f"{output_prefix}.{i+1}{suffix}"
-            with open(chunk_path) as f_in:
-                f_in.readline()  # Skip the header
-                for line in f_in:
-                    f_out.write(line)
-            chunk_paths.append(chunk_path)
+            if os.path.exists(chunk_path):
+                with open(chunk_path) as f_in:
+                    f_in.readline()  # Skip the header
+                    for line in f_in:
+                        f_out.write(line)
+                chunk_paths.append(chunk_path)
         f_out.close()
         # Delete the chunk data
         logging.info("Data combining complete. Deleting chunk data (*%s).", suffix)
@@ -829,17 +837,20 @@ def run_processing_parallel(
     # Copy the first chunk over
     first_bam_chunk = f"{output_prefix}.1.tagged.bam"
     bam_chunk_paths = [first_bam_chunk]
-    bam_reader = pysam.AlignmentFile(first_bam_chunk, "rb", check_sq=False)
     outpath_bam = output_prefix + ".tagged.bam"
+    bam_reader = pysam.AlignmentFile(first_bam_chunk, "rb", check_sq=False)
     f_tagged_bam = pysam.AlignmentFile(outpath_bam, "wb", template=bam_reader)
-    for r in bam_reader:
-        f_tagged_bam.write(r)
+
+    if os.path.exists(first_bam_chunk):
+        for r in bam_reader:
+            f_tagged_bam.write(r)
     # Copy the remaining chunks
     for i in range(1, num_chunks):
         chunk_path = f"{output_prefix}.{i+1}.tagged.bam"
-        for r in pysam.AlignmentFile(chunk_path, "rb", check_sq=False):
-            f_tagged_bam.write(r)
-        bam_chunk_paths.append(chunk_path)
+        if os.path.exists(chunk_path):
+            for r in pysam.AlignmentFile(chunk_path, "rb", check_sq=False):
+                f_tagged_bam.write(r)
+            bam_chunk_paths.append(chunk_path)
     f_tagged_bam.close()
     bam_reader.close()
     # Delete the chunk data
