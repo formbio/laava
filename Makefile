@@ -17,7 +17,7 @@ docker_repo := ghcr.io/formbio
 
 all: laava laava_dev sc ss min folder test
 
-.PHONY: clean laava laava_dev formbio sc ss min folder test
+.PHONY: clean laava laava_dev formbio sc ss min folder test test-local
 clean:
 	rm -f .nextflow.log*
 	rm -fr .nextflow/*
@@ -51,3 +51,8 @@ sc ss min folder: %: params-local-%.json
 test: laava_dev
 	docker run --rm -v $(CURDIR):/data -w /data -it $(docker_repo)/laava_dev:latest \
 		make -B -C test test
+
+# Test local execution without Docker (using conda)
+
+test-local:
+	cd test && make test-local

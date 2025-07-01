@@ -133,3 +133,32 @@ the top directory of this repo.
 Each of these commands will generate example HTML and PDF reports from the test datasets
 included in the repo, which you can view locally.
 
+### Local conda-based tests
+
+For development and testing without Docker, you can run tests directly using conda:
+
+```bash
+cd test/
+make test-local
+```
+
+This command will:
+1. Run the analysis pipeline on both test samples (sc and ss) using conda
+2. Execute the full test suite including:
+   - **Integration tests**: Validate duplicate removal and pipeline behavior
+   - **Output validation tests**: Compare generated files against expected results
+
+The test suite includes comprehensive validation of:
+- Raw data integrity (duplicates correctly preserved in source files)
+- Duplicate removal functionality during analysis
+- Data structure validation and consistency
+- Vector read filtering and classification
+- Report generation accuracy
+
+**Prerequisites**: 
+- Conda environment `laava` must be created and activated (see Option 2: Conda above)
+- All dependencies installed via `conda_env.yml`
+
+**Test files**: The test suite consists of:
+- `test_integration_duplicate_removal.py` - Validates duplicate handling and pipeline integrity
+- `test_outputs.py` - Compares generated outputs against reference files
