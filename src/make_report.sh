@@ -60,7 +60,6 @@ if [[ -n "$flipflop_name" || -n "$flipflop_fa" ]]; then
         echo "No built-in sequences for $flipflop_name and none given"
         exit 1
     fi
-    
 
     # Computing mITR orientation / For ssAAV it is not important so initializing to left 
     echo "Starting computing mITR orientation"
@@ -76,7 +75,7 @@ if [[ -n "$flipflop_name" || -n "$flipflop_fa" ]]; then
        orientation="left"
     fi
  
-    echo "Starting get_flipflop_config"
+    echo "Starting get_flipflop_config with with the right parameters"
     python "$(dirname $0)/get_flipflop_config.py" \
         "$out_dir/${sample_id}.tagged.bam" "$out_dir/${sample_id}.per_read.tsv.gz" "$vector_type" "$orientation" \
         $ff_opt \
