@@ -209,8 +209,7 @@ def main(per_read_tsv, tagged_bam, vector_type, orientation, output_prefix, flip
         flipflop_seqs = FlipFlopSeqSet.from_fasta(flipflop_fasta)
 
     read_info = load_per_read_info(per_read_tsv)
-    import re
- 
+
     with gzip.open(output_prefix + ".flipflop.tsv.gz", "wt") as fout:
             out_tsv = csv.writer(fout, delimiter="\t")
             out_tsv.writerow(OUT_FIELDS)
@@ -230,10 +229,8 @@ def main(per_read_tsv, tagged_bam, vector_type, orientation, output_prefix, flip
                 "wb",
                 header=reader.header,
             )
-            pre_name=""
-            paired=False
-            pre_r=None
 
+            # Initialize a list to hold the data
             data = []
 
             # Iterate through each record in reader
@@ -330,19 +327,6 @@ def main(per_read_tsv, tagged_bam, vector_type, orientation, output_prefix, flip
                                 c_r,  # Use c_r (computed earlier)
                             ]
                         )
-                        
-                    # TO FIX
-                    # out_tsv.writerow(
-                    #     [
-                    #         r.qname,
-                    #         a_type,
-                    #         t["AX"][len("vector-") :],
-                    #         str(r.reference_start),
-                    #         str(r.reference_end),
-                    #         c_l,
-                    #         c_r,
-                    #     ]
-                    #)
             
 
             out_bam_full.close()
