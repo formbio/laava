@@ -60,8 +60,22 @@ if [[ -n "$flipflop_name" || -n "$flipflop_fa" ]]; then
         echo "No built-in sequences for $flipflop_name and none given"
         exit 1
     fi
+    
 
-    echo
+    # Computing mITR orientation / For ssAAV it is not important so initializing to left 
+    echo "Starting computing mITR orientation"
+    if [ "${vector_type}" == "sc" ]; then
+       m_itr_start=$(cat "$vector_annotation" | grep "${mitr_label}" | cut -f2)
+       wt_start=$(cat "$vector_annotation" | grep "${itr_label_1}" | cut -f2)
+       if [ "$wt_start" -gt "$m_itr_start" ]; then
+          orientation="left"
+       elif [ "$m_itr_start" -gt "$wt_start" ]; then
+          orientation="right"
+       fi
+    elif [ "${vector_type}" == "ss" ]; then
+       orientation="left"
+    fi
+ 
     echo "Starting get_flipflop_config"
     python "$(dirname $0)/get_flipflop_config.py" \
         "$out_dir/${sample_id}.tagged.bam" "$out_dir/${sample_id}.per_read.tsv.gz" \
