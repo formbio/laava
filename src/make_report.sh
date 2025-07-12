@@ -18,14 +18,19 @@ flipflop_name=${15}
 flipflop_fa=${16}
 out_dir=${17}
 
-
+# List directory contents 
 ls -Alh
 
+echo
+echo "Creating sample metadata file"
 python "$(dirname $0)/write_sample_metadata.py" "$sample_id" "$sample_name" "$mapped_reads" \
     -v "$version" -o "$out_dir/${sample_id}.metadata.tsv"
 
 ls -Alh
 
+# Guess vector type if not specified
+echo
+echo "Guessing vector type if not specified"
 if [ "$vector_type" == "unspecified" ]; then
     vector_type=$(python "$(dirname $0)/guess_vector_type_length.py" "$vector_annotation" \
                   "$itr_label_1" "$itr_label_2" "$mitr_label")
@@ -49,6 +54,7 @@ python "$(dirname $0)/summarize_alignment.py" \
 echo "Finished summarize_alignment"
 ls -Alh
 
+# Check if flipflop analysis is needed
 if [[ -n "$flipflop_name" || -n "$flipflop_fa" ]]; then
     if [ -n "$flipflop_fa" ]; then
         # Use the gives seqs for FF analysis, regardless of FF name
