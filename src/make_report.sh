@@ -69,6 +69,8 @@ if [[ -n "$flipflop_name" || -n "$flipflop_fa" ]]; then
 
     # Computing mITR orientation / For ssAAV it is not important so initializing to left 
     echo "Starting computing mITR orientation"
+
+    # Determine orientation/position of the mITR based on vector type
     if [ "${vector_type}" == "sc" ]; then
        m_itr_start=$(cat "$vector_annotation" | grep "${mitr_label}" | cut -f2)
        wt_start=$(cat "$vector_annotation" | grep "${itr_label_1}" | cut -f2)
