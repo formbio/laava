@@ -18,6 +18,7 @@ import re
 
 SW_SCORE_MATRIX = parasail.matrix_create("ACGT", 2, -5)
 
+# Default AAV2 flip-flop sequences
 SEQ_AAV2 = dict(
     left_flip="TTGGCCACTCCCTCTCTGCGCGCTCGCTCGCTCACTGAGGCCGGGCGACCAAAGGTCGCCCGACGCCCGGGCTTTGCCCGGGCGGCCTCAGTGAGCGAGCGAGCGCGCAGAGAGGGAGTGGCCAACTCCATCACTAGGGGTTCCT",
     left_flop="TTGGCCACTCCCTCTCTGCGCGCTCGCTCGCTCACTGAGGCCGCCCGGGCAAAGCCCGGGCGTCGGGCGACCTTTGGTCGCCCGGCCTCAGTGAGCGAGCGAGCGCGCAGAGAGGGAGTGGCCAACTCCATCACTAGGGGTTCCT",
@@ -25,7 +26,7 @@ SEQ_AAV2 = dict(
     right_flop="AGGAACCCCTAGTGATGGAGTTGGCCACTCCCTCTCTGCGCGCTCGCTCGCTCACTGAGGCCGGGCGACCAAAGGTCGCCCGACGCCCGGGCTTTGCCCGGGCGGCCTCAGTGAGCGAGCGAGCGCGCAGAGAGGGAGTGGCCAA",
 )
 
-
+# Define a named tuple to hold the flip-flop sequences
 class FlipFlopSeqSet(NamedTuple):
     """Immutable container for flip-flop sequences."""
 
@@ -69,7 +70,7 @@ class FlipFlopSeqSet(NamedTuple):
             )
         return cls(**flipflip_seqs)
 
-
+# Function to identify flip-flop configurations based on the provided alingned reads and flip-flop sequences
 def identify_flip_flop(df, ff_seq, vector_type="ss", orientation="left"):
     """Determine left and right flip/flip/unclassified configurations.
 
@@ -86,7 +87,8 @@ def identify_flip_flop(df, ff_seq, vector_type="ss", orientation="left"):
     # 2048 read forward strand + supplementary alignment
     # 2064 read reverse strand + supplementary alignment
     # 4 read unmapped
-
+    
+    # Full scAAV support two aligned reads, one for each side of the ITR one for truncation before the mITR
     if (vector_type == "sc"):
         if len(df) == 2:
             if orientation == "left":    
@@ -160,14 +162,10 @@ def identify_flip_flop(df, ff_seq, vector_type="ss", orientation="left"):
                     config_right = "unclassified"
 
                 config_left = "unclassified"
-                
+    
+    # ssAAV support a single alignment read            
     elif (vector_type == "ss"):
         query = df['seq'].iloc[0]
-
-        #if df["AX"].drop_duplicates().iloc[0] == "vector-partial":
-        #if t["AX"] == "vector-partial":
-            # ignore, since both sides are missing chunks of ITR
-            #return "unclassified", "unclassified"
 
         if df["AX"].drop_duplicates().iloc[0] in ("vector-full", "vector-left-partial"):
             o1 = parasail.sw_trace(query, ff_seq.left_flip, 3, 1, SW_SCORE_MATRIX)
@@ -191,14 +189,14 @@ def identify_flip_flop(df, ff_seq, vector_type="ss", orientation="left"):
   
     return config_left, config_right
 
-
+# Function to load per-read information from a TSV file
 def load_per_read_info(fname):
     """Load per-read info, keyed by read IDs, from a CSV file."""
     with gzip.open(fname, "rt") as in_tsv:
         read_info = {r["read_id"]: r for r in csv.DictReader(in_tsv, delimiter="\t")}
     return read_info
 
-
+# Main function to process the tagged BAM file and per-read TSV file
 def main(per_read_tsv, tagged_bam, vector_type, orientation, output_prefix, flipflop_fasta):
     """Entry point."""
     OUT_FIELDS = ["name", "type", "subtype", "start", "end", "leftITR", "rightITR"]
@@ -314,7 +312,7 @@ def main(per_read_tsv, tagged_bam, vector_type, orientation, output_prefix, flip
                         header = pysam.AlignmentHeader.from_dict(row['header'])  # Convert OrderedDict to AlignmentHeader
                         filtered_row["flag"] = str(filtered_row["flag"])  # Convert directly if it's an integer
 
-                        #r = pysam.AlignedSegment.from_dict(filtered_row, header)  # TO FIX             
+                        #r = pysam.AlignedSegment.from_dict(filtered_row, header)  # TO FIX to add element in output BAM files         
 
                         out_tsv.writerow(
                             [
