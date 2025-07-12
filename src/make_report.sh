@@ -81,7 +81,8 @@ if [[ -n "$flipflop_name" || -n "$flipflop_fa" ]]; then
     elif [ "${vector_type}" == "ss" ]; then
        orientation="left"
     fi
- 
+    
+    echo
     echo "Starting get_flipflop_config with with the right parameters"
     get_flipflop_config.py \
         "$out_dir/${sample_id}.tagged.bam" "$out_dir/${sample_id}.per_read.tsv.gz" "$vector_type" "$orientation" \
@@ -93,6 +94,7 @@ else
     echo "Skipping flip/flop analysis"
 fi
 
+echo
 echo "Starting aggregate_tables"
 aggregate_tables.py --path-prefix "$out_dir/$sample_id"
 echo "Finished aggregate_tables"
