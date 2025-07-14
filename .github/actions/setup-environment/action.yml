@@ -13,28 +13,10 @@ runs:
         python-version: ${{ inputs.python-version }}
     
     - name: Cache APT packages
-      uses: awalsh128/cache-apt-pkgs-action@v1.5.1
+      uses: awalsh128/cache-apt-pkgs-action@v1.4.3
       with:
         packages: samtools texlive-latex-extra texlive-latex-recommended
         version: 1.0    
-    # - name: Cache apt packages
-    #   uses: actions/cache@v4
-    #   id: apt-cache
-    #   with:
-    #     path: |
-    #       /var/cache/apt/archives
-    #       /var/lib/apt/lists
-    #     key: ${{ runner.os }}-apt-${{ hashFiles('**/action.yml') }}-${{ inputs.python-version }}
-    #     restore-keys: |
-    #       ${{ runner.os }}-apt-
-    
-    # - name: Install apt packages
-    #   if: steps.apt-cache.outputs.cache-hit != 'true'
-    #   shell: bash
-    #   run: |
-    #     sudo apt-get update \
-    #     && sudo apt-get install -y samtools texlive-latex-extra texlive-latex-recommended \
-    #     && sudo apt-get remove -y fonts-urw-base35 libgs9 libgs9-common libjbig2dec0 poppler-data
     
     - name: Cache conda
       uses: actions/cache@v4
