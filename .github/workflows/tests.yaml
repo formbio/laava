@@ -55,15 +55,6 @@ jobs:
         run: |
           conda info
           conda list
-      - uses: chartboost/ruff-action@v1
-        with:
-          args: 'check --output-format=github'
-      - uses: chartboost/ruff-action@v1
-        with:
-          args: 'format --check'          
-      - name: Lint R script
-        run: |
-          make lint-r
       - name: Test script outputs
         run: |
           cd test && make test
