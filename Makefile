@@ -15,9 +15,9 @@ formbio_project := aav-qc-workshop
 tmp_stash_dir := /tmp/laava-deploy-test
 docker_repo := ghcr.io/formbio
 
-all: laava laava_dev sc ss min folder test
+all: laava laava_dev sc ss min folder test lint
 
-.PHONY: clean laava laava_dev formbio sc ss min folder test test-local
+.PHONY: clean laava laava_dev formbio sc ss min folder test test-local lint lint-from-docker
 clean:
 	rm -f .nextflow.log*
 	rm -fr .nextflow/*
@@ -48,11 +48,23 @@ sc ss min folder: %: params-local-%.json
 
 # Test local execution and outputs
 
-test: laava_dev
+test: lint-from-docker laava_dev
 	docker run --rm -v $(CURDIR):/data -w /data -it $(docker_repo)/laava_dev:latest \
 		make -B -C test test
 
+lint-from-docker: laava_dev
+	docker run --rm -v $(CURDIR):/data -w /data -it $(docker_repo)/laava_dev:latest \
+		make lint
+
 # Test local execution without Docker (using conda)
 
-test-local:
+test-local: lint
 	cd test && make test-local
+
+lint: lint-r lint-python
+
+lint-python:
+	ruff check --isolated --no-cache src/
+
+lint-r:
+	 Rscript -e 'library(lintr); options(lintr.error_on_lint=TRUE); lint_dir(".", linters=linters_with_tags("correctness"))'

@@ -58,10 +58,10 @@ jobs:
       - name: Lint Python scripts
         run: |
           # Stop the build if there are Python syntax errors or undefined names
-          ruff check --isolated --no-cache src/
+          make lint-python
       - name: Lint R script
         run: |
-          Rscript -e 'library(lintr); options(lintr.error_on_lint=TRUE); lint_dir(".", linters=linters_with_tags("correctness"))'
+          make lint-r
       - name: Test script outputs
         run: |
           cd test && make test
