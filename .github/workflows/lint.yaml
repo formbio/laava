@@ -28,7 +28,7 @@ jobs:
             auto-update-conda: true
             channel-priority: strict
             environment-file: conda_env.yml
-            python-version: ${{ matrix.python }}
+            python-version: '3.10'
             use-only-tar-bz2: true  # Required for caching       
       - name: Lint R script
         run: |
