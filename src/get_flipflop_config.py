@@ -261,11 +261,11 @@ def main(per_read_tsv, tagged_bam, vector_type, orientation, output_prefix, flip
 
                     # Extract AT value
                     at_match = re.search(r"AT:Z:(.+?)(?:,|'|$)", tags)
-                    f_df.at[index, "AT"] = at_match.group(1) if at_match else None
+                    f_df.loc[index, "AT"] = ax_match.group(1) if ax_match else None
 
                     # Extract AX value
                     ax_match = re.search(r"AX:Z:(.+?)(?:,|'|$)", tags)
-                    f_df.at[index, "AX"] = ax_match.group(1) if ax_match else None
+                    f_df.loc[index, "AX"] = ax_match.group(1) if ax_match else None
 
                 if f_df["AT"].drop_duplicates().iloc[0] == "vector" and f_df["AX"].drop_duplicates().iloc[0] in (
                     "vector-full",
