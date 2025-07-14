@@ -288,7 +288,7 @@ def main(per_read_tsv, tagged_bam, vector_type, orientation, output_prefix, flip
                             a_type = None  # Handle missing or invalid data
 
                         f_df.at[index, "tags"] =   f_df.at[index, "tags"] + "AF:Z:" + c_l + "-" + c_r + "," + "AG:Z:" + a_type
-                        if a_type not in ("scAAV", "ssAAV"):
+                        if a_type not in ("scAAV", "ssAAV", "other-vector"):
                             continue
 
                         # Define the columns to filter
@@ -327,6 +327,9 @@ def main(per_read_tsv, tagged_bam, vector_type, orientation, output_prefix, flip
                             ]
                         )
             
+                        # Exit the loop after processing the first row
+                        break
+
 
             out_bam_full.close()
             out_bam_leftp.close()
