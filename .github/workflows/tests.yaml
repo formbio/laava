@@ -19,6 +19,7 @@ jobs:
         # Enable the conda environment via ~/.bashrc and ~/.profile
         shell: bash -el {0}
     steps:
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-environment
         with:
           python-version: '3.10'
@@ -42,6 +43,7 @@ jobs:
         # Enable the conda environment via ~/.bashrc and ~/.profile
         shell: bash -el {0}
     steps:
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-environment
         with:
           python-version: ${{ matrix.python }}
