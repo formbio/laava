@@ -5,7 +5,7 @@ out_dir = build
 export PATH := $(CURDIR)/../src:$(PATH)
 
 
-.PHONY: all clean sc ss test
+.PHONY: all clean sc ss test test-local sc-local ss-local
 all: sc ss
 
 clean:
@@ -13,6 +13,52 @@ clean:
 
 test: sc ss
 	pytest test_outputs.py
+
+# Local testing without Docker (using conda)
+test-local: sc-local ss-local
+	conda run -n laava python -m pytest test_outputs.py test_integration_duplicate_removal.py test_unit_laava_modules.py test_output_gold_verification.py -v
+
+sc-local: $(out_dir)/sc.reference_names.tsv
+	mkdir -p $(out_dir)
+	conda run -n laava bash ../src/make_report.sh \
+		sc \
+		"Self-comp Example" \
+		test \
+		$(out_dir)/sc.reference_names.tsv \
+		$(in_dir)/sc.subsample005.bam \
+		$(in_dir)/sc.annotation.bed \
+		wtITR \
+		"" \
+		mITR \
+		sc \
+		200 \
+		100 \
+		100 \
+		0.8 \
+		"" \
+		"" \
+		$(out_dir)
+
+ss-local: $(out_dir)/ss.reference_names.tsv
+	mkdir -p $(out_dir)
+	conda run -n laava bash ../src/make_report.sh \
+		ss \
+		"Single-stranded Example" \
+		test \
+		$(out_dir)/ss.reference_names.tsv \
+		$(in_dir)/ss.subsample005.bam \
+		$(in_dir)/ss.annotation.bed \
+		ITR \
+		"" \
+		"" \
+		ss \
+		200 \
+		100 \
+		100 \
+		0.8 \
+		AAV2 \
+		"" \
+		$(out_dir)
 
 sc: $(out_dir)/sc_AAV_report.html
 
@@ -78,7 +124,6 @@ $(out_dir)/sc.reference_names.tsv $(out_dir)/ss.reference_names.tsv: \
 	$(out_dir)/%.reference_names.tsv: \
 	$(in_dir)/%.construct.fasta fasta/packaging.fa fasta/hg38.chr19trunc-chrM.fa
 	mkdir -p $(out_dir)
-	../src/get_reference_names.py -o $@ \
+	conda run -n laava python ../src/get_reference_names.py -o $@ \
 		$< --packaging $(word 2,$^) --host $(word 3,$^) \
 		--repcap-name pRep2Cap9 --helper-name pHelper --lambda-name Lambda
-

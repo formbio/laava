@@ -21,20 +21,20 @@ out_dir=${17}
 
 ls -Alh
 
-write_sample_metadata.py "$sample_id" "$sample_name" "$mapped_reads" \
+python "$(dirname $0)/write_sample_metadata.py" "$sample_id" "$sample_name" "$mapped_reads" \
     -v "$version" -o "$out_dir/${sample_id}.metadata.tsv"
 
 ls -Alh
 
 if [ "$vector_type" == "unspecified" ]; then
-    vector_type=$(guess_vector_type_length.py "$vector_annotation" \
+    vector_type=$(python "$(dirname $0)/guess_vector_type_length.py" "$vector_annotation" \
                   "$itr_label_1" "$itr_label_2" "$mitr_label")
     echo "Inferred vector_type: $vector_type"
 fi
 
 echo
 echo "Starting summarize_alignment"
-summarize_alignment.py \
+python "$(dirname $0)/summarize_alignment.py" \
     "$mapped_reads" "$vector_annotation" "${reference_names}" \
     "${itr_label_1}" "${itr_label_2}" "${mitr_label}" \
     --output-prefix="$out_dir/$sample_id" \
@@ -44,7 +44,7 @@ summarize_alignment.py \
     --max-allowed-outside-vector="$max_allowed_outside_vector" \
     --max-allowed-missing-flanking="$max_allowed_missing_flanking" \
     --min-supp-joint-coverage="$min_supp_joint_coverage" \
-    --cpus $(nproc)
+    --cpus $(if command -v nproc >/dev/null 2>&1; then nproc; else sysctl -n hw.ncpu 2>/dev/null || echo 1; fi)
 
 echo "Finished summarize_alignment"
 ls -Alh
@@ -63,7 +63,7 @@ if [[ -n "$flipflop_name" || -n "$flipflop_fa" ]]; then
 
     echo
     echo "Starting get_flipflop_config"
-    get_flipflop_config.py \
+    python "$(dirname $0)/get_flipflop_config.py" \
         "$out_dir/${sample_id}.tagged.bam" "$out_dir/${sample_id}.per_read.tsv.gz" \
         $ff_opt \
         -o "$out_dir/$sample_id"
@@ -74,16 +74,25 @@ else
 fi
 
 echo "Starting aggregate_tables"
-aggregate_tables.py --path-prefix "$out_dir/$sample_id"
+python "$(dirname $0)/aggregate_tables.py" --path-prefix "$out_dir/$sample_id"
 echo "Finished aggregate_tables"
 
 ls -Alh
 
 echo
 echo "Starting create_report"
-create_report.R "$out_dir/$sample_id" "$vector_type" \
-    $(emit_target_coords.py "${vector_annotation}" \
-        "${itr_label_1}" "${itr_label_2}" "${mitr_label}")
+if [ -n "$CONDA_PREFIX" ]; then
+    # Use conda's R with proper library path
+    export R_LIBS_USER="$CONDA_PREFIX/lib/R/library"
+    $CONDA_PREFIX/bin/Rscript "$(dirname $0)/create_report.R" "$out_dir/$sample_id" "$vector_type" \
+        $(python "$(dirname $0)/emit_target_coords.py" "${vector_annotation}" \
+            "${itr_label_1}" "${itr_label_2}" "${mitr_label}")
+else
+    # Fallback to system R
+    create_report.R "$out_dir/$sample_id" "$vector_type" \
+        $(python "$(dirname $0)/emit_target_coords.py" "${vector_annotation}" \
+            "${itr_label_1}" "${itr_label_2}" "${mitr_label}")
+fi
 echo "Finished create_report"
 
 ls -Alh
