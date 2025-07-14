@@ -14,6 +14,7 @@ import parasail
 import pysam
 from Bio import SeqIO
 import re
+import pandas as pd
 
 
 SW_SCORE_MATRIX = parasail.matrix_create("ACGT", 2, -5)
@@ -274,13 +275,13 @@ def main(per_read_tsv, tagged_bam, vector_type, orientation, output_prefix, flip
                     orientation= "left"
                     c_l, c_r = identify_flip_flop(f_df, flipflop_seqs, vector_type, orientation)
                     for index, row in f_df.iterrows():
-                        if "AX" in f_df.columns and not f_df["AX"].empty:
-                            if f_df["AX"].drop_duplicates().iloc[0] == "vector-full":
-                                writer = out_bam_full
-                            elif f_df["AX"].drop_duplicates().iloc[0] == "vector-right-partial":
-                                writer = out_bam_leftp
-                            elif f_df["AX"].drop_duplicates().iloc[0] == "vector-left-partial":
-                                writer = out_bam_rightp
+                        # if "AX" in f_df.columns and not f_df["AX"].empty:
+                        #     if f_df["AX"].drop_duplicates().iloc[0] == "vector-full":
+                        #         writer = out_bam_full
+                        #     elif f_df["AX"].drop_duplicates().iloc[0] == "vector-right-partial":
+                        #         writer = out_bam_leftp
+                        #     elif f_df["AX"].drop_duplicates().iloc[0] == "vector-left-partial":
+                        #         writer = out_bam_rightp
                         if row['name'] in read_info and "assigned_type" in read_info[row['name']]:
                             a_type = read_info[row['name']]["assigned_type"]
                         else:
@@ -309,7 +310,7 @@ def main(per_read_tsv, tagged_bam, vector_type, orientation, output_prefix, flip
                         # Filter the DataFrame to keep only the specified columns
                         filtered_row = row[columns_to_keep]
 
-                        header = pysam.AlignmentHeader.from_dict(row['header'])  # Convert OrderedDict to AlignmentHeader
+                        #header = pysam.AlignmentHeader.from_dict(row['header'])  # Convert OrderedDict to AlignmentHeader
                         filtered_row["flag"] = str(filtered_row["flag"])  # Convert directly if it's an integer
 
                         #r = pysam.AlignedSegment.from_dict(filtered_row, header)  # TO FIX to add element in output BAM files         
