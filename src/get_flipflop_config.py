@@ -72,7 +72,7 @@ class FlipFlopSeqSet(NamedTuple):
         return cls(**flipflip_seqs)
 
 # Function to identify flip-flop configurations based on the provided alingned reads and flip-flop sequences
-def identify_flip_flop(df, ff_seq, vector_type="ss", orientation="left"):
+def identify_flip_flop(df, ff_seq, vector_type, orientation):
     """Determine left and right flip/flip/unclassified configurations.
 
     Assume record tag:AT is vector, tag:AX can be full|left-partial|right-partial|partial
@@ -261,7 +261,7 @@ def main(per_read_tsv, tagged_bam, vector_type, orientation, output_prefix, flip
 
                     # Extract AT value
                     at_match = re.search(r"AT:Z:(.+?)(?:,|'|$)", tags)
-                    f_df.loc[index, "AT"] = ax_match.group(1) if ax_match else None
+                    f_df.loc[index, "AT"] = ax_match.group(1) if at_match else None
 
                     # Extract AX value
                     ax_match = re.search(r"AX:Z:(.+?)(?:,|'|$)", tags)
