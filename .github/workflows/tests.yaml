@@ -55,6 +55,12 @@ jobs:
         run: |
           conda info
           conda list
+      - name: Lint Python ruff
+        run: | 
+            make lint-python
+      - name: Lint R script
+        run: |
+            make lint-r          
       - name: Test script outputs
         run: |
           cd test && make test
