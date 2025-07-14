@@ -64,7 +64,7 @@ test-local: lint
 lint: lint-r lint-python
 
 lint-python:
-	ruff check --isolated --no-cache src/
+	ruff check --isolated --output-format=github --no-cache src/
 
 lint-r:
 	 Rscript -e 'library(lintr); options(lintr.error_on_lint=TRUE); lint_dir(".", linters=linters_with_tags("correctness"))'

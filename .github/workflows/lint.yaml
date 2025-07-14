@@ -10,9 +10,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-      - uses: chartboost/ruff-action@v1
-        with:
-          args: 'check --isolated --output-format=github'
       - uses: actions/cache@v4
         env:
           # Increase this value to reset cache if conda_env.yml has not changed
@@ -30,6 +27,9 @@ jobs:
             environment-file: conda_env.yml
             python-version: '3.10'
             use-only-tar-bz2: true  # Required for caching       
+      - name: Lint Python ruff
+        run: | 
+            make lint-python
       - name: Lint R script
         run: |
             make lint-r
