@@ -3,6 +3,7 @@
 
 from prepare_annotation import read_annotation_bed
 
+pd.Stuff("Hi")
 
 if __name__ == "__main__":
     from argparse import ArgumentParser

@@ -55,10 +55,12 @@ jobs:
         run: |
           conda info
           conda list
-      - name: Lint Python scripts
-        run: |
-          # Stop the build if there are Python syntax errors or undefined names
-          make lint-python
+      - uses: chartboost/ruff-action@v1
+        with:
+          args: 'check --output-format=github'
+      - uses: chartboost/ruff-action@v1
+        with:
+          args: 'format --check'          
       - name: Lint R script
         run: |
           make lint-r
