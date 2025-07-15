@@ -18,14 +18,19 @@ flipflop_name=${15}
 flipflop_fa=${16}
 out_dir=${17}
 
-
+# List directory contents 
 ls -Alh
 
+echo
+echo "Creating sample metadata file"
 python "$(dirname $0)/write_sample_metadata.py" "$sample_id" "$sample_name" "$mapped_reads" \
     -v "$version" -o "$out_dir/${sample_id}.metadata.tsv"
 
 ls -Alh
 
+# Guess vector type if not specified
+echo
+echo "Guessing vector type if not specified"
 if [ "$vector_type" == "unspecified" ]; then
     vector_type=$(python "$(dirname $0)/guess_vector_type_length.py" "$vector_annotation" \
                   "$itr_label_1" "$itr_label_2" "$mitr_label")
@@ -49,6 +54,7 @@ python "$(dirname $0)/summarize_alignment.py" \
 echo "Finished summarize_alignment"
 ls -Alh
 
+# Check if flipflop analysis is needed
 if [[ -n "$flipflop_name" || -n "$flipflop_fa" ]]; then
     if [ -n "$flipflop_fa" ]; then
         # Use the gives seqs for FF analysis, regardless of FF name
@@ -61,10 +67,26 @@ if [[ -n "$flipflop_name" || -n "$flipflop_fa" ]]; then
         exit 1
     fi
 
+    # Computing mITR orientation / For ssAAV it is not important so initializing to left 
+    echo "Starting computing mITR orientation"
+
+    # Determine orientation/position of the mITR based on vector type
+    if [ "${vector_type}" == "sc" ]; then
+       m_itr_start=$(cat "$vector_annotation" | grep "${mitr_label}" | cut -f2)
+       wt_start=$(cat "$vector_annotation" | grep "${itr_label_1}" | cut -f2)
+       if [ "$wt_start" -gt "$m_itr_start" ]; then
+          orientation="left"
+       elif [ "$m_itr_start" -gt "$wt_start" ]; then
+          orientation="right"
+       fi
+    elif [ "${vector_type}" == "ss" ]; then
+       orientation="left"
+    fi
+    
     echo
-    echo "Starting get_flipflop_config"
+    echo "Starting get_flipflop_config with with the right parameters"
     python "$(dirname $0)/get_flipflop_config.py" \
-        "$out_dir/${sample_id}.tagged.bam" "$out_dir/${sample_id}.per_read.tsv.gz" \
+        "$out_dir/${sample_id}.tagged.bam" "$out_dir/${sample_id}.per_read.tsv.gz" "$vector_type" "$orientation" \
         $ff_opt \
         -o "$out_dir/$sample_id"
     echo "Finished get_flipflop_config"
@@ -73,6 +95,7 @@ else
     echo "Skipping flip/flop analysis"
 fi
 
+echo
 echo "Starting aggregate_tables"
 python "$(dirname $0)/aggregate_tables.py" --path-prefix "$out_dir/$sample_id"
 echo "Finished aggregate_tables"
