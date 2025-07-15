@@ -79,7 +79,7 @@ def identify_flip_flop(df, ff_seq, vector_type, orientation):
     Add back a tag 'AF' that is [flip/flop]-[flip/flop]
     """
     min_score = 250
-    min_insert = 0 
+    min_insert = 10 
     config_left, config_right = "unclassified", "unclassified"
 
     # Expected flags
