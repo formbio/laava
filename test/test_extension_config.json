@@ -1,0 +1,8 @@
+{
+  "extensions": {
+    "cigar_processor": {
+      "module": "test_extension_override",
+      "function": "iter_cigar_w_aligned_pair_with_logging"
+    }
+  }
+}

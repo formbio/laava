@@ -11,3 +11,29 @@ test/CBA-eGFP/*.bam
 test/CMV-GFP/*.bam
 test/build/
 workflow-outputs/
+
+# LAAVA Performance Profiling (local only)
+profile/
+profiling_*/
+
+# Scale test data
+scale_data/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+
+# Development tools
+.cline/
+.laava/
+memory-bank/
+
+# Test output files
+test_runner_results/
+
+# Extensions directory (FormBio optimizations)
+extensions/
+src/sc_AAV_report.log
+.gitignore
+src/ss_AAV_report.log
