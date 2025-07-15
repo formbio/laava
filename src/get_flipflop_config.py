@@ -272,7 +272,6 @@ def main(per_read_tsv, tagged_bam, vector_type, orientation, output_prefix, flip
                     "vector-left-partial",
                     "vector-right-partial",
                 ):
-                    orientation= "left"
                     c_l, c_r = identify_flip_flop(f_df, flipflop_seqs, vector_type, orientation)
                     for index, row in f_df.iterrows():
                         # if "AX" in f_df.columns and not f_df["AX"].empty:
