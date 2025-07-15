@@ -254,6 +254,7 @@ def main(per_read_tsv, tagged_bam, vector_type, orientation, output_prefix, flip
             for id in df['name'].drop_duplicates():
                 print(id)
                 f_df= df[df['name'] == id]
+                f_df = f_df.copy()
 
                 # Iterate through each row of the DataFrame to extract AX and AT tags
                 for index, row in f_df.iterrows():
