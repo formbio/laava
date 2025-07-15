@@ -284,8 +284,10 @@ def main(per_read_tsv, tagged_bam, vector_type, orientation, output_prefix, flip
                         #         writer = out_bam_rightp
                         if row['name'] in read_info and "assigned_type" in read_info[row['name']]:
                             a_type = read_info[row['name']]["assigned_type"]
+                            effective_count = int(read_info[row['name']]["effective_count"])
                         else:
                             a_type = None  # Handle missing or invalid data
+                            effective_count = 0
 
                         f_df.at[index, "tags"] =   f_df.at[index, "tags"] + "AF:Z:" + c_l + "-" + c_r + "," + "AG:Z:" + a_type
                         #if a_type not in ("scAAV", "ssAAV", "other-vector"):
@@ -316,17 +318,18 @@ def main(per_read_tsv, tagged_bam, vector_type, orientation, output_prefix, flip
 
                         #r = pysam.AlignedSegment.from_dict(filtered_row, header)  # TO FIX to add element in output BAM files         
 
-                        out_tsv.writerow(
-                            [
-                                row['name'],  # Access qname from f_df
-                                a_type,  # Access assigned_type from f_df
-                                row["AX"][len("vector-") :],  # Extract AX value from f_df
-                                str(row["start"]),  # Access reference_start from f_df
-                                str(row["end"]),  # Access reference_end from f_df
-                                c_l,  # Use c_l (computed earlier)
-                                c_r,  # Use c_r (computed earlier)
-                            ]
-                        )
+                        for _ in range(effective_count):
+                            out_tsv.writerow(
+                                [
+                                    row['name'],  # Access qname from f_df
+                                    a_type,  # Access assigned_type from f_df
+                                    row["AX"][len("vector-") :],  # Extract AX value from f_df
+                                    str(row["start"]),  # Access reference_start from f_df
+                                    str(row["end"]),  # Access reference_end from f_df
+                                    c_l,  # Use c_l git(computed earlier)
+                                    c_r,  # Use c_r (computed earlier)
+                                ]
+                            )
             
                         # Exit the loop after processing the first row
                         break
