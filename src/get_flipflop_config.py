@@ -17,6 +17,10 @@ import re
 import pandas as pd
 
 
+# Pre-compiled regex patterns for performance optimization
+AT_PATTERN = re.compile(r"AT:Z:([^,'\s]+)")
+AX_PATTERN = re.compile(r"AX:Z:([^,'\s]+)")
+
 SW_SCORE_MATRIX = parasail.matrix_create("ACGT", 2, -5)
 
 # Default AAV2 flip-flop sequences
@@ -250,23 +254,27 @@ def main(per_read_tsv, tagged_bam, vector_type, orientation, output_prefix, flip
             
             #print(df)
 
-            # Iterate through each read-id 'name' in the DataFrame
-            for id in df['name'].drop_duplicates():
-                print(id)
-                f_df= df[df['name'] == id]
-                f_df = f_df.copy()
-
-                # Iterate through each row of the DataFrame to extract AX and AT tags
-                for index, row in f_df.iterrows():
-                    tags = row["tags"]
-
-                    # Extract AT value
-                    at_match = re.search(r"AT:Z:(.+?)(?:,|'|$)", tags)
-                    f_df.loc[index, "AT"] = at_match.group(1) if at_match else None
-
-                    # Extract AX value
-                    ax_match = re.search(r"AX:Z:(.+?)(?:,|'|$)", tags)
-                    f_df.loc[index, "AX"] = ax_match.group(1) if ax_match else None
+            # Extract tags using pre-compiled regex patterns for improved performance
+            print("Extracting tags for all records...")
+            for index, row in df.iterrows():
+                tags = row["tags"]
+                # Use pre-compiled patterns for better performance than re.search()
+                at_match = AT_PATTERN.search(tags)
+                df.loc[index, "AT"] = at_match.group(1) if at_match else None
+                ax_match = AX_PATTERN.search(tags)
+                df.loc[index, "AX"] = ax_match.group(1) if ax_match else None
+            
+            # Filter to only vector reads to reduce processing overhead
+            vector_reads = df[
+                (df['AT'] == 'vector') & 
+                (df['AX'].isin(['vector-full', 'vector-left-partial', 'vector-right-partial']))
+            ]
+            
+            print(f"Processing {len(vector_reads)} vector reads...")
+            
+            # Use efficient groupby instead of quadratic operations
+            for read_name, f_df in vector_reads.groupby('name'):
+                print(read_name)
 
                 if f_df["AT"].drop_duplicates().iloc[0] == "vector" and f_df["AX"].drop_duplicates().iloc[0] in (
                     "vector-full",
