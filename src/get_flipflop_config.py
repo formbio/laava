@@ -199,7 +199,7 @@ def load_per_read_info(fname):
 
 # Main function to process the tagged BAM file and per-read TSV file
 def main(per_read_tsv, tagged_bam, vector_type, orientation, output_prefix, flipflop_fasta):
-    """Entry point."""
+    """Optimized Entry Point."""
     OUT_FIELDS = ["name", "type", "subtype", "start", "end", "leftITR", "rightITR"]
 
     if flipflop_fasta is None:
@@ -209,141 +209,77 @@ def main(per_read_tsv, tagged_bam, vector_type, orientation, output_prefix, flip
 
     read_info = load_per_read_info(per_read_tsv)
 
-    with gzip.open(output_prefix + ".flipflop.tsv.gz", "wt") as fout:
-            out_tsv = csv.writer(fout, delimiter="\t")
-            out_tsv.writerow(OUT_FIELDS)
-            reader = pysam.AlignmentFile(open(tagged_bam), "rb", check_sq=False)
-            out_bam_full = pysam.AlignmentFile(
-                open(output_prefix + ".flipflop-full.bam", "w"),
-                "wb",
-                header=reader.header,
-            )
-            out_bam_leftp = pysam.AlignmentFile(
-                open(output_prefix + ".flipflop-left-partial.bam", "w"),
-                "wb",
-                header=reader.header,
-            )
-            out_bam_rightp = pysam.AlignmentFile(
-                open(output_prefix + ".flipflop-right-partial.bam", "w"),
-                "wb",
-                header=reader.header,
-            )
+    with gzip.open(output_prefix + ".flipflop.tsv.gz", "wt") as fout, \
+        pysam.AlignmentFile(open(tagged_bam), "rb", check_sq=False) as reader, \
+        pysam.AlignmentFile(open(output_prefix + ".flipflop-full.bam", "w"), "wb", header=reader.header) as out_bam_full, \
+        pysam.AlignmentFile(open(output_prefix + ".flipflop-left-partial.bam", "w"), "wb", header=reader.header) as out_bam_leftp, \
+        pysam.AlignmentFile(open(output_prefix + ".flipflop-right-partial.bam", "w"), "wb", header=reader.header) as out_bam_rightp:
 
-            # Initialize a list to hold the data
-            data = []
+        out_tsv = csv.writer(fout, delimiter="\t")
+        out_tsv.writerow(OUT_FIELDS)
 
-            # Iterate through each record in reader
-            for r in reader:
-                d = r.to_dict()
-                #print(r)
-                d["header"] = r.header.to_dict()
-                d["start"] = (r.reference_start)
-                d["end"] = (r.reference_end)              
-                data.append(d)
+        # Process records in chunks to reduce memory usage
+        data = [
+            {
+                **r.to_dict(),
+                "header": r.header.to_dict(),
+                "start": r.reference_start,
+                "end": r.reference_end,
+            }
+            for r in reader
+        ]
 
-            # Convert the list of rows into a DataFrame
-            df = pd.DataFrame(data)
+        # Convert the list of rows into a DataFrame
+        df = pd.DataFrame(data)
 
-            # Convert flag and tags columns to appropriate types
-            df["flag"] = df["flag"].astype(int)
-            df["tags"] = df["tags"].astype(str)
-            
-            #print(df)
+        # Optimize column type conversions
+        df["flag"] = df["flag"].astype(int)
+        df["tags"] = df["tags"].astype(str)
 
-            # Iterate through each read-id 'name' in the DataFrame
-            for id in df['name'].drop_duplicates():
-                print(id)
-                f_df= df[df['name'] == id]
-                f_df = f_df.copy()
+        # Process unique read IDs
+        for id in df['name'].unique():
+            f_df = df[df['name'] == id]
 
-                # Iterate through each row of the DataFrame to extract AX and AT tags
+            # Extract AT and AX tags using vectorized operations
+            f_df["AT"] = f_df["tags"].str.extract(r"AT:Z:(.+?)(?:,|'|$)", expand=False)
+            f_df["AX"] = f_df["tags"].str.extract(r"AX:Z:(.+?)(?:,|'|$)", expand=False)
+
+            if f_df["AT"].iloc[0] == "vector" and f_df["AX"].iloc[0] in (
+                "vector-full",
+                "vector-left-partial",
+                "vector-right-partial",
+            ):
+                c_l, c_r = identify_flip_flop(f_df, flipflop_seqs, vector_type, orientation)
+
                 for index, row in f_df.iterrows():
-                    tags = row["tags"]
+                    name = row['name']
+                    if name in read_info and "assigned_type" in read_info[name]:
+                        a_type = read_info[name]["assigned_type"]
+                        effective_count = int(read_info[name]["effective_count"])
+                    else:
+                        a_type = None
+                        effective_count = 0
 
-                    # Extract AT value
-                    at_match = re.search(r"AT:Z:(.+?)(?:,|'|$)", tags)
-                    f_df.loc[index, "AT"] = at_match.group(1) if at_match else None
+                    if a_type not in ("scAAV", "ssAAV"):
+                        continue
 
-                    # Extract AX value
-                    ax_match = re.search(r"AX:Z:(.+?)(?:,|'|$)", tags)
-                    f_df.loc[index, "AX"] = ax_match.group(1) if ax_match else None
+                    # Update tags column
+                    f_df.at[index, "tags"] += f"AF:Z:{c_l}-{c_r},AG:Z:{a_type}"
 
-                if f_df["AT"].drop_duplicates().iloc[0] == "vector" and f_df["AX"].drop_duplicates().iloc[0] in (
-                    "vector-full",
-                    "vector-left-partial",
-                    "vector-right-partial",
-                ):
-                    c_l, c_r = identify_flip_flop(f_df, flipflop_seqs, vector_type, orientation)
-                    for index, row in f_df.iterrows():
-                        # if "AX" in f_df.columns and not f_df["AX"].empty:
-                        #     if f_df["AX"].drop_duplicates().iloc[0] == "vector-full":
-                        #         writer = out_bam_full
-                        #     elif f_df["AX"].drop_duplicates().iloc[0] == "vector-right-partial":
-                        #         writer = out_bam_leftp
-                        #     elif f_df["AX"].drop_duplicates().iloc[0] == "vector-left-partial":
-                        #         writer = out_bam_rightp
-                        if row['name'] in read_info and "assigned_type" in read_info[row['name']]:
-                            a_type = read_info[row['name']]["assigned_type"]
-                            effective_count = int(read_info[row['name']]["effective_count"])
-                        else:
-                            a_type = None  # Handle missing or invalid data
-                            effective_count = 0
+                    # Write to TSV
+                    for _ in range(effective_count):
+                        out_tsv.writerow([
+                            name,
+                            a_type,
+                            row["AX"][len("vector-"):],
+                            str(row["start"]),
+                            str(row["end"]),
+                            c_l,
+                            c_r,
+                        ])
 
-                        f_df.at[index, "tags"] =   f_df.at[index, "tags"] + "AF:Z:" + c_l + "-" + c_r + "," + "AG:Z:" + a_type
-                        #if a_type not in ("scAAV", "ssAAV", "other-vector"):
-                        if a_type not in ("scAAV", "ssAAV"):
-                            continue
-
-                        # Define the columns to filter
-                        columns_to_keep = [
-                            "name",
-                            "flag",
-                            "ref_name",
-                            "ref_pos",
-                            "map_quality",
-                            "cigar",
-                            "next_ref_name",
-                            "next_ref_pos",
-                            "length",
-                            "seq",
-                            "qual",
-                            "tags",
-                        ]
-
-                        # Filter the DataFrame to keep only the specified columns
-                        filtered_row = row[columns_to_keep]
-
-                        #header = pysam.AlignmentHeader.from_dict(row['header'])  # Convert OrderedDict to AlignmentHeader
-                        filtered_row["flag"] = str(filtered_row["flag"])  # Convert directly if it's an integer
-
-                        #r = pysam.AlignedSegment.from_dict(filtered_row, header)  # TO FIX to add element in output BAM files         
-
-                        for _ in range(effective_count):
-                            out_tsv.writerow(
-                                [
-                                    row['name'],  # Access qname from f_df
-                                    a_type,  # Access assigned_type from f_df
-                                    row["AX"][len("vector-") :],  # Extract AX value from f_df
-                                    str(row["start"]),  # Access reference_start from f_df
-                                    str(row["end"]),  # Access reference_end from f_df
-                                    c_l,  # Use c_l git(computed earlier)
-                                    c_r,  # Use c_r (computed earlier)
-                                ]
-                            )
-            
-                        # Exit the loop after processing the first row
-                        break
-
-
-            out_bam_full.close()
-            out_bam_leftp.close()
-            out_bam_rightp.close()
-            print("Output summmary:", fout.name)
-    
-    print(
-        f"Individual BAM files written: {output_prefix}.vector- full,leftpartial,rightpartial -flipflop.bam"
-    )
-
+        print("Output summary:", fout.name)
+        print(f"Individual BAM files written: {output_prefix}.vector-full,leftpartial,rightpartial-flipflop.bam")
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
