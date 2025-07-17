@@ -15,6 +15,7 @@ process match_metadata_to_files {
 
 
 process map_reads() {
+    resourceLimits = cpus: params.cpus, memory: params.memory
     container "${params.container_repo}/laava${params.container_version}"
     publishDir "$params.output/alignment", mode: "copy"
 
@@ -52,6 +53,7 @@ process map_reads() {
 
 
 process make_report() {
+    resourceLimits = cpus: params.cpus, memory: params.memory
     container "${params.container_repo}/laava${params.container_version}"
     publishDir "$params.output/report", mode: "copy"
 
