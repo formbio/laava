@@ -17,7 +17,7 @@ docker_repo := ghcr.io/formbio
 
 all: laava laava_dev sc ss min folder test lint
 
-.PHONY: clean laava laava_dev formbio sc ss min folder test test-local lint lint-from-docker
+.PHONY: clean laava laava_dev formbio sc ss min folder test test-local lint lint-from-docker check-docker-dep-versions update-docker-package update-docker-dep
 clean:
 	rm -f .nextflow.log*
 	rm -fr .nextflow/*
@@ -68,3 +68,18 @@ lint-python:
 
 lint-r:
 	 Rscript -e 'library(lintr); options(lintr.error_on_lint=TRUE); lint_dir(".", linters=linters_with_tags("correctness"))'
+
+
+# Docker dependencies
+
+check-docker-dep-versions:
+	@./manage-docker-deps.sh check
+
+update-docker-deps:
+	@./manage-docker-deps.sh update-all
+	@echo "Updated apt-packages.txt with latest versions"
+
+update-docker-package:
+	@read -p "Package name: " pkg; \
+	read -p "Version (leave empty for latest): " ver; \
+	./manage-docker-deps.sh update $$pkg $$ver

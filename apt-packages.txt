@@ -1,0 +1,6 @@
+apt-transport-https=2.4.*
+less=590-2.1~deb12u2
+minimap2=2.24+*
+samtools=1.17-*
+texlive-latex-extra=2022.*
+texlive-latex-recommended=2022.*
