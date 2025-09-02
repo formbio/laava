@@ -34,15 +34,15 @@ EXPECTED_ROW_COUNTS = {
         "agg_flipflop": 15,
     },
     "tc-gia-012": {
-        "alignments": 2000,
+        "alignments": 4000,
         "per_read": 2000,
-        "flipflop": 0,
+        "flipflop": 2000,
         "metadata": 1,
         "reference_names": 8,
-        "nonmatch": 0,
+        "nonmatch": 46000,
         "agg_ref_type": 1,
-        "agg_subtype": 0,
-        "agg_flipflop": 0,
+        "agg_subtype": 1,
+        "agg_flipflop": 4,
     },
 }
 
@@ -88,12 +88,14 @@ class TestCompareTSVs:
     def test_agg_subtype(self, build_dir, name_prefix):
         self.check_tsv_row_count(build_dir, name_prefix, "agg_subtype", "tsv")
 
-    # Only ssAAV
-    def test_ss_flipflop(self, build_dir):
-        self.check_tsv_row_count(build_dir, "ss", "flipflop", "tsv.gz")
+    # Flipflop tests for datasets that support it
+    @pytest.mark.parametrize("name_prefix", ["ss", "tc-gia-012"])
+    def test_flipflop(self, build_dir, name_prefix):
+        self.check_tsv_row_count(build_dir, name_prefix, "flipflop", "tsv.gz")
 
-    def test_ss_agg_flipflop(self, build_dir):
-        self.check_tsv_row_count(build_dir, "ss", "agg_flipflop", "tsv")
+    @pytest.mark.parametrize("name_prefix", ["ss", "tc-gia-012"])
+    def test_agg_flipflop(self, build_dir, name_prefix):
+        self.check_tsv_row_count(build_dir, name_prefix, "agg_flipflop", "tsv")
 
     @pytest.mark.parametrize("name_prefix", EXPECTED_ROW_COUNTS.keys())
     def test_per_read(self, build_dir, name_prefix):
