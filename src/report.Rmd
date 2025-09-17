@@ -195,9 +195,25 @@ agg_subtype <- read_tsv(paste0(params$path_prefix, '.agg_subtype.tsv'), show_col
 
 # Assigned types by read alignment characteristics
 
+# ```{r typetable, message=FALSE, warning=FALSE}
+# flextable(agg_ref_type %>% select(! pct_vector)) %>%
+#   set_header_labels(values = c(
+#     "Mapped Reference", 
+#     "Assigned Type", 
+#     "Counts", 
+#     "Frequency (%)", 
+#     "Counts Excluding Lambda", 
+#     "Frequency (%, Excluding Lambda)"))
+# ```
+
 ```{r typetable, message=FALSE, warning=FALSE}
-flextable(agg_ref_type %>% select(! pct_vector)) %>%
-  set_header_labels(values = c("Mapped Reference", "Assigned Type", "Count", "Frequency (%)", "Counts Excluding Lambda", "Frequency (%, Excluding Lambda)"))
+flextable(agg_ref_type %>% select(! c(pct_vector, `Frequency (%)`))) %>%
+  set_header_labels(values = c(
+    "Mapped Reference", 
+    "Assigned Type", 
+    "Counts", 
+    "Counts Excluding Lambda", 
+    "Frequency (%, Excluding Lambda)"))
 ```
 
 ```{r typeplots, message=FALSE, warning=FALSE}
@@ -226,18 +242,32 @@ if (nrow(countreads) > 0 && sum(countreads$effective_count) > 0) {
 
 ## Frequency of vector assigned types
 
+# ```{r vectypes, message=FALSE, warning=FALSE}
+# vectypes <- agg_ref_type %>%
+#     filter(reference_label == "vector") %>%
+#     select(! reference_label)
+
+# flextable(vectypes) %>%
+#   set_header_labels(values = c(
+#     "Assigned Type",
+#     "Counts",
+#     "GOI Vector Frequency (%)",
+#     "Total Frequency (%)",
+#     "Counts Excluding Lambda", 
+#     "Frequency (%, Excluding Lambda)"
+#   ))
+# ```
+
 ```{r vectypes, message=FALSE, warning=FALSE}
 vectypes <- agg_ref_type %>%
     filter(reference_label == "vector") %>%
-    select(! reference_label)
+    select(! c(reference_label, `Total Frequency (%)`, `Counts Excluding Lambda`))  # Exclude the columns to hide
 
 flextable(vectypes) %>%
   set_header_labels(values = c(
     "Assigned Type",
-    "Count",
-    "Frequency in AAV (%)",
-    "Total Frequency (%)",
-    "Counts Excluding Lambda", 
+    "Counts",
+    "GOI Vector Frequency (%)",
     "Frequency (%, Excluding Lambda)"
   ))
 ```
@@ -303,20 +333,32 @@ other-vector |unclassified    |Read alignment does not match any of the above or
 
 ## Assigned types and subtypes
 
+# ```{r subtypetable, message=FALSE, warning=FALSE}
+# flextable(agg_subtype) %>%
+#   set_header_labels(
+#     values = c(
+#       "Assigned Type",
+#       "Assigned Subtype",
+#       "Counts",
+#       "Freq. in AAV (%)",
+#       "Total Freq. (%)",
+#       "Frequency (%, Excluding Lambda)"
+#     )
+#   )
+# ```
+
 ```{r subtypetable, message=FALSE, warning=FALSE}
-flextable(agg_subtype) %>%
+flextable(agg_subtype %>% select(!`Total Freq. (%)`)) %>%
   set_header_labels(
     values = c(
       "Assigned Type",
       "Assigned Subtype",
-      "Count",
-      "Freq. in AAV (%)",
-      "Total Freq. (%)",
+      "Counts",
+      "GOI Vector Frequency (%)",
       "Frequency (%, Excluding Lambda)"
     )
   )
 ```
-
 
 ## Distribution of read length by subtype
 
