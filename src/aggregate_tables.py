@@ -42,8 +42,7 @@ def analyze_alignments(path_prefix):
 
     total_read_count_all = read_df["effective_count"].sum()
     total_read_count_vector = read_vector["effective_count"].sum()
-    total_read_count_lambda = read_lambda["effective_count"].sum()
-
+    total_read_count_lambda = 0 if read_lambda is read_lambda.empty else read_lambda["effective_count"].sum()
 
     result = {
         "agg_ref_type": get_ref_type_agg(
@@ -80,7 +79,9 @@ def get_ref_type_agg(read_df, total_read_count_all, total_read_count_vector, tot
     pct_vector[df["reference_label"] != "vector"] = np.nan
     df["pct_vector"] = pct_vector
     df["pct_total"] = round(df["effective_count"] * 100 / total_read_count_all, 2)
+    df["counts_wo_lambda"] = df["effective_count"]
     df["pct_wo_lambda"] = round(df["effective_count"] * 100 / (total_read_count_all-total_read_count_lambda), 2)
+    df.loc[df["reference_label"].isin(["lambda", "Lambda"]), "counts_wo_lambda"] = 0
     return df
 
 
