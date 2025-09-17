@@ -236,7 +236,9 @@ flextable(vectypes) %>%
     "Assigned Type",
     "Count",
     "Frequency in AAV (%)",
-    "Total Frequency (%)"
+    "Total Frequency (%)",
+    "Counts Excluding Lambda", 
+    "Frequency (%, Excluding Lambda)"
   ))
 ```
 
