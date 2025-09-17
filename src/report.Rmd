@@ -197,7 +197,7 @@ agg_subtype <- read_tsv(paste0(params$path_prefix, '.agg_subtype.tsv'), show_col
 
 ```{r typetable, message=FALSE, warning=FALSE}
 flextable(agg_ref_type %>% select(! pct_vector)) %>%
-  set_header_labels(values = c("Mapped Reference", "Assigned Type", "Count", "Frequency (%)"))
+  set_header_labels(values = c("Mapped Reference", "Assigned Type", "Count", "Frequency (%)", "Counts Excluding Lambda", "Frequency (%, Excluding Lambda)"))
 ```
 
 ```{r typeplots, message=FALSE, warning=FALSE}
@@ -309,7 +309,8 @@ flextable(agg_subtype) %>%
       "Assigned Subtype",
       "Count",
       "Freq. in AAV (%)",
-      "Total Freq. (%)"
+      "Total Freq. (%)",
+      "Frequency (%, Excluding Lambda)"
     )
   )
 ```
