@@ -90,6 +90,16 @@ scAAV        |Self-complementary AAV vector genome where one half of the payload
 backbone     |Read aligns to the vector plasmid sequence but fully outside of the annotated ITR-to-ITR region, indicating that the sequence fragment originated solely from the plasmid backbone.
 other-vector |Read consists of a fragment mapping to the vector but with characteristics other than those listed above.
 
+Table: Count and Frequency definitions.
+
+Term |Definition
+:-----------:|----------------------------------------------------
+Counts                              |Single-stranded AAV vector genome where the resulting DNA template is expected to be single-stranded, as opposed to self-complementary. A sequencing read is inferred as ssAAV if it has a single alignment to the vector plasmid’s ITR-to-ITR payload region and no complementary supplemental alignment.
+Counts Excluding Lambda             |Self-complementary AAV vector genome where one half of the payload region is a reverse complement of the other, resulting in an intramolecular double-stranded DNA template. A sequencing read is inferred as scAAV if it aligns to the payload region in both forward (+) and reverse (-) read directions.
+Frequency (%, Excluding Lambda)     |Read aligns to the vector plasmid sequence but fully outside of the annotated ITR-to-ITR region, indicating that the sequence fragment originated solely from the plasmid backbone.
+GOI Vector Frequency (%)            |Read consists of a fragment mapping to the vector but with characteristics other than those listed above.
+
+
 
 `<br />`{=html}
 
