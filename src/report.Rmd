@@ -207,7 +207,7 @@ agg_subtype <- read_tsv(paste0(params$path_prefix, '.agg_subtype.tsv'), show_col
 # ```
 
 ```{r typetable, message=FALSE, warning=FALSE}
-flextable(agg_ref_type %>% select(! c(pct_vector, `Frequency (%)`))) %>%
+flextable(agg_ref_type %>% select(!pct_vector)) %>%
   set_header_labels(values = c(
     "Mapped Reference", 
     "Assigned Type", 
@@ -261,7 +261,7 @@ if (nrow(countreads) > 0 && sum(countreads$effective_count) > 0) {
 ```{r vectypes, message=FALSE, warning=FALSE}
 vectypes <- agg_ref_type %>%
     filter(reference_label == "vector") %>%
-    select(! c(reference_label, `Total Frequency (%)`, `Counts Excluding Lambda`))  # Exclude the columns to hide
+    select(! c(reference_label, pct_total, counts_wo_lambda))  # Exclude the columns to hide
 
 flextable(vectypes) %>%
   set_header_labels(values = c(
@@ -348,7 +348,7 @@ other-vector |unclassified    |Read alignment does not match any of the above or
 # ```
 
 ```{r subtypetable, message=FALSE, warning=FALSE}
-flextable(agg_subtype %>% select(!`Total Freq. (%)`)) %>%
+flextable(agg_subtype %>% select(!pct_total)) %>%
   set_header_labels(
     values = c(
       "Assigned Type",
