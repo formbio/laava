@@ -171,8 +171,16 @@ def identify_flip_flop(df, ff_seq, vector_type, orientation):
     if (vector_type == "sc"):
         if len(df) == 2:
             if orientation == "left":    
-                forward_query = df[(df['flag'] == 0 ) | (df['flag'] == 2048)]['seq'].iloc[0]
-                reverse_query = df[(df['flag'] == 16) | (df['flag'] == 2064)]['seq'].iloc[0]
+                forward_reads = df[(df['flag'] == 0 ) | (df['flag'] == 2048)]['seq']
+                reverse_reads = df[(df['flag'] == 16) | (df['flag'] == 2064)]['seq']
+                
+                # Check if we have the expected reads
+                if len(forward_reads) == 0 or len(reverse_reads) == 0:
+                    # Handle case where we don't have both forward and reverse reads
+                    return "unclassified", "unclassified"
+                
+                forward_query = forward_reads.iloc[0]
+                reverse_query = reverse_reads.iloc[0]
                 
                 o11 = parasail.sw_trace(forward_query, ff_seq.left_flip, 3, 1, SW_SCORE_MATRIX)
                 o12 = parasail.sw_trace(forward_query, ff_seq.left_flop, 3, 1, SW_SCORE_MATRIX)
@@ -194,8 +202,16 @@ def identify_flip_flop(df, ff_seq, vector_type, orientation):
                     config_right = "unclassified"
                     
             elif orientation == "right":
-                forward_query = df[(df['flag'] == 0 ) | (df['flag'] == 2048)]['seq'].iloc[0]
-                reverse_query = df[(df['flag'] == 16) | (df['flag'] == 2064)]['seq'].iloc[0]
+                forward_reads = df[(df['flag'] == 0 ) | (df['flag'] == 2048)]['seq']
+                reverse_reads = df[(df['flag'] == 16) | (df['flag'] == 2064)]['seq']
+                
+                # Check if we have the expected reads
+                if len(forward_reads) == 0 or len(reverse_reads) == 0:
+                    # Handle case where we don't have both forward and reverse reads
+                    return "unclassified", "unclassified"
+                
+                forward_query = forward_reads.iloc[0]
+                reverse_query = reverse_reads.iloc[0]
                 o11 = parasail.sw_trace(forward_query[-len(ff_seq.right_flip) - min_insert :], ff_seq.right_flip, 3, 1, SW_SCORE_MATRIX,)
                 o12 = parasail.sw_trace(forward_query[-len(ff_seq.right_flop) - min_insert :], ff_seq.right_flop, 3, 1, SW_SCORE_MATRIX,)
                 o21 = parasail.sw_trace(reverse_query[-len(ff_seq.right_flip) - min_insert :], ff_seq.right_flip, 3, 1, SW_SCORE_MATRIX,)
@@ -230,8 +246,8 @@ def identify_flip_flop(df, ff_seq, vector_type, orientation):
                 config_right = "unclassified"
             
             elif orientation == "right":
-                o11 = parasail.sw_trace(forward_query[-len(ff_seq.right_flip) - min_insert :], ff_seq.right_flip, 3, 1, SW_SCORE_MATRIX,)
-                o12 = parasail.sw_trace(forward_query[-len(ff_seq.right_flop) - min_insert :], ff_seq.right_flop, 3, 1, SW_SCORE_MATRIX,)
+                o11 = parasail.sw_trace(query[-len(ff_seq.right_flip) - min_insert :], ff_seq.right_flip, 3, 1, SW_SCORE_MATRIX,)
+                o12 = parasail.sw_trace(query[-len(ff_seq.right_flop) - min_insert :], ff_seq.right_flop, 3, 1, SW_SCORE_MATRIX,)
 
                 if o11.score > o12.score and o11.score > min_score:
                     config_right = "flip"
