@@ -198,11 +198,11 @@ agg_subtype <- read_tsv(paste0(params$path_prefix, '.agg_subtype.tsv'), show_col
 # Calculate the total row
 total_row <- agg_ref_type %>%
   summarise(
-    `Mapped Reference` = "Total",
-    `Assigned Type` = "",
-    Counts = sum(Counts, na.rm = TRUE),
-    `Counts Excluding Lambda` = sum(`Counts Excluding Lambda`, na.rm = TRUE),
-    `Frequency (%, Excluding Lambda)` = sum(`Frequency (%, Excluding Lambda)`, na.rm = TRUE)
+    reference_label = "Total",
+    assigned_type = "",
+    effective_count = sum(effective_count, na.rm = TRUE),
+    counts_wo_lambda = sum(counts_wo_lambda, na.rm = TRUE),
+    pct_wo_lambda = sum(pct_wo_lambda, na.rm = TRUE)
   )
 
 # Append the total row to the dataset
@@ -253,10 +253,10 @@ if (nrow(countreads) > 0 && sum(countreads$effective_count) > 0) {
 # Calculate the total row
 total_row <- vectypes %>%
   summarise(
-    `Assigned Type` = "Total",
-    Counts = sum(Counts, na.rm = TRUE),
-    `GOI Vector Frequency (%)` = sum(`GOI Vector Frequency (%)`, na.rm = TRUE),
-    `Frequency (%, Excluding Lambda)` = sum(`Frequency (%, Excluding Lambda)`, na.rm = TRUE)
+    assigned_type = "Total",
+    effective_count = sum(effective_count, na.rm = TRUE),
+    pct_vector = sum(pct_vector, na.rm = TRUE),
+    pct_wo_lambda = sum(pct_wo_lambda, na.rm = TRUE)
   )
 
 # Append the total row to the dataset
@@ -336,11 +336,11 @@ other-vector |unclassified    |Read alignment does not match any of the above or
 # Calculate the total row
 total_row <- agg_subtype %>%
   summarise(
-    `Assigned Type` = "Total",
-    `Assigned Subtype` = "",
-    Counts = sum(Counts, na.rm = TRUE),
-    `GOI Vector Frequency (%)` = sum(`GOI Vector Frequency (%)`, na.rm = TRUE),
-    `Frequency (%, Excluding Lambda)` = sum(`Frequency (%, Excluding Lambda)`, na.rm = TRUE)
+    assigned_type = "Total",
+    assigned_subtype = "",
+    effective_count = sum(effective_count, na.rm = TRUE),
+    pct_vector= sum(pct_vector, na.rm = TRUE),
+    pct_wo_lambda = sum(pct_wo_lambda, na.rm = TRUE)
   )
 
 # Append the total row to the dataset
