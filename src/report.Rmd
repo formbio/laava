@@ -194,20 +194,8 @@ agg_subtype <- read_tsv(paste0(params$path_prefix, '.agg_subtype.tsv'), show_col
 ```
 
 # Assigned types by read alignment characteristics
-
-# ```{r typetable, message=FALSE, warning=FALSE}
-#  flextable(agg_ref_type %>% select(! pct_vector)) %>%
-#    set_header_labels(values = c(
-#      "Mapped Reference", 
-#      "Assigned Type", 
-#      "Counts", 
-#      "Frequency (%)", 
-#      "Counts Excluding Lambda", 
-#      "Frequency (%, Excluding Lambda)"))
-# ```
-
 ```{r typetable, message=FALSE, warning=FALSE}
- flextable(agg_ref_type %>% select(! c(pct_vector, pct_total))) %>%
+  flextable(agg_ref_type %>% select(! c(pct_vector, pct_total))) %>%
    set_header_labels(values = c(
      "Mapped Reference", 
      "Assigned Type", 
@@ -241,23 +229,6 @@ if (nrow(countreads) > 0 && sum(countreads$effective_count) > 0) {
 
 
 # Frequency of vector assigned types
-
-# ```{r vectypes, message=FALSE, warning=FALSE}
-#  vectypes <- agg_ref_type %>%
-#      filter(reference_label == "vector") %>%
-#      select(! reference_label)
-
-#  flextable(vectypes) %>%
-#    set_header_labels(values = c(
-#      "Assigned Type",
-#      "Counts",
-#      "GOI Vector Frequency (%)",
-#      "Total Frequency (%)",
-#      "Counts Excluding Lambda", 
-#      "Frequency (%, Excluding Lambda)"
-#    ))
-# ```
-
 ```{r vectypes, message=FALSE, warning=FALSE}
  vectypes <- agg_ref_type %>%
      filter(reference_label == "vector") %>%
@@ -289,7 +260,6 @@ p2.atype_violin <- ggplot(
 
 p2.atype_violin
 ```
-
 
 # Assigned subtypes detailed analysis
 
@@ -332,20 +302,6 @@ other-vector |unclassified    |Read alignment does not match any of the above or
 ```
 
 # Assigned types and subtypes
-
-# ```{r subtypetable, message=FALSE, warning=FALSE}
-#  flextable(agg_subtype) %>%
-#    set_header_labels(
-#      values = c(
-#        "Assigned Type",
-#        "Assigned Subtype",
-#        "Counts",
-#        "Freq. in AAV (%)",
-#        "Total Freq. (%)",
-#        "Frequency (%, Excluding Lambda)"
-#      )
-#    )
-# ```
 
 ```{r subtypetable, message=FALSE, warning=FALSE}
  flextable(agg_subtype %>% select(!pct_total)) %>%
