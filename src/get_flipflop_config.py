@@ -152,8 +152,8 @@ def identify_flip_flop(df, ff_seq, vector_type, orientation):
                 config_right = "unclassified"
             
             elif orientation == "right":
-                o11 = parasail.sw_trace(forward_query[-len(ff_seq.right_flip) - min_insert :], ff_seq.right_flip, 3, 1, SW_SCORE_MATRIX,)
-                o12 = parasail.sw_trace(forward_query[-len(ff_seq.right_flop) - min_insert :], ff_seq.right_flop, 3, 1, SW_SCORE_MATRIX,)
+                o11 = parasail.sw_trace(query[-len(ff_seq.right_flip) - min_insert :], ff_seq.right_flip, 3, 1, SW_SCORE_MATRIX,)
+                o12 = parasail.sw_trace(query[-len(ff_seq.right_flop) - min_insert :], ff_seq.right_flop, 3, 1, SW_SCORE_MATRIX,)
 
                 if o11.score > o12.score and o11.score > min_score:
                     config_right = "flip"
