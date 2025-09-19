@@ -64,26 +64,47 @@ class FlipFlopSeqSet(NamedTuple):
                     "SEQ_LEFT_FLIP|SEQ_LEFT_FLOP|SEQ_RIGHT_FLIP|SEQ_RIGHT_FLOP. "
                     f"Is {r.id} instead. Ignoring!"
                 )
-        if not all(flipflip_seqs.keys()):
+        if not all(flipflip_seqs.values()):
             missing_keys = [
                 key for key, val in known_seq_ids.items() if flipflip_seqs[val] is None
             ]
             raise RuntimeError(
-                f"Required flip-flop sequence IDs missing from {fname}: " ", ".join(
+                f"Required flip-flop sequence IDs missing from {fname}: " + ", ".join(
                     missing_keys
                 )
             )
         return cls(**flipflip_seqs)
 
 def chunked_bam_reader(reader, chunk_size=10000):
-    """Yield chunks of BAM records to prevent memory explosion on large datasets."""
+    """Yield chunks of BAM records ensuring all alignments for a read stay together.
+    
+    This prevents read fragmentation across chunks which could cause incomplete
+    flip-flop analysis for reads with multiple alignments (supplementary/secondary).
+    """
     chunk = []
+    current_read_name = None
+    read_group = []
+    
     for record in reader:
-        chunk.append(record)
-        if len(chunk) >= chunk_size:
-            yield chunk
-            chunk = []
-    if chunk:  # Final partial chunk
+        # If this is a new read name and we have accumulated records
+        if current_read_name is not None and record.query_name != current_read_name:
+            # Add the complete read group to chunk
+            chunk.extend(read_group)
+            read_group = []
+            
+            # Check if chunk is large enough to yield (but keep current read group intact)
+            if len(chunk) >= chunk_size:
+                yield chunk
+                chunk = []
+        
+        # Update current read tracking
+        current_read_name = record.query_name
+        read_group.append(record)
+    
+    # Handle final read group and chunk
+    if read_group:
+        chunk.extend(read_group)
+    if chunk:
         yield chunk
 
 
@@ -230,8 +251,8 @@ def identify_flip_flop(df, ff_seq, vector_type, orientation):
                 config_right = "unclassified"
             
             elif orientation == "right":
-                o11 = parasail.sw_trace(forward_query[-len(ff_seq.right_flip) - min_insert :], ff_seq.right_flip, 3, 1, SW_SCORE_MATRIX,)
-                o12 = parasail.sw_trace(forward_query[-len(ff_seq.right_flop) - min_insert :], ff_seq.right_flop, 3, 1, SW_SCORE_MATRIX,)
+                o11 = parasail.sw_trace(query[-len(ff_seq.right_flip) - min_insert :], ff_seq.right_flip, 3, 1, SW_SCORE_MATRIX,)
+                o12 = parasail.sw_trace(query[-len(ff_seq.right_flop) - min_insert :], ff_seq.right_flop, 3, 1, SW_SCORE_MATRIX,)
 
                 if o11.score > o12.score and o11.score > min_score:
                     config_right = "flip"

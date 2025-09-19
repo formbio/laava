@@ -11,3 +11,4 @@ test/CBA-eGFP/*.bam
 test/CMV-GFP/*.bam
 test/build/
 workflow-outputs/
+*/__pycache__/*
