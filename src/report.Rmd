@@ -94,10 +94,10 @@ Table: Count and Frequency definitions.
 
 Term |Definition
 :-----------:|----------------------------------------------------
-Counts                              |Single-stranded AAV vector genome where the resulting DNA template is expected to be single-stranded, as opposed to self-complementary. A sequencing read is inferred as ssAAV if it has a single alignment to the vector plasmid’s ITR-to-ITR payload region and no complementary supplemental alignment.
-Counts Excluding Lambda             |Self-complementary AAV vector genome where one half of the payload region is a reverse complement of the other, resulting in an intramolecular double-stranded DNA template. A sequencing read is inferred as scAAV if it aligns to the payload region in both forward (+) and reverse (-) read directions.
-Frequency (%, Excluding Lambda)     |Read aligns to the vector plasmid sequence but fully outside of the annotated ITR-to-ITR region, indicating that the sequence fragment originated solely from the plasmid backbone.
-GOI Vector Frequency (%)            |Read consists of a fragment mapping to the vector but with characteristics other than those listed above.
+Counts                              |Refers to the total number of reads including lambda
+Counts Excluding Lambda             |Refers to the total number of reads excluding lambda
+Frequency (%, Excluding Lambda)     |Frequency of reads excluding lambda
+GOI Vector Frequency (%)            |Refers to the frequency of reads that align to the GOI transfer vector; excludes reads that align to contaminants (chimeric vector, chimeric non-vector, pRepCap, pHelper, host and unmapped) and lambda
 
 
 `<br />`{=html}
@@ -194,6 +194,11 @@ agg_subtype <- read_tsv(paste0(params$path_prefix, '.agg_subtype.tsv'), show_col
 ```
 
 # Assigned types by read alignment characteristics
+
+In the table below, the distribution of reads mapping to the vector, and other contaminants are described. The table includes the counts (includes lambda), counts excluding lambda and the frequency excluding lambda. 
+
+Note: If lambda spike-in was not performed as part of the library prep process, the values in the counts and counts excluding lambda columns will be identical.
+
 ```{r typetable, message=FALSE, warning=FALSE}
 # Calculate the total row
 total_row <- agg_ref_type %>%
@@ -245,6 +250,8 @@ if (nrow(countreads) > 0 && sum(countreads$effective_count) > 0) {
 
 # Frequency of vector assigned types
 
+In the table below, the distribution of reads mapping to the vector, other-vector and backbone are described. The table includes the counts, frequency excluding lambda, and the GOI vector frequency.
+
 ```{r vectypes, message=FALSE, warning=FALSE}
  vectypes <- agg_ref_type %>%
      filter(reference_label == "vector") %>%
@@ -262,13 +269,13 @@ total_row <- vectypes %>%
 # Append the total row to the dataset
 vectypes_with_total <- bind_rows(vectypes, total_row)
 
-# Create the flextable
-flextable(vectypes_with_total) %>%
+# Create the flextable with reordered columns
+flextable(vectypes_with_total %>% select(assigned_type, effective_count, pct_wo_lambda, pct_vector)) %>%
   set_header_labels(values = c(
     "Assigned Type",
     "Counts",
-    "GOI Vector Frequency (%)",
-    "Frequency (%, Excluding Lambda)"
+    "Frequency (%, Excluding Lambda)",
+    "GOI Vector Frequency (%)"
   ))
 ```
 
@@ -332,6 +339,8 @@ other-vector |unclassified    |Read alignment does not match any of the above or
 
 # Assigned types and subtypes
 
+In the table below, the distribution of reads mapping to the various assigned subtypes are described. The table includes the counts, frequency excluding lambda, and the GOI vector frequency.
+
 ```{r subtypetable, message=FALSE, warning=FALSE}
 # Calculate the total row
 total_row <- agg_subtype %>%
@@ -346,15 +355,15 @@ total_row <- agg_subtype %>%
 # Append the total row to the dataset
 agg_subtype_with_total <- bind_rows(agg_subtype, total_row)
 
-# Create the flextable
-flextable(agg_subtype_with_total %>% select(!pct_total)) %>%
+# Create the flextable with reordered columns
+flextable(agg_subtype_with_total %>% select(assigned_type, assigned_subtype, effective_count, pct_wo_lambda, pct_vector)) %>%
   set_header_labels(
     values = c(
       "Assigned Type",
       "Assigned Subtype",
       "Counts",
-      "GOI Vector Frequency (%)",
-      "Frequency (%, Excluding Lambda)"
+      "Frequency (%, Excluding Lambda)",
+      "GOI Vector Frequency (%)"
     )
   )
 ```
