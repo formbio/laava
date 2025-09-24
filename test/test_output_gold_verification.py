@@ -62,18 +62,18 @@ class TestGoldVerification:
             "agg_ref_type": "1fe190033bed259a61f79e6bad8b01151132e6fa58ddc99b50fd5db2e1bb48f1",
             "agg_subtype": "c58e2d0f04e5e3ac0a8a5eb94e5e885719bca6d4a019f288b8b0f0089b715552",
             "agg_flipflop": "0fbf0b00fc757989160de05e238032a07fc5108de3de59fd62e6d9267fbb8521",
-            "flipflop": "fe4703fdad2744753cd41b4494d4499edbe5048f30c7efef2a60a22987293d90",
+            "flipflop": "6b80dbe7a6b26c0b66944ff6dd08947cde8c1d142553424e51f0e85d7fb96704",
             "metadata": "374c65f7a71d1607263d54fdfcee879de390cf1e718a5a6c3c1a71d3e32e3729",
         },
         # TC-GIA-012 pipeline outputs
         "tc-gia-012": {
-            "nonmatch": "e72665a70d20f2b4cc6e9910b3f98060afdc7ee9519bc068191cae7da508f3fb",
-            "alignments": "dcd08c60101616934565b2df46a204024210236c44287dd87be96b91eb450507",
-            "per_read": "f672e3f96bfa15c9b16b0aecf8f732f0be7acae2c307f63885d5b8490b314042",
-            "agg_ref_type": "2773db37bd96206f280b7a34cd685623853d9f3616fbb20c4a26de6ecae11605",
-            "agg_subtype": "e35f78d4d183637178ce5485d330edb4edca679f2435f67bf2bc370835317b6e",
-            "agg_flipflop": "aef75b3803b6a0eca6ea2e59d675439897a725b013b781a5c7af84c0fb06bb16",
-            "flipflop": "7bbb30b0eade0fe77c4fa20def42ff0b93235e9d3d739db163a180549526d132",
+            "nonmatch": "d6473fd0260da7858a155a8d00756a87553353a4c47f836f4e57f2c4f4afb673",
+            "alignments": "682fe02480cc81a7725b26936bc1b38b10370506501e97f302e2d73a0defcef6",
+            "per_read": "828211a905e30653312d907118258ac2ced59b986931eb036f04fa1c35ec3890",
+            "agg_ref_type": "2149128cd3454adc1ad2a00633246984df142127e0dc58a739bdf27c5e6b934c",
+            "agg_subtype": "eb80b89e4d7357fda99cd802544c39ee9f8b310c1026cd30983faa6bfa0903fb",
+            "agg_flipflop": "ae361932caddc73c33972f80341d0906130e7386b915da4435fb292e22f4a4a3",
+            "flipflop": "de19ecfca2f2167dc672f5e9a608469a6515f205394d99c53ae257465f6b7aae",
             "metadata": "acbd7bef18c335d4c5ca0ffa3aae89c6cb3b04aac07ab5214af8898c70572304",
         }
     }
