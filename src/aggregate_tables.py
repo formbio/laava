@@ -42,7 +42,7 @@ def analyze_alignments(path_prefix):
 
     total_read_count_all = read_df["effective_count"].sum()
     total_read_count_vector = read_vector["effective_count"].sum()
-    total_read_count_lambda = 0 if read_lambda is read_lambda.empty else read_lambda["effective_count"].sum()
+    total_read_count_lambda = 0 if read_lambda.empty else read_lambda["effective_count"].sum()
 
     result = {
         "agg_ref_type": get_ref_type_agg(
