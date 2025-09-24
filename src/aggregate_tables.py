@@ -87,6 +87,19 @@ def get_ref_type_agg(read_df, total_read_count_all, total_read_count_vector, tot
 
 def get_subtype_agg(read_vector, total_read_count_all, total_read_count_vector, total_read_count_lambda):
     """Counts and percentages of assigned types and subtypes."""
+    # Handle case where there are no vector reads
+    if read_vector.empty:
+        # Return DataFrame with NA values that R can handle without affecting calculations
+        # Using pd.NA ensures R recognizes this as missing data that won't interfere with sums
+        return pd.DataFrame({
+            "assigned_type": [pd.NA],
+            "assigned_subtype": [pd.NA],
+            "effective_count": [0],  # Use 0 so R sum() works correctly
+            "pct_vector": [0.0],
+            "pct_total": [0.0], 
+            "pct_wo_lambda": [0.0]
+        })
+    
     df = (
         read_vector.groupby(["assigned_type", "assigned_subtype"])["effective_count"]
         .sum()
