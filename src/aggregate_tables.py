@@ -37,7 +37,7 @@ def analyze_alignments(path_prefix):
     # Filter to vector-only reads
     read_vector = read_df[read_df["reference_label"] == "vector"]
 
-      # Filter to lambda-only reads
+    # Filter to lambda-only reads
     read_lambda = read_df[(read_df["reference_label"] == "Lambda") | (read_df["reference_label"] == "lambda")]
 
     total_read_count_all = read_df["effective_count"].sum()
