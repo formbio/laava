@@ -82,6 +82,7 @@ def get_ref_type_agg(read_df, total_read_count_all, total_read_count_vector, tot
     df["counts_wo_lambda"] = df["effective_count"]
     df["pct_wo_lambda"] = round(df["effective_count"] * 100 / (total_read_count_all-total_read_count_lambda), 2)
     df.loc[df["reference_label"].isin(["lambda", "Lambda"]), "counts_wo_lambda"] = 0
+    df.loc[df["reference_label"].isin(["lambda", "Lambda"]), "pct_wo_lambda"] = 0.0
     return df
 
 
