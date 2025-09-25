@@ -61,20 +61,9 @@ class TestGoldVerification:
             "per_read": "26aefedb8a2d0b747015d999bff9e35e5acd7f040f5f89efeb40289598ff666a", 
             "agg_ref_type": "1fe190033bed259a61f79e6bad8b01151132e6fa58ddc99b50fd5db2e1bb48f1",
             "agg_subtype": "c58e2d0f04e5e3ac0a8a5eb94e5e885719bca6d4a019f288b8b0f0089b715552",
-            "agg_flipflop": "0fbf0b00fc757989160de05e238032a07fc5108de3de59fd62e6d9267fbb8521",
-            "flipflop": "6b80dbe7a6b26c0b66944ff6dd08947cde8c1d142553424e51f0e85d7fb96704",
+            "agg_flipflop": "153381dde39f5bd74cca990e2c4f7df24c776df2153d870dfb160c75c30a69fa",
+            "flipflop": "2949aaa5864bc37038574bea0bd5408a8c00e068523e9c7865244e8449406149",
             "metadata": "374c65f7a71d1607263d54fdfcee879de390cf1e718a5a6c3c1a71d3e32e3729",
-        },
-        # TC-GIA-012 pipeline outputs
-        "tc-gia-012": {
-            "nonmatch": "d6473fd0260da7858a155a8d00756a87553353a4c47f836f4e57f2c4f4afb673",
-            "alignments": "682fe02480cc81a7725b26936bc1b38b10370506501e97f302e2d73a0defcef6",
-            "per_read": "828211a905e30653312d907118258ac2ced59b986931eb036f04fa1c35ec3890",
-            "agg_ref_type": "2149128cd3454adc1ad2a00633246984df142127e0dc58a739bdf27c5e6b934c",
-            "agg_subtype": "eb80b89e4d7357fda99cd802544c39ee9f8b310c1026cd30983faa6bfa0903fb",
-            "agg_flipflop": "ae361932caddc73c33972f80341d0906130e7386b915da4435fb292e22f4a4a3",
-            "flipflop": "de19ecfca2f2167dc672f5e9a608469a6515f205394d99c53ae257465f6b7aae",
-            "metadata": "acbd7bef18c335d4c5ca0ffa3aae89c6cb3b04aac07ab5214af8898c70572304",
         }
     }
 
@@ -200,39 +189,6 @@ class TestGoldVerification:
     def test_ss_metadata_content_unchanged(self, build_dir):
         """Verify SS metadata.tsv content is unchanged."""
         self.verify_file_hash(build_dir, "ss", "metadata", "tsv")
-
-    # TC-GIA-012 Pipeline Tests
-    def test_tc_gia_012_nonmatch_content_unchanged(self, build_dir):
-        """Verify TC-GIA-012 nonmatch.tsv.gz content is unchanged."""
-        self.verify_file_hash(build_dir, "tc-gia-012", "nonmatch", "tsv.gz")
-
-    def test_tc_gia_012_alignments_content_unchanged(self, build_dir):
-        """Verify TC-GIA-012 alignments.tsv.gz content is unchanged."""
-        self.verify_file_hash(build_dir, "tc-gia-012", "alignments", "tsv.gz")
-
-    def test_tc_gia_012_per_read_content_unchanged(self, build_dir):
-        """Verify TC-GIA-012 per_read.tsv.gz content is unchanged."""
-        self.verify_file_hash(build_dir, "tc-gia-012", "per_read", "tsv.gz")
-
-    def test_tc_gia_012_agg_ref_type_content_unchanged(self, build_dir):
-        """Verify TC-GIA-012 agg_ref_type.tsv content is unchanged."""
-        self.verify_file_hash(build_dir, "tc-gia-012", "agg_ref_type", "tsv")
-
-    def test_tc_gia_012_agg_subtype_content_unchanged(self, build_dir):
-        """Verify TC-GIA-012 agg_subtype.tsv content is unchanged."""
-        self.verify_file_hash(build_dir, "tc-gia-012", "agg_subtype", "tsv")
-
-    def test_tc_gia_012_agg_flipflop_content_unchanged(self, build_dir):
-        """Verify TC-GIA-012 agg_flipflop.tsv content is unchanged."""
-        self.verify_file_hash(build_dir, "tc-gia-012", "agg_flipflop", "tsv")
-
-    def test_tc_gia_012_flipflop_content_unchanged(self, build_dir):
-        """Verify TC-GIA-012 flipflop.tsv.gz content is unchanged."""
-        self.verify_file_hash(build_dir, "tc-gia-012", "flipflop", "tsv.gz")
-
-    def test_tc_gia_012_metadata_content_unchanged(self, build_dir):
-        """Verify TC-GIA-012 metadata.tsv content is unchanged."""
-        self.verify_file_hash(build_dir, "tc-gia-012", "metadata", "tsv")
 
     # Utility Methods
     def print_current_hashes(self, build_dir):

@@ -227,24 +227,19 @@ flextable(agg_ref_type_with_total %>% select(! c(pct_vector, pct_total))) %>%
 ```{r typeplots, message=FALSE, warning=FALSE}
 countreads <- agg_ref_type %>% filter(reference_label != "lambda")
 
-# Only create plots if there's data to plot
-if (nrow(countreads) > 0 && sum(countreads$effective_count) > 0) {
-  # Bar chart
-  ggplot(countreads, aes(x = reference_label, y = pct_total, fill = assigned_type)) +
-    geom_bar(stat = "identity") +
-    scale_x_discrete("Sequence", guide = guide_axis(angle = 30)) +
-    scale_y_continuous("Reads (%)",
-                       limits = c(0, 100),
-                       expand = c(0, 0))
+# Bar chart
+ggplot(countreads, aes(x = reference_label, y = pct_total, fill = assigned_type)) +
+  geom_bar(stat = "identity") +
+  scale_x_discrete("Sequence", guide = guide_axis(angle = 30)) +
+  scale_y_continuous("Reads (%)",
+                     limits = c(0, 100),
+                     expand = c(0, 0))
 
-  # Pie chart
-  ggplot(countreads, aes(x = "", y = effective_count, fill = reference_label)) +
-    geom_bar(stat = "identity", width = 1) +
-    coord_polar("y", start = 0) +
-    theme_void()
-} else {
-  cat("No mapped reads available for visualization.")
-}
+# Pie chart
+ggplot(countreads, aes(x = "", y = effective_count, fill = reference_label)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y", start = 0) +
+  theme_void()
 ```
 
 
@@ -544,8 +539,6 @@ x.err.vector[x.err.vector$type == 'X', "type"] <- 'mismatch'
 x.err.vector[x.err.vector$type == 'N', "type"] <- 'gaps'
 
 # Round positions down to 10s for plotting
-x.err.vector$pos0 <- as.numeric(x.err.vector$pos0)
-x.err.vector$pos0 <- ifelse(x.err.vector$pos0 < 0, 0, x.err.vector$pos0)
 x.err.vector$pos0_div <- (x.err.vector$pos0 %/% 10 * 10)
 
 df.err.vector <- x.err.vector %>%
