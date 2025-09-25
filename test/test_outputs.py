@@ -41,7 +41,7 @@ EXPECTED_ROW_COUNTS = {
         "reference_names": 8,
         "nonmatch": 0,
         "agg_ref_type": 1,
-        "agg_subtype": 0,
+        "agg_subtype": 1,
         "agg_flipflop": 0,
     },
 }

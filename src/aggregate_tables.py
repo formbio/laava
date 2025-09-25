@@ -37,15 +37,19 @@ def analyze_alignments(path_prefix):
     # Filter to vector-only reads
     read_vector = read_df[read_df["reference_label"] == "vector"]
 
+    # Filter to lambda-only reads
+    read_lambda = read_df[(read_df["reference_label"] == "Lambda") | (read_df["reference_label"] == "lambda")]
+
     total_read_count_all = read_df["effective_count"].sum()
     total_read_count_vector = read_vector["effective_count"].sum()
+    total_read_count_lambda = 0 if read_lambda.empty else read_lambda["effective_count"].sum()
 
     result = {
         "agg_ref_type": get_ref_type_agg(
-            read_df, total_read_count_all, total_read_count_vector
+            read_df, total_read_count_all, total_read_count_vector, total_read_count_lambda
         ),
         "agg_subtype": get_subtype_agg(
-            read_vector, total_read_count_all, total_read_count_vector
+            read_vector, total_read_count_all, total_read_count_vector, total_read_count_lambda
         ),
     }
 
@@ -58,7 +62,7 @@ def analyze_alignments(path_prefix):
     return result
 
 
-def get_ref_type_agg(read_df, total_read_count_all, total_read_count_vector):
+def get_ref_type_agg(read_df, total_read_count_all, total_read_count_vector, total_read_count_lambda):
     """Counts and percentages of reference labels and types."""
     df = (
         read_df.groupby(["reference_label", "assigned_type"], dropna=False)[
@@ -75,11 +79,28 @@ def get_ref_type_agg(read_df, total_read_count_all, total_read_count_vector):
     pct_vector[df["reference_label"] != "vector"] = np.nan
     df["pct_vector"] = pct_vector
     df["pct_total"] = round(df["effective_count"] * 100 / total_read_count_all, 2)
+    df["counts_wo_lambda"] = df["effective_count"]
+    df["pct_wo_lambda"] = round(df["effective_count"] * 100 / (total_read_count_all-total_read_count_lambda), 2)
+    df.loc[df["reference_label"].isin(["lambda", "Lambda"]), "counts_wo_lambda"] = 0
+    df.loc[df["reference_label"].isin(["lambda", "Lambda"]), "pct_wo_lambda"] = 0.0
     return df
 
 
-def get_subtype_agg(read_vector, total_read_count_all, total_read_count_vector):
+def get_subtype_agg(read_vector, total_read_count_all, total_read_count_vector, total_read_count_lambda):
     """Counts and percentages of assigned types and subtypes."""
+    # Handle case where there are no vector reads
+    if read_vector.empty:
+        # Return DataFrame with NA values that R can handle without affecting calculations
+        # Using pd.NA ensures R recognizes this as missing data that won't interfere with sums
+        return pd.DataFrame({
+            "assigned_type": [pd.NA],
+            "assigned_subtype": [pd.NA],
+            "effective_count": [0],  # Use 0 so R sum() works correctly
+            "pct_vector": [0.0],
+            "pct_total": [0.0], 
+            "pct_wo_lambda": [0.0]
+        })
+    
     df = (
         read_vector.groupby(["assigned_type", "assigned_subtype"])["effective_count"]
         .sum()
@@ -88,6 +109,7 @@ def get_subtype_agg(read_vector, total_read_count_all, total_read_count_vector):
     df = df.sort_values(["assigned_type", "effective_count"], ascending=[False, False])
     df["pct_vector"] = round(df["effective_count"] * 100 / total_read_count_vector, 2)
     df["pct_total"] = round(df["effective_count"] * 100 / total_read_count_all, 2)
+    df["pct_wo_lambda"] = round(df["effective_count"] * 100 / (total_read_count_all-total_read_count_lambda), 2)
     return df
 
 

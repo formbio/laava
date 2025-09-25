@@ -152,8 +152,8 @@ def identify_flip_flop(df, ff_seq, vector_type, orientation):
                 config_right = "unclassified"
             
             elif orientation == "right":
-                o11 = parasail.sw_trace(forward_query[-len(ff_seq.right_flip) - min_insert :], ff_seq.right_flip, 3, 1, SW_SCORE_MATRIX,)
-                o12 = parasail.sw_trace(forward_query[-len(ff_seq.right_flop) - min_insert :], ff_seq.right_flop, 3, 1, SW_SCORE_MATRIX,)
+                o11 = parasail.sw_trace(query[-len(ff_seq.right_flip) - min_insert :], ff_seq.right_flip, 3, 1, SW_SCORE_MATRIX,)
+                o12 = parasail.sw_trace(query[-len(ff_seq.right_flop) - min_insert :], ff_seq.right_flop, 3, 1, SW_SCORE_MATRIX,)
 
                 if o11.score > o12.score and o11.score > min_score:
                     config_right = "flip"
@@ -206,6 +206,11 @@ def main(per_read_tsv, tagged_bam, vector_type, orientation, output_prefix, flip
         flipflop_seqs = FlipFlopSeqSet(**SEQ_AAV2)
     else:
         flipflop_seqs = FlipFlopSeqSet.from_fasta(flipflop_fasta)
+
+    # Skip scAAV records entirely - not currently supported
+    if vector_type == "sc":
+        print("Flipflop analysis for scAAV oriented vectors is currently not supported")
+        exit
 
     read_info = load_per_read_info(per_read_tsv)
 
@@ -273,11 +278,7 @@ def main(per_read_tsv, tagged_bam, vector_type, orientation, output_prefix, flip
                     "vector-left-partial",
                     "vector-right-partial",
                 ):
-                    # Skip scAAV records entirely - not currently supported
-                    if vector_type == "sc":
-                        print(f"Skipping read {id}: Flipflop analysis for scAAV oriented vectors is not currently supported")
-                        continue
-                    
+                  
                     c_l, c_r = identify_flip_flop(f_df, flipflop_seqs, vector_type, orientation)
                     for index, row in f_df.iterrows():
                         # if "AX" in f_df.columns and not f_df["AX"].empty:
