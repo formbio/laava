@@ -67,7 +67,7 @@ tc-gia-012-local: $(out_dir)/tc-gia-012.reference_names.tsv
 		"TC-GIA-012" \
 		test \
 		$(out_dir)/tc-gia-012.reference_names.tsv \
-		$(in_dir)/TC-GIA-012/TC-GIA-012.bam \
+		tc-gia-012_aligned.bam \
 		$(in_dir)/TC-GIA-012/scAAV_CBA_eGFP_reverse_complement.bed \
 		ITR-L \
 		"" \
