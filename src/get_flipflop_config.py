@@ -207,6 +207,11 @@ def main(per_read_tsv, tagged_bam, vector_type, orientation, output_prefix, flip
     else:
         flipflop_seqs = FlipFlopSeqSet.from_fasta(flipflop_fasta)
 
+    # Skip scAAV records entirely - not currently supported
+    if vector_type == "sc":
+        print(f"Skipping read {id}: Flipflop analysis for scAAV oriented vectors is not currently supported")
+        exit
+
     read_info = load_per_read_info(per_read_tsv)
 
     with gzip.open(output_prefix + ".flipflop.tsv.gz", "wt") as fout:
@@ -273,11 +278,7 @@ def main(per_read_tsv, tagged_bam, vector_type, orientation, output_prefix, flip
                     "vector-left-partial",
                     "vector-right-partial",
                 ):
-                    # Skip scAAV records entirely - not currently supported
-                    if vector_type == "sc":
-                        print(f"Skipping read {id}: Flipflop analysis for scAAV oriented vectors is not currently supported")
-                        continue
-                    
+                  
                     c_l, c_r = identify_flip_flop(f_df, flipflop_seqs, vector_type, orientation)
                     for index, row in f_df.iterrows():
                         # if "AX" in f_df.columns and not f_df["AX"].empty:
