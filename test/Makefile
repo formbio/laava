@@ -148,3 +148,10 @@ $(out_dir)/sc.reference_names.tsv $(out_dir)/ss.reference_names.tsv: \
 	conda run -n laava python ../src/get_reference_names.py -o $@ \
 		$< --packaging $(word 2,$^) --host $(word 3,$^) \
 		--repcap-name pRep2Cap9 --helper-name pHelper --lambda-name Lambda
+
+$(out_dir)/tc-gia-012.reference_names.tsv: \
+	$(in_dir)/TC-GIA-012/scAAV_CBA_eGFP_reverse_complement.fasta $(in_dir)/TC-GIA-012/package.fa fasta/hg38.chr19trunc-chrM.fa
+	mkdir -p $(out_dir)
+	conda run -n laava python ../src/get_reference_names.py -o $@ \
+		$< --packaging $(word 2,$^) --host $(word 3,$^) \
+		--repcap-name pRep2Cap9 --helper-name pHelper --lambda-name Lambda
