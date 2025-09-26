@@ -145,7 +145,7 @@ def main(per_read_tsv, tagged_bam, vector_type, output_prefix, flipflop_fasta):
 
     # Skip scAAV records entirely - not currently supported
     if vector_type == "sc":
-        print("Flipflop analysis for scAAV oriented vectors is currently not supported")
+        print("Flip-flop analysis for scAAV oriented vectors is currently not supported")
         exit()
 
     read_info = load_per_read_info(per_read_tsv)
