@@ -279,7 +279,7 @@ def load_per_read_info(fname):
 def main(per_read_tsv, tagged_bam, vector_type, orientation, output_prefix, flipflop_fasta):
     """Entry point - Chunked processing to prevent OOM on large datasets."""
     OUT_FIELDS = ["name", "type", "subtype", "start", "end", "leftITR", "rightITR"]
-    CHUNK_SIZE = 10000  # Process 10K records at a time to prevent memory explosion
+    CHUNK_SIZE = 20000  # Process 10K records at a time to prevent memory explosion
 
     if flipflop_fasta is None:
         flipflop_seqs = FlipFlopSeqSet(**SEQ_AAV2)
@@ -339,6 +339,7 @@ def main(per_read_tsv, tagged_bam, vector_type, orientation, output_prefix, flip
                 df_chunk, flipflop_seqs, vector_type, orientation, 
                 read_info, out_tsv, out_bam_full, out_bam_leftp, out_bam_rightp
             )
+            break # only do one chunk for testing
 
         out_bam_full.close()
         out_bam_leftp.close()
