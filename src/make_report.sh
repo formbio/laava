@@ -65,6 +65,7 @@ if [[ -n "$flipflop_name" || -n "$flipflop_fa" ]]; then
     echo "Starting get_flipflop_config"
     python "$(dirname $0)/get_flipflop_config.py" \
         "$out_dir/${sample_id}.tagged.bam" "$out_dir/${sample_id}.per_read.tsv.gz" \
+        "$vector_type" \
         $ff_opt \
         -o "$out_dir/$sample_id"
     echo "Finished get_flipflop_config"
