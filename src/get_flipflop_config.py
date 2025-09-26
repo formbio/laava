@@ -134,7 +134,7 @@ def load_per_read_info(fname):
     return read_info
 
 
-def main(per_read_tsv, tagged_bam, output_prefix, flipflop_fasta):
+def main(per_read_tsv, tagged_bam, vector_type, output_prefix, flipflop_fasta):
     """Entry point."""
     OUT_FIELDS = ["name", "type", "subtype", "start", "end", "leftITR", "rightITR"]
 
@@ -142,6 +142,11 @@ def main(per_read_tsv, tagged_bam, output_prefix, flipflop_fasta):
         flipflop_seqs = FlipFlopSeqSet(**SEQ_AAV2)
     else:
         flipflop_seqs = FlipFlopSeqSet.from_fasta(flipflop_fasta)
+
+    # Skip scAAV records entirely - not currently supported
+    if vector_type == "sc":
+        print("Flip-flop analysis for scAAV oriented vectors is currently not supported")
+        return
 
     read_info = load_per_read_info(per_read_tsv)
 
@@ -213,6 +218,7 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("sorted_tagged_bam", help="Sorted tagged BAM file")
     parser.add_argument("per_read_tsv", help="Per read TSV file")
+    parser.add_argument("vector_type", help="AAV vector type")
     parser.add_argument("-o", "--output-prefix", help="Output prefix", required=True)
     parser.add_argument(
         "--flipflop-fasta",
@@ -225,6 +231,7 @@ if __name__ == "__main__":
     main(
         args.per_read_tsv,
         args.sorted_tagged_bam,
+        args.vector_type,
         args.output_prefix,
         args.flipflop_fasta,
     )
