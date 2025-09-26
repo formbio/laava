@@ -11,7 +11,7 @@ all: sc ss
 clean:
 	rm -frv build/*
 
-test: sc ss
+test: sc ss tc-gia-012-local
 	pytest test_outputs.py
 
 # Local testing without Docker (using conda)
