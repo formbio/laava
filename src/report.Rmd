@@ -90,6 +90,15 @@ scAAV        |Self-complementary AAV vector genome where one half of the payload
 backbone     |Read aligns to the vector plasmid sequence but fully outside of the annotated ITR-to-ITR region, indicating that the sequence fragment originated solely from the plasmid backbone.
 other-vector |Read consists of a fragment mapping to the vector but with characteristics other than those listed above.
 
+Table: Count and Frequency definitions.
+
+Term |Definition
+:-----------:|----------------------------------------------------
+Counts                              |Refers to the total number of reads including lambda
+Counts Excluding Lambda             |Refers to the total number of reads excluding lambda
+Frequency (%, Excluding Lambda)     |Frequency of reads excluding lambda
+GOI Vector Frequency (%)            |Refers to the frequency of reads that align to the GOI transfer vector; excludes reads that align to contaminants (chimeric vector, chimeric non-vector, pRepCap, pHelper, host and unmapped) and lambda
+
 
 `<br />`{=html}
 
@@ -186,48 +195,82 @@ agg_subtype <- read_tsv(paste0(params$path_prefix, '.agg_subtype.tsv'), show_col
 
 # Assigned types by read alignment characteristics
 
+In the table below, the distribution of reads mapping to the vector, and other contaminants are described. The table includes the counts (includes lambda), counts excluding lambda and the frequency excluding lambda. 
+
+Note: If lambda spike-in was not performed as part of the library prep process, the values in the counts and counts excluding lambda columns will be identical.
+
 ```{r typetable, message=FALSE, warning=FALSE}
-flextable(agg_ref_type %>% select(! pct_vector)) %>%
-  set_header_labels(values = c("Mapped Reference", "Assigned Type", "Count", "Frequency (%)"))
+# Calculate the total row
+total_row <- agg_ref_type %>%
+  summarise(
+    reference_label = "Total",
+    assigned_type = "",
+    effective_count = sum(effective_count, na.rm = TRUE),
+    counts_wo_lambda = sum(counts_wo_lambda, na.rm = TRUE),
+    pct_wo_lambda = sum(pct_wo_lambda, na.rm = TRUE)
+  )
+
+# Append the total row to the dataset
+agg_ref_type_with_total <- bind_rows(agg_ref_type, total_row)
+
+# Create the flextable
+flextable(agg_ref_type_with_total %>% select(! c(pct_vector, pct_total))) %>%
+  set_header_labels(values = c(
+    "Mapped Reference", 
+    "Assigned Type", 
+    "Counts", 
+    "Counts Excluding Lambda", 
+    "Frequency (%, Excluding Lambda)"
+  ))
 ```
 
 ```{r typeplots, message=FALSE, warning=FALSE}
 countreads <- agg_ref_type %>% filter(reference_label != "lambda")
 
-# Only create plots if there's data to plot
-if (nrow(countreads) > 0 && sum(countreads$effective_count) > 0) {
-  # Bar chart
-  ggplot(countreads, aes(x = reference_label, y = pct_total, fill = assigned_type)) +
-    geom_bar(stat = "identity") +
-    scale_x_discrete("Sequence", guide = guide_axis(angle = 30)) +
-    scale_y_continuous("Reads (%)",
-                       limits = c(0, 100),
-                       expand = c(0, 0))
+# Bar chart
+ggplot(countreads, aes(x = reference_label, y = pct_total, fill = assigned_type)) +
+  geom_bar(stat = "identity") +
+  scale_x_discrete("Sequence", guide = guide_axis(angle = 30)) +
+  scale_y_continuous("Reads (%)",
+                     limits = c(0, 100),
+                     expand = c(0, 0))
 
-  # Pie chart
-  ggplot(countreads, aes(x = "", y = effective_count, fill = reference_label)) +
-    geom_bar(stat = "identity", width = 1) +
-    coord_polar("y", start = 0) +
-    theme_void()
-} else {
-  cat("No mapped reads available for visualization.")
-}
+# Pie chart
+ggplot(countreads, aes(x = "", y = effective_count, fill = reference_label)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y", start = 0) +
+  theme_void()
 ```
 
 
-## Frequency of vector assigned types
+# Frequency of vector assigned types
+
+In the table below, the distribution of reads mapping to the vector, other-vector and backbone are described. The table includes the counts, frequency excluding lambda, and the GOI vector frequency.
 
 ```{r vectypes, message=FALSE, warning=FALSE}
-vectypes <- agg_ref_type %>%
-    filter(reference_label == "vector") %>%
-    select(! reference_label)
+ vectypes <- agg_ref_type %>%
+     filter(reference_label == "vector") %>%
+     select(! c(reference_label, pct_total, counts_wo_lambda))  # Exclude the columns to hide
 
-flextable(vectypes) %>%
+# Calculate the total row
+total_row <- vectypes %>%
+  summarise(
+    assigned_type = "Total",
+    effective_count = sum(effective_count, na.rm = TRUE),
+    pct_vector = sum(pct_vector, na.rm = TRUE),
+    pct_wo_lambda = sum(pct_wo_lambda, na.rm = TRUE)
+  )
+
+# Append the total row to the dataset
+vectypes_with_total <- bind_rows(vectypes, total_row)
+
+# Create the flextable with reordered columns
+flextable(vectypes_with_total %>% select(assigned_type, effective_count, pct_wo_lambda, pct_vector)) %>%
   set_header_labels(values = c(
     "Assigned Type",
-    "Count",
-    "Frequency in AAV (%)",
-    "Total Frequency (%)"
+    "Counts",
+    "Frequency (%, Excluding Lambda)",
+    "GOI Vector Frequency (%)"
   ))
 ```
 
@@ -248,7 +291,6 @@ p2.atype_violin <- ggplot(
 
 p2.atype_violin
 ```
-
 
 # Assigned subtypes detailed analysis
 
@@ -290,21 +332,36 @@ other-vector |complex         |Read aligns to a double-stranded fragment with as
 other-vector |unclassified    |Read alignment does not match any of the above orientations.
 ```
 
-## Assigned types and subtypes
+# Assigned types and subtypes
+
+In the table below, the distribution of reads mapping to the various assigned subtypes are described. The table includes the counts, frequency excluding lambda, and the GOI vector frequency.
 
 ```{r subtypetable, message=FALSE, warning=FALSE}
-flextable(agg_subtype) %>%
+# Calculate the total row
+total_row <- agg_subtype %>%
+  summarise(
+    assigned_type = "Total",
+    assigned_subtype = "",
+    effective_count = sum(effective_count, na.rm = TRUE),
+    pct_vector= sum(pct_vector, na.rm = TRUE),
+    pct_wo_lambda = sum(pct_wo_lambda, na.rm = TRUE)
+  )
+
+# Append the total row to the dataset
+agg_subtype_with_total <- bind_rows(agg_subtype, total_row)
+
+# Create the flextable with reordered columns
+flextable(agg_subtype_with_total %>% select(assigned_type, assigned_subtype, effective_count, pct_wo_lambda, pct_vector)) %>%
   set_header_labels(
     values = c(
       "Assigned Type",
       "Assigned Subtype",
-      "Count",
-      "Freq. in AAV (%)",
-      "Total Freq. (%)"
+      "Counts",
+      "Frequency (%, Excluding Lambda)",
+      "GOI Vector Frequency (%)"
     )
   )
 ```
-
 
 ## Distribution of read length by subtype
 
@@ -482,8 +539,6 @@ x.err.vector[x.err.vector$type == 'X', "type"] <- 'mismatch'
 x.err.vector[x.err.vector$type == 'N', "type"] <- 'gaps'
 
 # Round positions down to 10s for plotting
-x.err.vector$pos0 <- as.numeric(x.err.vector$pos0)
-x.err.vector$pos0 <- ifelse(x.err.vector$pos0 < 0, 0, x.err.vector$pos0)
 x.err.vector$pos0_div <- (x.err.vector$pos0 %/% 10 * 10)
 
 df.err.vector <- x.err.vector %>%

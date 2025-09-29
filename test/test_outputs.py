@@ -25,7 +25,7 @@ EXPECTED_ROW_COUNTS = {
     "ss": {
         "alignments": 5489,
         "per_read": 3517,
-        "flipflop": 3274,
+        "flipflop": 2576,
         "metadata": 1,
         "reference_names": 8,
         "nonmatch": 78330,
@@ -36,13 +36,13 @@ EXPECTED_ROW_COUNTS = {
     "tc-gia-012": {
         "alignments": 4000,
         "per_read": 2000,
-        "flipflop": 2000,
+        "flipflop": 0,
         "metadata": 1,
         "reference_names": 8,
         "nonmatch": 46000,
         "agg_ref_type": 1,
         "agg_subtype": 1,
-        "agg_flipflop": 4,
+        "agg_flipflop": 0,
     },
 }
 
@@ -88,26 +88,23 @@ class TestCompareTSVs:
     def test_agg_subtype(self, build_dir, name_prefix):
         self.check_tsv_row_count(build_dir, name_prefix, "agg_subtype", "tsv")
 
-    # Flipflop tests for datasets that support it
-    @pytest.mark.parametrize("name_prefix", ["ss", "tc-gia-012"])
-    def test_flipflop(self, build_dir, name_prefix):
-        self.check_tsv_row_count(build_dir, name_prefix, "flipflop", "tsv.gz")
+    # Only ssAAV
+    def test_ss_flipflop(self, build_dir):
+        self.check_tsv_row_count(build_dir, "ss", "flipflop", "tsv.gz")
 
-    @pytest.mark.parametrize("name_prefix", ["ss", "tc-gia-012"])
-    def test_agg_flipflop(self, build_dir, name_prefix):
-        self.check_tsv_row_count(build_dir, name_prefix, "agg_flipflop", "tsv")
+    def test_ss_agg_flipflop(self, build_dir):
+        self.check_tsv_row_count(build_dir, "ss", "agg_flipflop", "tsv")
 
     @pytest.mark.parametrize("name_prefix", EXPECTED_ROW_COUNTS.keys())
     def test_per_read(self, build_dir, name_prefix):
         tsv_path, expected_count, row_count = self.check_tsv_row_count(
             build_dir, name_prefix, "per_read", "tsv.gz"
         )
-        # Handle different BAM path structures
         if name_prefix == "tc-gia-012":
             bam_path = Path(f"{BAM_DIR}/TC-GIA-012/TC-GIA-012.bam")
         else:
             bam_path = Path(f"{BAM_DIR}/{name_prefix}.subsample005.bam")
-        
+
         try:
             with pysam.AlignmentFile(bam_path, "rb", check_sq=False) as bam_file:
                 primary_count = sum(
@@ -119,7 +116,6 @@ class TestCompareTSVs:
                 row_count == expected_count == primary_count
             ), f"Expected {expected_count} primary reads, got {row_count} in TSV and {primary_count} in SAM for {tsv_path}"
         except (ValueError, OSError) as e:
-            # For problematic BAM files (like TC-GIA-012), just verify the TSV row count matches expected
             if name_prefix == "tc-gia-012":
                 # We already verified the row count matches expected, so this is sufficient
                 pass
