@@ -335,7 +335,6 @@ def main(per_read_tsv, tagged_bam, vector_type, orientation, output_prefix, flip
                 # Progress reporting
                 if total_processed % 20000 == 0:
                     print(f"Processed {total_processed:,} total reads, {vector_reads_processed:,} vector reads")
-                    break # for testing
                 
                 # Skip non-vector reads early to save memory
                 if not is_vector_read(record):
