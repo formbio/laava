@@ -403,7 +403,7 @@ if __name__ == "__main__":
     parser.add_argument("sorted_tagged_bam", help="Sorted tagged BAM file")
     parser.add_argument("per_read_tsv", help="Per read TSV file")
     parser.add_argument("vector_type", help="AAV vector type")
-    # parser.add_argument("orientation", help="mITR orientation")
+    parser.add_argument("orientation", help="mITR orientation")
     parser.add_argument("-o", "--output-prefix", help="Output prefix", required=True)
     parser.add_argument(
         "--flipflop-fasta",
@@ -417,8 +417,7 @@ if __name__ == "__main__":
         args.per_read_tsv,
         args.sorted_tagged_bam,
         args.vector_type,
-        "left",
-        # args.orientation,
+        args.orientation,
         args.output_prefix,
         args.flipflop_fasta,
     )
