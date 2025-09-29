@@ -107,7 +107,7 @@ def is_vector_read(record):
         return False
 
 
-def identify_flip_flop_direct(reads, ff_seq, vector_type, orientation='left'):
+def identify_flip_flop_direct(reads, ff_seq, vector_type, orientation):
     """Determine left and right flip/flop/unclassified configurations from pysam records directly."""
     min_score = 250
     min_insert = 10 
@@ -417,6 +417,7 @@ if __name__ == "__main__":
         args.per_read_tsv,
         args.sorted_tagged_bam,
         args.vector_type,
+        "left",
         # args.orientation,
         args.output_prefix,
         args.flipflop_fasta,
