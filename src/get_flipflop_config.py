@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import csv
 import gzip
-import gc
 from typing import NamedTuple
 
 import parasail
@@ -103,7 +102,7 @@ def is_vector_read(record):
         ax_tag = tags.get('AX', None)
         return (at_tag == 'vector' and 
                 ax_tag in ('vector-full', 'vector-left-partial', 'vector-right-partial'))
-    except:
+    except Exception:
         return False
 
 
@@ -392,8 +391,8 @@ def main(per_read_tsv, tagged_bam, vector_type, orientation, output_prefix, flip
         try:
             os.remove(sorted_bam)
             print(f"Cleaned up temporary sorted BAM: {sorted_bam}")
-        except:
-            print(f"Warning: Could not clean up temporary file: {sorted_bam}")
+        except Exception as e:
+            print(f"Warning: Could not clean up temporary file: {sorted_bam}, error{e}")
 
 
 if __name__ == "__main__":
