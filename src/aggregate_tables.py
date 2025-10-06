@@ -36,6 +36,9 @@ def analyze_alignments(path_prefix):
     read_df = pd.read_csv(f"{path_prefix}.per_read.tsv.gz", sep="\t")
     alignments_df = pd.read_csv(f"{path_prefix}.alignments.tsv.gz", sep="\t")
     
+    # Pre-aggregate the alignment data by read_id (sum map_len)
+    map_len_df = alignments_df[alignments_df["is_mapped"] == "Y"].groupby("read_id")["map_len"].sum().reset_index()
+    
     # Filter to vector-only reads
     read_vector = read_df[read_df["reference_label"] == "vector"]
 
@@ -48,10 +51,10 @@ def analyze_alignments(path_prefix):
 
     result = {
         "agg_ref_type": get_ref_type_agg(
-            read_df, alignments_df, total_read_count_all, total_read_count_vector, total_read_count_lambda
+            read_df, map_len_df, total_read_count_all, total_read_count_vector, total_read_count_lambda
         ),
         "agg_subtype": get_subtype_agg(
-            read_vector, alignments_df, total_read_count_all, total_read_count_vector, total_read_count_lambda
+            read_vector, map_len_df, total_read_count_all, total_read_count_vector, total_read_count_lambda
         ),
     }
 
@@ -64,18 +67,18 @@ def analyze_alignments(path_prefix):
     return result
 
 
-def get_ref_type_agg(read_df, alignments_df, total_read_count_all, total_read_count_vector, total_read_count_lambda):
+def get_ref_type_agg(read_df, map_len_df, total_read_count_all, total_read_count_vector, total_read_count_lambda):
     """Counts and percentages of reference labels and types."""
-    # Merge the read_df with alignments_df to get map_len
+    # Merge read_df with pre-aggregated map_len data
     merged_df = pd.merge(
         read_df[["read_id", "reference_label", "assigned_type", "effective_count"]], 
-        alignments_df[alignments_df["is_mapped"] == "Y"][["read_id", "map_len"]],
+        map_len_df,
         on="read_id",
         how="left"  # Keep all reads, even if they don't have alignments
     )
     merged_df["map_len"] = merged_df["map_len"].fillna(0)
     
-    # Now do a single groupby to get both effective_count and base
+    # Do a single groupby to get both effective_count and base
     df = merged_df.groupby(["reference_label", "assigned_type"], dropna=False).agg({
         "effective_count": "sum",
         "map_len": "sum"
@@ -99,7 +102,7 @@ def get_ref_type_agg(read_df, alignments_df, total_read_count_all, total_read_co
     return df
 
 
-def get_subtype_agg(read_vector, alignments_df, total_read_count_all, total_read_count_vector, total_read_count_lambda):
+def get_subtype_agg(read_vector, map_len_df, total_read_count_all, total_read_count_vector, total_read_count_lambda):
     """Counts and percentages of assigned types and subtypes."""
     # Handle case where there are no vector reads
     if read_vector.empty:
@@ -115,16 +118,16 @@ def get_subtype_agg(read_vector, alignments_df, total_read_count_all, total_read
             "pct_wo_lambda": [0.0]
         })
     
-    # Merge read_vector with alignments_df to get map_len
+    # Merge read_vector with pre-aggregated map_len data
     merged_df = pd.merge(
         read_vector[["read_id", "assigned_type", "assigned_subtype", "effective_count"]],
-        alignments_df[alignments_df["is_mapped"] == "Y"][["read_id", "map_len"]],
+        map_len_df,
         on="read_id",
         how="left"
     )
     merged_df["map_len"] = merged_df["map_len"].fillna(0)
     
-    # Single groupby to get both effective_count and base
+    # Group by to get both effective_count and base
     df = merged_df.groupby(["assigned_type", "assigned_subtype"]).agg({
         "effective_count": "sum",
         "map_len": "sum"
