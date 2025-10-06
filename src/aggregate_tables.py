@@ -145,11 +145,17 @@ def get_subtype_agg(read_vector, map_len_df, total_read_count_all, total_read_co
 
 def get_flipflop_agg(ff_df):
     """Counts of flip-flop configurations."""
-    df = (
-        ff_df.groupby(["type", "subtype", "leftITR", "rightITR"])
-        .size()
-        .reset_index(name="count")
-    )
+    # Calculate length for each record
+    ff_df["length"] = ff_df["end"] - ff_df["start"]
+    
+    # Group by required columns and calculate count and sum of lengths
+    df = ff_df.groupby(["type", "subtype", "leftITR", "rightITR"]).agg({
+        "name": "count",    # This gives us the count
+        "length": "sum"     # This gives us the base (sum of all lengths)
+    }).reset_index()
+    
+    # Rename columns
+    df = df.rename(columns={"name": "count", "length": "base"})
     return df
 
 
