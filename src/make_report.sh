@@ -48,7 +48,7 @@ python "$(dirname $0)/summarize_alignment.py" \
 
 echo "Finished summarize_alignment"
 ls -Alh
-
+: <<'TEST'   
 if [[ -n "$flipflop_name" || -n "$flipflop_fa" ]]; then
     if [ -n "$flipflop_fa" ]; then
         # Use the gives seqs for FF analysis, regardless of FF name
@@ -75,7 +75,7 @@ if [[ -n "$flipflop_name" || -n "$flipflop_fa" ]]; then
     elif [ "${vector_type}" == "ss" ]; then
        orientation="left"
     fi
-    
+ 
     python "$(dirname $0)/get_flipflop_config.py" \
         "$out_dir/${sample_id}.tagged.bam" "$out_dir/${sample_id}.per_read.tsv.gz" \
         "$vector_type" \
@@ -111,3 +111,4 @@ fi
 echo "Finished create_report"
 
 ls -Alh
+TEST

@@ -868,6 +868,77 @@ def check_is_mitr_left(annotation_bed, itr_labels):
     return None
 
 
+def generate_vector_coverage(bam_filename, annotation, output_prefix):
+    """Generate per-base coverage statistics for vectors in annotation.
+    
+    Parameters:
+        bam_filename (str): Path to the sorted BAM file
+        annotation (dict): Dictionary of annotation objects already loaded
+        output_prefix (str): Prefix for output file
+        
+    Returns:
+        str: Path to the output TSV file
+    """
+    # Open BAM file
+    bam = pysam.AlignmentFile(bam_filename, "rb", check_sq=False)
+    
+    # Count unique fragments (by query name)
+    read_names = set()
+    for read in bam:
+        if not read.is_unmapped:
+            read_names.add(read.query_name)
+    
+    total_fragments = len(read_names)
+    bam.reset()
+    
+    # Initialize list to store coverage data
+    coverage_data = []
+    
+    # Process vectors from annotation
+    for seq_name, info in annotation.items():
+        if info["label"] != "vector":
+            continue
+            
+        region = info["region"]
+        if region is None:
+            logging.warning(f"No region defined for vector {seq_name}, skipping coverage calculation")
+            continue
+            
+        start_pos, end_pos = region
+        
+        logging.info(f"Calculating coverage for vector {seq_name} ({start_pos}-{end_pos})")
+        
+        # Create a position-coverage mapping
+        position_coverage = {i: 0 for i in range(start_pos, end_pos)}
+        
+        # Use pileup with max_depth set to total fragments count (to avoid default limit)
+        for column in bam.pileup(seq_name, start_pos, end_pos, max_depth=total_fragments):
+            if start_pos <= column.pos < end_pos:
+                position_coverage[column.pos] = column.n
+        
+        # Convert to output format with percentages
+        for position, coverage in position_coverage.items():
+            percent_coverage = (coverage / total_fragments) * 100 if total_fragments > 0 else 0
+            
+            coverage_data.append({
+                "vector_name": seq_name,
+                "position": position + 1,  # Convert to 1-based for output
+                "raw_coverage": coverage,
+                "percent_coverage": percent_coverage
+            })
+    
+    # Write coverage data to TSV
+    output_path = f"{output_prefix}.vector_coverage.tsv"
+    with open(output_path, "w") as f:
+        writer = csv.DictWriter(f, fieldnames=["vector_name", "position", "raw_coverage", "percent_coverage"], 
+                                delimiter="\t")
+        writer.writeheader()
+        writer.writerows(coverage_data)
+    
+    logging.info(f"Vector coverage data written to {output_path}")
+    return output_path
+
+
 def main(args):
     """Entry point."""
     annotation = load_annotation_bed(
@@ -898,6 +969,13 @@ def main(args):
             args.output_prefix,
             num_chunks=args.cpus,
         )
+
+    # Generate vector coverage file
+    generate_vector_coverage(
+        args.bam_filename,
+        annotation,
+        args.output_prefix
+    )
 
     # subset BAM files into major categories for ease of loading into IGV for viewing
     # subset_sam_by_readname_list(in_bam, out_bam, per_read_tsv, wanted_types, wanted_subtypes)
