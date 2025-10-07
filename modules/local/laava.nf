@@ -34,7 +34,7 @@ process map_reads() {
           val(sample_name),
           path("${sample_id}.reference_names.tsv"),
           path("${sample_id}.sort_by_name.bam"),
-          path("${sample_id}.sort_by_pos.bam")emit: mapped_name_bam
+          path("${sample_id}.sort_by_pos.bam"), emit: mapped_name_bam
     tuple val(sample_id),
           val(sample_name),
           path("${sample_id}.sort_by_pos.bam"),
