@@ -259,7 +259,7 @@ total_row <- vectypes %>%
   summarise(
     assigned_type = "Total",
     effective_count = sum(effective_count, na.rm = TRUE),
-    baes = sum(base, na.rm = TRUE),
+    base = sum(base, na.rm = TRUE),
     pct_vector = sum(pct_vector, na.rm = TRUE),
     pct_wo_lambda = sum(pct_wo_lambda, na.rm = TRUE)
   )
@@ -268,7 +268,7 @@ total_row <- vectypes %>%
 vectypes_with_total <- bind_rows(vectypes, total_row)
 
 # Create the flextable with reordered columns
-flextable(vectypes_with_total %>% select(assigned_type, effective_count, pct_wo_lambda, pct_vector)) %>%
+flextable(vectypes_with_total %>% select(assigned_type, effective_count, base, pct_wo_lambda, pct_vector)) %>%
   set_header_labels(values = c(
     "Assigned Type",
     "Counts",
