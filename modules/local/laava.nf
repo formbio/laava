@@ -33,8 +33,7 @@ process map_reads() {
     tuple val(sample_id),
           val(sample_name),
           path("${sample_id}.reference_names.tsv"),
-          path("${sample_id}.sort_by_name.bam"),
-          path("${sample_id}.sort_by_name.bam.bai"), emit: mapped_name_bam
+          path("${sample_id}.sort_by_name.bam"),emit: mapped_name_bam
     tuple val(sample_id),
           val(sample_name),
           path("${sample_id}.sort_by_pos.bam"),
@@ -61,6 +60,8 @@ process make_report() {
           val(sample_name),
           path(reference_names),
           path(mapped_reads),
+          path(mapped_pos_bam),
+          path(mapped_pos_bam_idx),
           path(vector_annotation),
           val(itr_label_1),
           val(itr_label_2),
@@ -104,6 +105,8 @@ process make_report() {
         "${workflow.manifest.version}" \\
         "${reference_names}" \\
         "${mapped_reads}" \\
+        "${mapped_pos_bam}" \\
+        "${mapped_pos_bam_idx}" \\
         "${vector_annotation}" \\
         "${itr_label_1}" \\
         "${itr_label_2}" \\

@@ -977,9 +977,10 @@ def main(args):
             num_chunks=args.cpus,
         )
 
-    # Generate vector coverage file
+    # Generate vector coverage file using position-sorted BAM if provided
+    coverage_bam = args.pos_sorted_bam if args.pos_sorted_bam else args.bam_filename
     generate_vector_coverage(
-        args.bam_filename,
+        coverage_bam,
         annotation,
         args.output_prefix
     )
@@ -1124,6 +1125,8 @@ if __name__ == "__main__":
     AP.add_argument(
         "--cpus", default=1, type=int, help="Number of CPUs. [Default: %(default)s]"
     )
+    AP.add_argument("--pos-sorted-bam", help="Position-sorted BAM file (for coverage calculation)")
+    AP.add_argument("--pos-sorted-bam-idx", help="Index for position-sorted BAM file (optional)")
     AP.add_argument("--debug", action="store_true", default=False)
 
     args = AP.parse_args()
