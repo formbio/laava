@@ -1,3 +1,4 @@
+
 ---
 output:
   html_document:
@@ -206,7 +207,6 @@ total_row <- agg_ref_type %>%
     reference_label = "Total",
     assigned_type = "",
     effective_count = sum(effective_count, na.rm = TRUE),
-    base = sum(base, na.rm=TRUE),
     counts_wo_lambda = sum(counts_wo_lambda, na.rm = TRUE),
     pct_wo_lambda = sum(pct_wo_lambda, na.rm = TRUE)
   )
@@ -220,7 +220,6 @@ flextable(agg_ref_type_with_total %>% select(! c(pct_vector, pct_total))) %>%
     "Mapped Reference", 
     "Assigned Type", 
     "Counts", 
-    "Base Counts",
     "Counts Excluding Lambda", 
     "Frequency (%, Excluding Lambda)"
   ))
@@ -259,7 +258,6 @@ total_row <- vectypes %>%
   summarise(
     assigned_type = "Total",
     effective_count = sum(effective_count, na.rm = TRUE),
-    base = sum(base, na.rm = TRUE),
     pct_vector = sum(pct_vector, na.rm = TRUE),
     pct_wo_lambda = sum(pct_wo_lambda, na.rm = TRUE)
   )
@@ -268,11 +266,10 @@ total_row <- vectypes %>%
 vectypes_with_total <- bind_rows(vectypes, total_row)
 
 # Create the flextable with reordered columns
-flextable(vectypes_with_total %>% select(assigned_type, effective_count, base, pct_wo_lambda, pct_vector)) %>%
+flextable(vectypes_with_total %>% select(assigned_type, effective_count, pct_wo_lambda, pct_vector)) %>%
   set_header_labels(values = c(
     "Assigned Type",
     "Counts",
-    "Base Count",
     "Frequency (%, Excluding Lambda)",
     "GOI Vector Frequency (%)"
   ))
@@ -347,7 +344,6 @@ total_row <- agg_subtype %>%
     assigned_type = "Total",
     assigned_subtype = "",
     effective_count = sum(effective_count, na.rm = TRUE),
-    base = sum(base, na.rm=TRUE),
     pct_vector= sum(pct_vector, na.rm = TRUE),
     pct_wo_lambda = sum(pct_wo_lambda, na.rm = TRUE)
   )
@@ -356,13 +352,12 @@ total_row <- agg_subtype %>%
 agg_subtype_with_total <- bind_rows(agg_subtype, total_row)
 
 # Create the flextable with reordered columns
-flextable(agg_subtype_with_total %>% select(assigned_type, assigned_subtype, effective_count, base, pct_wo_lambda, pct_vector)) %>%
+flextable(agg_subtype_with_total %>% select(assigned_type, assigned_subtype, effective_count, pct_wo_lambda, pct_vector)) %>%
   set_header_labels(
     values = c(
       "Assigned Type",
       "Assigned Subtype",
       "Counts",
-      "Base Counts",
       "Frequency (%, Excluding Lambda)",
       "GOI Vector Frequency (%)"
     )
@@ -640,10 +635,11 @@ if (exists("df.flipflop") && (nrow(df.flipflop) > 1)) {
 
 ```{r fftable, message=FALSE, warning=FALSE, results='asis'}
 if (exists("df.flipflop") && (nrow(df.flipflop) > 1)) {
-  flextable(df.flipflop) %>%
-    set_header_labels(values = c("type", "subtype", "leftITR", "rightITR", "count", "base counts"))
+  flextable(df.flipflop %>% select(! c("base"))) %>%
+    set_header_labels(values = c("type", "subtype", "leftITR", "rightITR", "count"))
 }
 ```
+
 
 ```{r saverdata, message=FALSE, warning=FALSE}
 # Enable for troubleshooting -- takes some time to generate
