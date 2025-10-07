@@ -95,7 +95,6 @@ workflow laava {
     )
     make_report(
         map_reads.out.mapped_name_bam
-        .join(map_reads.out.mapped_pos_bam)
         .combine( channel.fromPath( vector_bed ) )
         .combine( channel.of( itr_label_1 ) )
         .combine( channel.of( itr_label_2 ) )
