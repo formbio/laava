@@ -124,6 +124,7 @@ workflow laava {
     flipflop_bams = make_report.out.flipflop_bams
     flipflop_tsv = make_report.out.flipflop_tsv
     sample_id = make_report.out.sample_id
+    vector_coverage = make_report.out.vector_coverage
 }
 
 

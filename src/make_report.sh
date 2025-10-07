@@ -48,7 +48,7 @@ python "$(dirname $0)/summarize_alignment.py" \
 
 echo "Finished summarize_alignment"
 ls -Alh
-: <<'TEST'   
+
 if [[ -n "$flipflop_name" || -n "$flipflop_fa" ]]; then
     if [ -n "$flipflop_fa" ]; then
         # Use the gives seqs for FF analysis, regardless of FF name
@@ -111,4 +111,3 @@ fi
 echo "Finished create_report"
 
 ls -Alh
-TEST
