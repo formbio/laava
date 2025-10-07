@@ -879,15 +879,17 @@ def generate_vector_coverage(bam_filename, annotation, output_prefix):
     Returns:
         str: Path to the output TSV file
     """
-    # Check if BAM index exists, create if needed
-    index_filename = bam_filename + ".bai"
-    if not os.path.exists(index_filename):
-        logging.info(f"BAM index not found, creating index for {bam_filename}")
-        pysam.index(bam_filename)
-        logging.info(f"BAM index created: {index_filename}")
+    # Sort BAM by position for coverage calculation
+    pos_sorted_bam = f"{output_prefix}.pos_sorted.bam"
+    logging.info(f"Sorting BAM by position: {bam_filename} -> {pos_sorted_bam}")
+    pysam.sort("-o", pos_sorted_bam, bam_filename)
     
-    # Open BAM file
-    bam = pysam.AlignmentFile(bam_filename, "rb", check_sq=False)
+    # Create index for position-sorted BAM
+    logging.info(f"Creating index for position-sorted BAM: {pos_sorted_bam}")
+    pysam.index(pos_sorted_bam)
+    
+    # Open position-sorted BAM file
+    bam = pysam.AlignmentFile(pos_sorted_bam, "rb", check_sq=False)
     
     # Count unique fragments (by query name)
     read_names = set()
@@ -977,10 +979,9 @@ def main(args):
             num_chunks=args.cpus,
         )
 
-    # Generate vector coverage file using position-sorted BAM if provided
-    coverage_bam = args.pos_sorted_bam if args.pos_sorted_bam else args.bam_filename
+    # Generate vector coverage file
     generate_vector_coverage(
-        coverage_bam,
+        args.bam_filename,
         annotation,
         args.output_prefix
     )
@@ -1125,7 +1126,6 @@ if __name__ == "__main__":
     AP.add_argument(
         "--cpus", default=1, type=int, help="Number of CPUs. [Default: %(default)s]"
     )
-    AP.add_argument("--pos-sorted-bam", help="Position-sorted BAM file (for coverage calculation)")
     AP.add_argument("--debug", action="store_true", default=False)
 
     args = AP.parse_args()

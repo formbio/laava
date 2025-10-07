@@ -1,3 +1,4 @@
+
 # Local tests: Run the core analysis steps on downsampled copies of the public PacBio example data
 
 in_dir = samples
@@ -26,7 +27,6 @@ sc-local: $(out_dir)/sc.reference_names.tsv
 		test \
 		$(out_dir)/sc.reference_names.tsv \
 		$(in_dir)/sc.subsample005.bam \
-		$(in_dir)/sc.subsample005.sort.pos.bam \
 		$(in_dir)/sc.annotation.bed \
 		wtITR \
 		"" \
@@ -48,7 +48,6 @@ ss-local: $(out_dir)/ss.reference_names.tsv
 		test \
 		$(out_dir)/ss.reference_names.tsv \
 		$(in_dir)/ss.subsample005.bam \
-		$(in_dir)/ss.subsample005.sort.pos.bam \
 		$(in_dir)/ss.annotation.bed \
 		ITR \
 		"" \
@@ -70,7 +69,6 @@ tc-gia-012-local: $(out_dir)/tc-gia-012.reference_names.tsv
 		test \
 		$(out_dir)/tc-gia-012.reference_names.tsv \
 		tc-gia-012_aligned.bam \
-		tc-gia-012_aligned.sort.pos.bam \
 		$(in_dir)/TC-GIA-012/scAAV_CBA_eGFP_reverse_complement.bed \
 		ITR-L \
 		"" \
@@ -91,7 +89,7 @@ ss: $(out_dir)/ss_AAV_report.html
 
 $(out_dir)/sc_AAV_report.html: \
 	../src/make_report.sh $(out_dir)/sc.reference_names.tsv \
-		$(in_dir)/sc.subsample005.bam $(in_dir)/sc.subsample005.sort.pos.bam $(in_dir)/sc.annotation.bed \
+		$(in_dir)/sc.subsample005.bam $(in_dir)/sc.annotation.bed \
 		../src/aggregate_tables.py ../src/create_report.R \
 		../src/emit_target_coords.py ../src/get_flipflop_config.py \
 		../src/prepare_annotation.py ../src/summarize_alignment.py \
@@ -103,7 +101,6 @@ $(out_dir)/sc_AAV_report.html: \
 		test \
 		$(out_dir)/sc.reference_names.tsv \
 		$(in_dir)/sc.subsample005.bam \
-		$(in_dir)/sc.subsample005.sort.pos.bam \
 		$(in_dir)/sc.annotation.bed \
 		wtITR \
 		"" \
@@ -120,7 +117,7 @@ $(out_dir)/sc_AAV_report.html: \
 
 $(out_dir)/ss_AAV_report.html: \
 	../src/make_report.sh $(out_dir)/ss.reference_names.tsv \
-		$(in_dir)/ss.subsample005.bam $(in_dir)/ss.subsample005.sort.pos.bam $(in_dir)/ss.annotation.bed \
+		$(in_dir)/ss.subsample005.bam $(in_dir)/ss.annotation.bed \
 		../src/aggregate_tables.py ../src/create_report.R \
 		../src/emit_target_coords.py ../src/get_flipflop_config.py \
 		../src/prepare_annotation.py ../src/summarize_alignment.py \
@@ -132,7 +129,6 @@ $(out_dir)/ss_AAV_report.html: \
 		test \
 		$(out_dir)/ss.reference_names.tsv \
 		$(in_dir)/ss.subsample005.bam \
-		$(in_dir)/ss.subsample005.sort.pos.bam \
 		$(in_dir)/ss.annotation.bed \
 		ITR \
 		"" \
