@@ -6,19 +6,18 @@ version=$3
 reference_names=$4
 mapped_reads=$5
 mapped_pos_bam=$6
-mapped_pos_bam_idx=$7
-vector_annotation=$8
-itr_label_1=$9
-itr_label_2=${10}
-mitr_label=${11}
-vector_type=${12}
-target_gap_threshold=${13}
-max_allowed_outside_vector=${14}
-max_allowed_missing_flanking=${15}
-min_supp_joint_coverage=${16}
-flipflop_name=${17}
-flipflop_fa=${18}
-out_dir=${19}
+vector_annotation=$7
+itr_label_1=$8
+itr_label_2=${9}
+mitr_label=${10}
+vector_type=${11}
+target_gap_threshold=${12}
+max_allowed_outside_vector=${13}
+max_allowed_missing_flanking=${14}
+min_supp_joint_coverage=${15}
+flipflop_name=${16}
+flipflop_fa=${17}
+out_dir=${18}
 
 
 ls -Alh
@@ -47,7 +46,6 @@ python "$(dirname $0)/summarize_alignment.py" \
     --max-allowed-missing-flanking="$max_allowed_missing_flanking" \
     --min-supp-joint-coverage="$min_supp_joint_coverage" \
     --pos-sorted-bam="$mapped_pos_bam" \
-    --pos-sorted-bam-idx="$mapped_pos_bam_idx" \
     --cpus $(if command -v nproc >/dev/null 2>&1; then nproc; else sysctl -n hw.ncpu 2>/dev/null || echo 1; fi)
 
 echo "Finished summarize_alignment"

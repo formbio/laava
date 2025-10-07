@@ -61,7 +61,6 @@ process make_report() {
           path(reference_names),
           path(mapped_reads),
           path(mapped_pos_bam),
-          path(mapped_pos_bam_idx),
           path(vector_annotation),
           val(itr_label_1),
           val(itr_label_2),
@@ -106,7 +105,6 @@ process make_report() {
         "${reference_names}" \\
         "${mapped_reads}" \\
         "${mapped_pos_bam}" \\
-        "${mapped_pos_bam_idx}" \\
         "${vector_annotation}" \\
         "${itr_label_1}" \\
         "${itr_label_2}" \\

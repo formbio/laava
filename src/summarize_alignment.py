@@ -1126,7 +1126,6 @@ if __name__ == "__main__":
         "--cpus", default=1, type=int, help="Number of CPUs. [Default: %(default)s]"
     )
     AP.add_argument("--pos-sorted-bam", help="Position-sorted BAM file (for coverage calculation)")
-    AP.add_argument("--pos-sorted-bam-idx", help="Index for position-sorted BAM file (optional)")
     AP.add_argument("--debug", action="store_true", default=False)
 
     args = AP.parse_args()
