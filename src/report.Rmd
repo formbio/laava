@@ -215,7 +215,7 @@ total_row <- agg_ref_type %>%
 agg_ref_type_with_total <- bind_rows(agg_ref_type, total_row)
 
 # Create the flextable
-flextable(agg_ref_type_with_total %>% select(! c(pct_vector, pct_total))) %>%
+flextable(agg_ref_type_with_total %>% select(! c(pct_vector, pct_total, "base"))) %>%
   set_header_labels(values = c(
     "Mapped Reference", 
     "Assigned Type", 
