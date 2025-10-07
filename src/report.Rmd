@@ -1,3 +1,4 @@
+
 ---
 output:
   html_document:
@@ -214,7 +215,7 @@ total_row <- agg_ref_type %>%
 agg_ref_type_with_total <- bind_rows(agg_ref_type, total_row)
 
 # Create the flextable
-flextable(agg_ref_type_with_total %>% select(! c(pct_vector, pct_total))) %>%
+flextable(agg_ref_type_with_total %>% select(! c(pct_vector, pct_total, "base"))) %>%
   set_header_labels(values = c(
     "Mapped Reference", 
     "Assigned Type", 
@@ -634,10 +635,11 @@ if (exists("df.flipflop") && (nrow(df.flipflop) > 1)) {
 
 ```{r fftable, message=FALSE, warning=FALSE, results='asis'}
 if (exists("df.flipflop") && (nrow(df.flipflop) > 1)) {
-  flextable(df.flipflop) %>%
+  flextable(df.flipflop %>% select(! c("base"))) %>%
     set_header_labels(values = c("type", "subtype", "leftITR", "rightITR", "count"))
 }
 ```
+
 
 ```{r saverdata, message=FALSE, warning=FALSE}
 # Enable for troubleshooting -- takes some time to generate
