@@ -879,6 +879,13 @@ def generate_vector_coverage(bam_filename, annotation, output_prefix):
     Returns:
         str: Path to the output TSV file
     """
+    # Check if BAM index exists, create if needed
+    index_filename = bam_filename + ".bai"
+    if not os.path.exists(index_filename):
+        logging.info(f"BAM index not found, creating index for {bam_filename}")
+        pysam.index(bam_filename)
+        logging.info(f"BAM index created: {index_filename}")
+    
     # Open BAM file
     bam = pysam.AlignmentFile(bam_filename, "rb", check_sq=False)
     
