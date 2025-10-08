@@ -75,7 +75,7 @@ if [[ -n "$flipflop_name" || -n "$flipflop_fa" ]]; then
     elif [ "${vector_type}" == "ss" ]; then
        orientation="left"
     fi
-    
+ 
     python "$(dirname $0)/get_flipflop_config.py" \
         "$out_dir/${sample_id}.tagged.bam" "$out_dir/${sample_id}.per_read.tsv.gz" \
         "$vector_type" \

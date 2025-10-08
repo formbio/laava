@@ -81,6 +81,7 @@ process make_report() {
     path("${sample_id}.nonmatch.tsv.gz"), emit: nonmatch_tsv
     path("${sample_id}.agg_ref_type.tsv"), emit: agg_ref_type_tsv
     path("${sample_id}.agg_subtype.tsv"), emit: agg_subtype_tsv
+    path("${sample_id}.vector_coverage.tsv"), emit: vector_coverage
     path("${sample_id}.flipflop.tsv.gz"), emit: flipflop_tsv, optional: true
     path("${sample_id}.agg_flipflop.tsv"), emit: agg_flipflop_tsv, optional:true
 
