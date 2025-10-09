@@ -890,7 +890,8 @@ def generate_vector_coverage(bam_filename, annotation, output_prefix):
     
     # Open position-sorted BAM file
     bam = pysam.AlignmentFile(pos_sorted_bam, "rb", check_sq=False)
-    
+    mapped_reads = bam.count(read_callback='all')
+    logging.info(f"Total reads: {mapped_reads}")
     # Count unique fragments (by query name)
     read_names = set()
     for read in bam:
@@ -898,6 +899,7 @@ def generate_vector_coverage(bam_filename, annotation, output_prefix):
             read_names.add(read.query_name)
     
     total_fragments = len(read_names)
+    logging.info(f"Total fragments: {total_fragments}")
     bam.reset()
     
     # Initialize list to store coverage data
@@ -921,13 +923,13 @@ def generate_vector_coverage(bam_filename, annotation, output_prefix):
         position_coverage = {i: 0 for i in range(start_pos, end_pos)}
         
         # Use pileup with max_depth set to total fragments count (to avoid default limit)
-        for column in bam.pileup(seq_name, start_pos, end_pos, max_depth=total_fragments):
+        for column in bam.pileup(seq_name, start_pos, end_pos, max_depth=mapped_reads):
             if start_pos <= column.pos < end_pos:
                 position_coverage[column.pos] = column.n
         
         # Convert to output format with percentages
         for position, coverage in position_coverage.items():
-            percent_coverage = (coverage / total_fragments) * 100 if total_fragments > 0 else 0
+            percent_coverage = (coverage / mapped_reads) * 100 if mapped_reads > 0 else 0
             
             coverage_data.append({
                 "vector_name": seq_name,
@@ -935,7 +937,7 @@ def generate_vector_coverage(bam_filename, annotation, output_prefix):
                 "raw_coverage": coverage,
                 "percent_coverage": percent_coverage
             })
-    
+
     # Write coverage data to TSV
     output_path = f"{output_prefix}.vector_coverage.tsv"
     with open(output_path, "w") as f:
@@ -958,7 +960,7 @@ def main(args):
         is_mitr_left = check_is_mitr_left(args.annotation_bed, args.itr_labels)
     else:
         is_mitr_left = None
-
+    '''
     if args.cpus == 1:
         per_read_tsv, full_out_bam = process_alignment_bam(
             args.sample_id,
@@ -978,14 +980,14 @@ def main(args):
             args.output_prefix,
             num_chunks=args.cpus,
         )
-
+    '''
     # Generate vector coverage file
     generate_vector_coverage(
         args.bam_filename,
         annotation,
         args.output_prefix
     )
-
+    '''
     # subset BAM files into major categories for ease of loading into IGV for viewing
     # subset_sam_by_readname_list(in_bam, out_bam, per_read_tsv, wanted_types, wanted_subtypes)
     subset_bam_prefixes = []
@@ -1072,7 +1074,7 @@ def main(args):
             f"samtools sort {p}.tagged.bam > {p}.tagged.sorted.bam", shell=True
         )
         subprocess.check_call(f"samtools index {p}.tagged.sorted.bam", shell=True)
-
+    '''
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
