@@ -1,3 +1,27 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "laava"
+version = "0.1.0"
+description = "Long-read AAV Analysis Pipeline"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "LICENSE.md" }
+authors = [
+    { name = "Form Biosciences" }
+]
+dependencies = [
+    "numpy",
+    "pandas",
+    "pysam",
+    "rmarkdown",
+]
+
+[project.scripts]
+laava-run = "src.laava_run:main"
+
 [tool.ruff]
 # Minimum version to assume for error checking
 target-version = "py39"

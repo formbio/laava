@@ -1,0 +1,13 @@
+name: laava_minimal
+channels:
+    - conda-forge
+    - bioconda
+    - defaults
+dependencies:
+    - python>=3.7.6
+    - biopython
+    - pandas
+    - pysam
+    - pytest
+    - minimap2
+    - samtools
