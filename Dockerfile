@@ -23,7 +23,6 @@ RUN rm -rf /var/lib/apt/lists/*
 # Install directly into 'base' conda environment
 COPY conda_env.yml ./conda_env.yml
 RUN conda env update -v -n base -f conda_env.yml
-RUN conda install conda-forge::awscli=2.24.2
 
 # Executable scripts
 RUN mkdir -p /opt/laava
