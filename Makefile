@@ -8,6 +8,9 @@ in_dir = test/samples
 out_dir = test/build
 fa_dir = test/fasta
 
+# Configurable parameters
+MEMORY ?= 32GB
+
 # Form Bio workflow deployment
 formbio_org := form-bio-solutions
 formbio_project := aav-qc-workshop
@@ -42,9 +45,10 @@ formbio: clean
 
 
 # Test Nextflow pipeline execution
+# Usage: make sc [MEMORY=8GB]  # Default: 32GB
 
 sc ss min folder: %: params-local-%.json
-	nextflow run -profile local main.nf -params-file $<
+	nextflow run -profile local main.nf -params-file $< --memory '$(MEMORY)'
 
 # Test local execution and outputs
 
