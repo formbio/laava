@@ -112,7 +112,9 @@ def iter_cigar_w_aligned_pair(rec, writer):
             if r_pos is not None:
                 logging.warning("Unexpected value for r_pos: %s", r_pos)
             continue
-        total_len += cigar_count
+        # iter_cigar yields one tuple per base, so count one per base here; adding
+        # cigar_count (the run length) made total_len the sum of squared run lengths
+        total_len += 1
         if cigar_type != prev_cigar_type:
             if cigar_type in ("I", "D", "X", "N"):
                 total_err += cigar_count
@@ -297,7 +299,15 @@ def process_alignment_bam(
         "map_iden",
         "map_label",
         "map_target_overlap",
+        # Aligner confidence, appended after the original columns: minimap2's MAPQ, best
+        # (s1) and best-secondary (s2) chain scores, and per-base divergence (de)
+        "mapq",
+        "s1",
+        "s2",
+        "de",
     ]
+    # Every primary/supplementary record of every read, including those not kept above
+    ALL_ALIGNMENT_FIELDS = ALIGNMENT_FIELDS + ["kept"]
     PER_READ_FIELDS = [
         "read_id",
         "has_primary",
@@ -307,17 +317,26 @@ def process_alignment_bam(
         "effective_count",
         "reference_label",
         "read_target_overlap",
+        # Appended: number of mapped alignments of the read (primary + all supp), and
+        # the distinct alignment labels involved, regardless of which companion is kept
+        "n_alignments",
+        "labels_involved",
     ]
     NONMATCH_FIELDS = ["read_id", "pos0", "type", "type_len"]
 
     f_alignments = open(output_prefix + ".alignments.tsv", "w")
+    f_all_alignments = open(output_prefix + ".all_alignments.tsv", "w")
     f_nonmatch = open(output_prefix + ".nonmatch.tsv", "w")
     f_per_read = open(output_prefix + ".per_read.tsv", "w")
 
     out_alignments = csv.DictWriter(f_alignments, ALIGNMENT_FIELDS, delimiter="\t")
+    out_all_alignments = csv.DictWriter(
+        f_all_alignments, ALL_ALIGNMENT_FIELDS, delimiter="\t"
+    )
     out_nonmatch = csv.DictWriter(f_nonmatch, NONMATCH_FIELDS, delimiter="\t")
     out_per_read = csv.DictWriter(f_per_read, PER_READ_FIELDS, delimiter="\t")
     out_alignments.writeheader()
+    out_all_alignments.writeheader()
     out_nonmatch.writeheader()
     out_per_read.writeheader()
 
@@ -357,6 +376,7 @@ def process_alignment_bam(
                     out_nonmatch,
                     out_per_read,
                     bam_writer,
+                    out_all_alignments,
                 )
                 records = [cur_r]
             else:
@@ -375,9 +395,11 @@ def process_alignment_bam(
         out_nonmatch,
         out_per_read,
         bam_writer,
+        out_all_alignments,
     )
     bam_writer.close()
     f_alignments.close()
+    f_all_alignments.close()
     f_nonmatch.close()
     f_per_read.close()
     return f_per_read.name, output_prefix + ".tagged.bam"
@@ -461,6 +483,7 @@ def process_alignment_records_for_a_read(
     out_nonmatch,
     out_per_read,
     bam_writer,
+    out_all_alignments=None,
 ):
     """For each, find the most probable assignment.
 
@@ -470,6 +493,7 @@ def process_alignment_records_for_a_read(
     :return:
     """
     read_tally = {"primary": None, "supp": []}
+    all_records = []  # the info of every record of this read, including dropped supps
     for r in records:
         # check ccs id format is <movie>/<zmw>/ccs[/rev or /fwd]
         if ccs_rex.fullmatch(r.qname) is None:
@@ -493,10 +517,20 @@ def process_alignment_records_for_a_read(
             "map_iden": "NA",
             "map_label": "NA",
             "map_target_overlap": "NA",
+            "mapq": "NA",
+            "s1": "NA",
+            "s2": "NA",
+            "de": "NA",
         }
+        all_records.append(info)  # every record of the read, kept or not
         if r.is_unmapped:
             read_tally["primary"] = info
         else:
+            # minimap2's own confidence values, passed through unchanged for information
+            info["mapq"] = r.mapping_quality
+            for tag in ("s1", "s2", "de"):
+                if r.has_tag(tag):
+                    info[tag] = r.get_tag(tag)
             cigar_list = r.cigar
             seq_len = r.query_length
             if CIGAR_DICT[cigar_list[0][0]] == "H":
@@ -543,6 +577,20 @@ def process_alignment_records_for_a_read(
         # supp could be None, in which case there is best matching supp!
         # in the case supp is None we wanna see if this is a weird read (ex: mapped twice to + strand)
 
+    # every record of the read, with a flag for the ones also written to `out_alignments`
+    # (the primary and the companion supp). Purely additional output.
+    if out_all_alignments is not None:
+        kept_ids = {id(prim)} | ({id(supp)} if supp is not None else set())
+        for rec_info in all_records:
+            row = {k: v for k, v in rec_info.items() if k != "rec"}
+            row["kept"] = "Y" if id(rec_info) in kept_ids else "N"
+            out_all_alignments.writerow(row)
+    mapped_infos = [i for i in all_records if i["is_mapped"] == "Y"]
+    n_alignments = len(mapped_infos)
+    labels_involved = (
+        "|".join(sorted({i["map_label"] for i in mapped_infos})) if mapped_infos else "NA"
+    )
+
     # write the assigned type / subtype to the new BAM output
     bam_writer.write(
         pysam.AlignedSegment.from_dict(
@@ -577,6 +625,8 @@ def process_alignment_records_for_a_read(
         if prim["is_mapped"] == "Y"
         else "(unmapped)",
         "read_target_overlap": "NA",
+        "n_alignments": n_alignments,
+        "labels_involved": labels_involved,
     }
     if read_info["has_primary"] == "Y":
         # Set reference_label to a known label, chimeric-(non)vector, or leave as "NA" or "unmapped"
@@ -821,6 +871,7 @@ def run_processing_parallel(
     _outpath_nonmatch = gather_text_chunks(".nonmatch.tsv")
     outpath_per_read = gather_text_chunks(".per_read.tsv")
     _outpath_alignments = gather_text_chunks(".alignments.tsv")
+    _outpath_all_alignments = gather_text_chunks(".all_alignments.tsv")
 
     # Combine the data together for *.tagged.bam
     # TODO - samtools cat/merge?

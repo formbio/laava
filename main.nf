@@ -113,6 +113,7 @@ workflow laava {
     mapped_pos_bam = map_reads.out.mapped_pos_bam
     metadata_out_tsv = make_report.out.metadata_tsv
     alignments_tsv = make_report.out.alignments_tsv
+    all_alignments_tsv = make_report.out.all_alignments_tsv
     per_read_tsv = make_report.out.per_read_tsv
     nonmatch_tsv = make_report.out.nonmatch_tsv
     agg_ref_type_tsv = make_report.out.agg_ref_type_tsv

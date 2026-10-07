@@ -77,6 +77,7 @@ process make_report() {
     // summary tables
     path("${sample_id}.metadata.tsv"), emit: metadata_tsv
     path("${sample_id}.alignments.tsv.gz"), emit: alignments_tsv
+    path("${sample_id}.all_alignments.tsv.gz"), emit: all_alignments_tsv, optional: true
     path("${sample_id}.per_read.tsv.gz"), emit: per_read_tsv
     path("${sample_id}.nonmatch.tsv.gz"), emit: nonmatch_tsv
     path("${sample_id}.agg_ref_type.tsv"), emit: agg_ref_type_tsv
