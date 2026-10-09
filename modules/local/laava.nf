@@ -38,6 +38,7 @@ process map_reads() {
           val(sample_name),
           path("${sample_id}.sort_by_pos.bam"),
           path("${sample_id}.sort_by_pos.bam.bai"), emit: mapped_pos_bam
+    path("${sample_id}.source_header.txt"), emit: source_header, optional: true
 
     script:
     // Hack for optional inputs
