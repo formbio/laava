@@ -41,6 +41,9 @@ grep '^>' all_refs.fa
 echo
 
 if [[ $reads == *.bam ]]; then
+    # `samtools fastq` drops the header (@RG: instrument, kit, basecaller), and the aligned BAMs below never have it, so keep the input's header lines verbatim, once, before converting.
+    # Nothing here parses them. `--no-PG`: samtools would otherwise append a @PG line for this very command, which the input never had. FASTQ input has no header to keep, so no file is written for it.
+    samtools view -H --no-PG "$reads" > "${sample_id}.source_header.txt"
     echo "Converting $reads from BAM to FASTQ"
     samtools fastq -n -0 reads.fq "$reads"
     reads_fn=reads.fq

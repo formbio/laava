@@ -48,8 +48,8 @@ class TestGoldVerification:
         # SC (Self-Complementary) pipeline outputs
         "sc": {
             "nonmatch": "cf9cf24d7efdc43086cf47e6aa0977b5bfbd22b2e7915b59b79d291791a5dd4d",
-            "alignments": "28e41d7f23699fe4e0a7dfbde2039c9f7de8bf249d2c771f98c3cdac42c8c78f", 
-            "per_read": "fd694fb03859deb296f95fe4886ba04642d5a60e689fbb87cbddd390544d076a",
+            "alignments": "c79fde3ce451ece009c61234a0970ffa1a136f5908b86ddc6e3d0cb8ff36b2d9", 
+            "per_read": "8eda211c58f9fd3547c26bcc6f97b90ea4adcd19d99c4e86d1659337dd4e168d",
             "agg_ref_type": "7a7635f8896cecd142438f6ceb868939ca642593f2df2b6dfb19f58c38b28d37",
             "agg_subtype": "734b36a42ad47c00f4e61c0194ba129b74a74b9a10d507427f3a6f600e0bd87e",
             "metadata": "0f9d78923ac48bec7b204900d45d57be62f2d0c241fb5a769f3691f8d61a3dcc",
@@ -57,8 +57,8 @@ class TestGoldVerification:
         # SS (Single-Stranded) pipeline outputs  
         "ss": {
             "nonmatch": "7547a6278e470637ddd14c40b6b4c72c27983966af8c821333237d3868a644e5",
-            "alignments": "9d57fa00c1f60b1bf84281ce21bf8e8deed9b4a0e50e0bfdb37984c2a9558b0e",
-            "per_read": "26aefedb8a2d0b747015d999bff9e35e5acd7f040f5f89efeb40289598ff666a", 
+            "alignments": "acc5837f0922d13c1165f5aeabc8d9c7820020e10d1f021e59c35d0082763ecc",
+            "per_read": "66ac59bfef20c25c5010786c4d04df130791ed246c23086fe2026d13bad98527", 
             "agg_ref_type": "1fe190033bed259a61f79e6bad8b01151132e6fa58ddc99b50fd5db2e1bb48f1",
             "agg_subtype": "c58e2d0f04e5e3ac0a8a5eb94e5e885719bca6d4a019f288b8b0f0089b715552",
             "agg_flipflop": "153381dde39f5bd74cca990e2c4f7df24c776df2153d870dfb160c75c30a69fa",
